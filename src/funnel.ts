@@ -5,7 +5,7 @@ import type { FunnelOptions } from './schemas/funnel.schema.ts';
 import { FunnelWithExplanationSchema, SeedsSchema, type Funnel, type FunnelStage, type FunnelCategory, type FunnelWithExplanation } from './schemas/funnel.schema.ts';
 import { dedent } from './utils.ts';
 
-export { FunnelWithExplanationSchema as FunnelSchema };
+export { FunnelWithExplanationSchema };
 
 /**
  * Iterates over all categories in a funnel, yielding references to stage info and category objects.
