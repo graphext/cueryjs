@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Structured Analysis Viewer</title>
+		<style>
+			:root {
+				--bg-primary: #0f172a;
+				--bg-secondary: #1e293b;
+				--bg-tertiary: #334155;
+				--text-primary: #f1f5f9;
+				--text-secondary: #94a3b8;
+				--accent: #3b82f6;
+				--accent-hover: #2563eb;
+				--success: #22c55e;
+				--warning: #f59e0b;
+				--danger: #ef4444;
+				--border: #475569;
+			}
+
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+
+			body {
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+				background: var(--bg-primary);
+				color: var(--text-primary);
+				line-height: 1.6;
+				min-height: 100vh;
+			}
+
+			.container {
+				max-width: 1400px;
+				margin: 0 auto;
+				padding: 2rem;
+			}
+
+			header {
+				text-align: center;
+				margin-bottom: 2rem;
+			}
+
+			header h1 {
+				font-size: 2rem;
+				margin-bottom: 0.5rem;
+			}
+
+			header p {
+				color: var(--text-secondary);
+			}
+
+			/* Input Section */
+			.input-section {
+				background: var(--bg-secondary);
+				border-radius: 12px;
+				padding: 1.5rem;
+				margin-bottom: 2rem;
+				border: 1px solid var(--border);
+			}
+
+			.input-section h2 {
+				font-size: 1.1rem;
+				margin-bottom: 1rem;
+				color: var(--text-secondary);
+			}
+
+			.input-methods {
+				display: flex;
+				gap: 1rem;
+				flex-wrap: wrap;
+			}
+
+			.btn {
+				background: var(--accent);
+				color: white;
+				border: none;
+				padding: 0.75rem 1.5rem;
+				border-radius: 8px;
+				cursor: pointer;
+				font-size: 0.95rem;
+				transition: background 0.2s;
+			}
+
+			.btn:hover {
+				background: var(--accent-hover);
+			}
+
+			.btn-secondary {
+				background: var(--bg-tertiary);
+			}
+
+			.btn-secondary:hover {
+				background: var(--border);
+			}
+
+			input[type='file'] {
+				display: none;
+			}
+
+			textarea {
+				width: 100%;
+				min-height: 150px;
+				background: var(--bg-primary);
+				border: 1px solid var(--border);
+				border-radius: 8px;
+				padding: 1rem;
+				color: var(--text-primary);
+				font-family: 'Monaco', 'Menlo', monospace;
+				font-size: 0.85rem;
+				resize: vertical;
+				margin-top: 1rem;
+			}
+
+			textarea:focus {
+				outline: none;
+				border-color: var(--accent);
+			}
+
+			/* Error/Status Messages */
+			.message {
+				padding: 1rem;
+				border-radius: 8px;
+				margin-top: 1rem;
+				display: none;
+			}
+
+			.message.error {
+				background: rgba(239, 68, 68, 0.2);
+				border: 1px solid var(--danger);
+				color: var(--danger);
+			}
+
+			.message.success {
+				background: rgba(34, 197, 94, 0.2);
+				border: 1px solid var(--success);
+				color: var(--success);
+			}
+
+			/* Dashboard */
+			.dashboard {
+				display: none;
+			}
+
+			.dashboard.visible {
+				display: block;
+			}
+
+			/* Meta Info */
+			.meta-info {
+				background: var(--bg-secondary);
+				border-radius: 12px;
+				padding: 1.5rem;
+				margin-bottom: 2rem;
+				border: 1px solid var(--border);
+			}
+
+			.meta-info h2 {
+				font-size: 1.5rem;
+				margin-bottom: 0.5rem;
+				word-break: break-all;
+			}
+
+			.meta-info .url {
+				color: var(--accent);
+				font-size: 0.9rem;
+				word-break: break-all;
+			}
+
+			.meta-info .brand {
+				display: inline-block;
+				background: var(--accent);
+				color: white;
+				padding: 0.25rem 0.75rem;
+				border-radius: 20px;
+				font-size: 0.85rem;
+				margin-top: 0.5rem;
+			}
+
+			/* Stats Grid */
+			.stats-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+				gap: 1rem;
+				margin-bottom: 2rem;
+			}
+
+			.stat-card {
+				background: var(--bg-secondary);
+				border-radius: 12px;
+				padding: 1.25rem;
+				border: 1px solid var(--border);
+			}
+
+			.stat-card .label {
+				color: var(--text-secondary);
+				font-size: 0.85rem;
+				margin-bottom: 0.25rem;
+			}
+
+			.stat-card .value {
+				font-size: 2rem;
+				font-weight: 700;
+			}
+
+			.stat-card .sub {
+				color: var(--text-secondary);
+				font-size: 0.8rem;
+				margin-top: 0.25rem;
+			}
+
+			/* Sections */
+			.section {
+				background: var(--bg-secondary);
+				border-radius: 12px;
+				margin-bottom: 1rem;
+				border: 1px solid var(--border);
+				overflow: hidden;
+			}
+
+			.section-header {
+				padding: 1rem 1.5rem;
+				cursor: pointer;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				background: var(--bg-tertiary);
+				user-select: none;
+			}
+
+			.section-header:hover {
+				background: var(--border);
+			}
+
+			.section-header h3 {
+				font-size: 1rem;
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+
+			.section-header .count {
+				background: var(--accent);
+				color: white;
+				padding: 0.15rem 0.5rem;
+				border-radius: 10px;
+				font-size: 0.75rem;
+			}
+
+			.section-header .chevron {
+				transition: transform 0.2s;
+			}
+
+			.section-header.open .chevron {
+				transform: rotate(180deg);
+			}
+
+			.section-content {
+				display: none;
+				padding: 1.5rem;
+				max-height: 500px;
+				overflow-y: auto;
+			}
+
+			.section-content.open {
+				display: block;
+			}
+
+			/* Heading Tree */
+			.heading-tree {
+				font-family: 'Monaco', 'Menlo', monospace;
+				font-size: 0.9rem;
+			}
+
+			.heading-node {
+				margin-left: 1.5rem;
+				padding: 0.25rem 0;
+				border-left: 2px solid var(--border);
+				padding-left: 1rem;
+			}
+
+			.heading-node.h1 {
+				margin-left: 0;
+				border-color: var(--accent);
+			}
+			.heading-node.h2 {
+				border-color: var(--success);
+			}
+			.heading-node.h3 {
+				border-color: var(--warning);
+			}
+			.heading-node.h4 {
+				border-color: var(--danger);
+			}
+
+			.heading-tag {
+				display: inline-block;
+				background: var(--bg-tertiary);
+				padding: 0.1rem 0.4rem;
+				border-radius: 4px;
+				font-size: 0.75rem;
+				margin-right: 0.5rem;
+				color: var(--text-secondary);
+			}
+
+			/* Lists */
+			.content-list {
+				list-style: none;
+			}
+
+			.content-list li {
+				padding: 0.75rem;
+				background: var(--bg-primary);
+				border-radius: 8px;
+				margin-bottom: 0.5rem;
+				font-size: 0.9rem;
+			}
+
+			.content-list li:hover {
+				background: var(--bg-tertiary);
+			}
+
+			/* Links Table */
+			.links-table {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 0.85rem;
+			}
+
+			.links-table th,
+			.links-table td {
+				padding: 0.75rem;
+				text-align: left;
+				border-bottom: 1px solid var(--border);
+			}
+
+			.links-table th {
+				background: var(--bg-primary);
+				color: var(--text-secondary);
+				font-weight: 600;
+			}
+
+			.links-table tr:hover td {
+				background: var(--bg-primary);
+			}
+
+			.links-table a {
+				color: var(--accent);
+				text-decoration: none;
+				word-break: break-all;
+			}
+
+			.links-table a:hover {
+				text-decoration: underline;
+			}
+
+			.badge {
+				display: inline-block;
+				padding: 0.15rem 0.5rem;
+				border-radius: 10px;
+				font-size: 0.7rem;
+				font-weight: 600;
+			}
+
+			.badge-internal {
+				background: rgba(34, 197, 94, 0.2);
+				color: var(--success);
+			}
+
+			.badge-external {
+				background: rgba(59, 130, 246, 0.2);
+				color: var(--accent);
+			}
+
+			/* Schema Tags */
+			.schema-tags {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+
+			.schema-tag {
+				background: var(--bg-primary);
+				padding: 0.5rem 1rem;
+				border-radius: 8px;
+				font-size: 0.85rem;
+			}
+
+			.schema-tag.active {
+				background: rgba(34, 197, 94, 0.2);
+				color: var(--success);
+			}
+
+			.schema-tag.inactive {
+				background: var(--bg-primary);
+				color: var(--text-secondary);
+			}
+
+			/* Meta Tags */
+			.meta-table {
+				width: 100%;
+				border-collapse: collapse;
+			}
+
+			.meta-table th,
+			.meta-table td {
+				padding: 0.5rem;
+				text-align: left;
+				border-bottom: 1px solid var(--border);
+				font-size: 0.85rem;
+			}
+
+			.meta-table th {
+				width: 200px;
+				color: var(--text-secondary);
+			}
+
+			.meta-table td {
+				word-break: break-word;
+			}
+
+			/* Questions */
+			.question-item {
+				padding: 0.75rem 1rem;
+				background: var(--bg-primary);
+				border-radius: 8px;
+				margin-bottom: 0.5rem;
+				border-left: 3px solid var(--warning);
+			}
+
+			/* Paragraphs */
+			.paragraph-item {
+				padding: 0.75rem;
+				background: var(--bg-primary);
+				border-radius: 8px;
+				margin-bottom: 0.5rem;
+				font-size: 0.9rem;
+				line-height: 1.5;
+			}
+
+			.paragraph-item .length {
+				color: var(--text-secondary);
+				font-size: 0.75rem;
+				margin-top: 0.25rem;
+			}
+
+			/* Tables Display */
+			.table-item {
+				margin-bottom: 1rem;
+				background: var(--bg-primary);
+				border-radius: 8px;
+				overflow: hidden;
+			}
+
+			.table-item .table-header-info {
+				padding: 0.75rem;
+				background: var(--bg-tertiary);
+				font-size: 0.85rem;
+				color: var(--text-secondary);
+			}
+
+			.table-item table {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 0.8rem;
+			}
+
+			.table-item th,
+			.table-item td {
+				padding: 0.5rem;
+				border: 1px solid var(--border);
+				text-align: left;
+			}
+
+			.table-item th {
+				background: var(--bg-secondary);
+			}
+
+			/* Heading Stats */
+			.heading-stats-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+				gap: 1rem;
+				margin-bottom: 1rem;
+			}
+
+			.heading-stat {
+				text-align: center;
+				padding: 1rem;
+				background: var(--bg-primary);
+				border-radius: 8px;
+			}
+
+			.heading-stat .value {
+				font-size: 1.5rem;
+				font-weight: 700;
+			}
+
+			.heading-stat .label {
+				font-size: 0.8rem;
+				color: var(--text-secondary);
+			}
+
+			.heading-stat.success .value {
+				color: var(--success);
+			}
+			.heading-stat.warning .value {
+				color: var(--warning);
+			}
+			.heading-stat.danger .value {
+				color: var(--danger);
+			}
+
+			/* Classification */
+			.classification-card {
+				background: var(--bg-primary);
+				border-radius: 12px;
+				padding: 1.5rem;
+				border-left: 4px solid var(--accent);
+			}
+
+			.classification-type {
+				display: inline-block;
+				padding: 0.4rem 0.8rem;
+				border-radius: 8px;
+				font-size: 1rem;
+				font-weight: 600;
+				background: var(--accent);
+				color: white;
+				margin-bottom: 0.5rem;
+			}
+
+			.classification-subtype {
+				font-size: 0.9rem;
+				color: var(--text-secondary);
+				margin-bottom: 1rem;
+			}
+
+			.classification-summary {
+				font-size: 0.95rem;
+				line-height: 1.6;
+				color: var(--text-primary);
+				margin-bottom: 1rem;
+				padding: 1rem;
+				background: var(--bg-secondary);
+				border-radius: 8px;
+			}
+
+			.classification-reasoning {
+				font-size: 0.85rem;
+				line-height: 1.5;
+				color: var(--text-secondary);
+				margin-bottom: 1rem;
+				padding: 0.75rem;
+				background: var(--bg-tertiary);
+				border-radius: 6px;
+				font-style: italic;
+			}
+
+			.themes-container {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+				margin-top: 0.5rem;
+			}
+
+			.themes-label {
+				font-size: 0.85rem;
+				color: var(--text-secondary);
+				margin-bottom: 0.5rem;
+			}
+
+			.theme-tag {
+				padding: 0.3rem 0.6rem;
+				border-radius: 16px;
+				font-size: 0.8rem;
+				background: rgba(59, 130, 246, 0.2);
+				color: var(--accent);
+			}
+
+			.no-classification {
+				color: var(--text-secondary);
+				font-style: italic;
+			}
+
+			/* JSON Preview */
+			.json-preview {
+				background: var(--bg-primary);
+				border-radius: 8px;
+				padding: 1rem;
+				font-family: 'Monaco', 'Menlo', monospace;
+				font-size: 0.8rem;
+				white-space: pre-wrap;
+				word-break: break-all;
+				max-height: 400px;
+				overflow-y: auto;
+			}
+
+			/* Footer */
+			footer {
+				text-align: center;
+				padding: 2rem;
+				color: var(--text-secondary);
+				font-size: 0.85rem;
+			}
+
+			footer a {
+				color: var(--accent);
+				text-decoration: none;
+			}
+
+			/* Scrollbar */
+			::-webkit-scrollbar {
+				width: 8px;
+				height: 8px;
+			}
+
+			::-webkit-scrollbar-track {
+				background: var(--bg-primary);
+			}
+
+			::-webkit-scrollbar-thumb {
+				background: var(--border);
+				border-radius: 4px;
+			}
+
+			::-webkit-scrollbar-thumb:hover {
+				background: var(--text-secondary);
+			}
+
+			@media (max-width: 768px) {
+				.container {
+					padding: 1rem;
+				}
+
+				.stats-grid {
+					grid-template-columns: repeat(2, 1fr);
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<header>
+				<h1>📊 Structured Analysis Viewer</h1>
+				<p>Load a StructuredAnalysis JSON to visualize page structure and content</p>
+			</header>
+
+			<div class="input-section">
+				<h2>Load Data</h2>
+				<div class="input-methods">
+					<label class="btn">
+						📁 Open JSON File
+						<input type="file" id="fileInput" accept=".json">
+					</label>
+					<button class="btn btn-secondary" id="pasteBtn">📋 Paste JSON</button>
+					<button class="btn btn-secondary" id="loadStoredBtn" style="display: none">🔄 Load Previous</button>
+					<button class="btn btn-secondary" id="clearBtn" style="display: none">✕ Clear</button>
+				</div>
+				<textarea
+					id="jsonInput"
+					placeholder="Paste your StructuredAnalysis JSON here..."
+					style="display: none"
+				></textarea>
+				<button class="btn" id="parseBtn" style="display: none; margin-top: 1rem">Parse JSON</button>
+				<div class="message" id="message"></div>
+			</div>
+
+			<div class="dashboard" id="dashboard">
+				<!-- Meta Info -->
+				<div class="meta-info" id="metaInfo"></div>
+
+				<!-- Stats Grid -->
+				<div class="stats-grid" id="statsGrid"></div>
+
+				<!-- Collapsible Sections -->
+				<div id="sections"></div>
+			</div>
+		</div>
+
+		<footer>
+			<p>Part of the <a href="#">Cuery Analysis Tools</a> • View source on GitHub</p>
+		</footer>
+
+		<script>
+			// State
+			let currentAnalysis = null;
+
+			// DOM Elements
+			const fileInput = document.getElementById('fileInput');
+			const pasteBtn = document.getElementById('pasteBtn');
+			const loadStoredBtn = document.getElementById('loadStoredBtn');
+			const clearBtn = document.getElementById('clearBtn');
+			const jsonInput = document.getElementById('jsonInput');
+			const parseBtn = document.getElementById('parseBtn');
+			const message = document.getElementById('message');
+			const dashboard = document.getElementById('dashboard');
+			const metaInfo = document.getElementById('metaInfo');
+			const statsGrid = document.getElementById('statsGrid');
+			const sections = document.getElementById('sections');
+
+			// Check for stored data
+			function checkStoredData() {
+				const stored = localStorage.getItem('structuredAnalysis');
+				if (stored) {
+					loadStoredBtn.style.display = 'inline-block';
+				}
+			}
+
+			// Show message
+			function showMessage(text, type = 'error') {
+				message.textContent = text;
+				message.className = `message ${type}`;
+				message.style.display = 'block';
+				setTimeout(() => {
+					message.style.display = 'none';
+				}, 5000);
+			}
+
+			// Parse and validate JSON
+			function parseJSON(text) {
+				try {
+					const data = JSON.parse(text);
+
+					// Basic validation - only require url (content and stats can be inferred/defaulted)
+					if (!data.url) {
+						throw new Error('Invalid StructuredAnalysis: missing "url" property');
+					}
+
+					// Ensure content and stats exist with defaults
+					data.content = data.content || {};
+					data.stats = data.stats || {};
+
+					return data;
+				} catch (e) {
+					if (e instanceof SyntaxError) {
+						throw new Error(`JSON syntax error: ${e.message}`);
+					}
+					throw new Error(`Validation error: ${e.message}`);
+				}
+			}
+
+			// Render the analysis
+			function renderAnalysis(analysis) {
+				currentAnalysis = analysis;
+
+				// Store in localStorage
+				localStorage.setItem('structuredAnalysis', JSON.stringify(analysis));
+				loadStoredBtn.style.display = 'none';
+				clearBtn.style.display = 'inline-block';
+
+				// Render meta info
+				renderMetaInfo(analysis);
+
+				// Render stats grid
+				renderStatsGrid(analysis.stats);
+
+				// Render sections
+				renderSections(analysis);
+
+				// Show dashboard
+				dashboard.classList.add('visible');
+
+				// Hide input
+				jsonInput.style.display = 'none';
+				parseBtn.style.display = 'none';
+
+				showMessage('Analysis loaded successfully!', 'success');
+			}
+
+			function renderMetaInfo(analysis) {
+				const title = analysis.content.meta?.title || analysis.response?.title ||
+					'Untitled Page';
+				metaInfo.innerHTML = `
+                <h2>${escapeHtml(title)}</h2>
+                <div class="url">${escapeHtml(analysis.url)}</div>
+                ${analysis.brand ? `<span class="brand">${escapeHtml(analysis.brand)}</span>` : ''}
+            `;
+			}
+
+			function renderStatsGrid(stats) {
+				const hs = stats.headingStats || {};
+				const cards = [
+					{
+						label: 'Words',
+						value: (stats.numWords ?? 0).toLocaleString(),
+						sub: `${(stats.numChars ?? 0).toLocaleString()} chars`,
+					},
+					{
+						label: 'Paragraphs',
+						value: stats.numParagraphs ?? 0,
+						sub: `avg ${stats.avgParagraphLength ?? 0} chars`,
+					},
+					{
+						label: 'Links',
+						value: stats.numLinks ?? 0,
+						sub: `${stats.numInternalLinks ?? 0} int / ${stats.numExternalLinks ?? 0} ext`,
+					},
+					{
+						label: 'Headings',
+						value: hs.totalHeadings ?? 0,
+						sub: `max depth: ${hs.maxDepth ?? 0}`,
+					},
+					{ label: 'Lists', value: stats.numLists ?? 0, sub: `avg ${stats.avgListLength ?? 0} items` },
+					{ label: 'Tables', value: stats.numTables ?? 0 },
+					{ label: 'Forms', value: stats.numForms ?? 0 },
+					{ label: 'Questions', value: stats.numQuestions ?? 0 },
+					{ label: 'Schemas', value: stats.numSchemas ?? 0 },
+				];
+
+				// Add classification card if present
+				if (currentAnalysis?.classification) {
+					const clf = currentAnalysis.classification;
+					cards.push({
+						label: 'Page Type',
+						value: clf.type || '—',
+						sub: clf.subtype || null
+					});
+				}
+
+				statsGrid.innerHTML = cards.map((card) => `
+                <div class="stat-card">
+                    <div class="label">${card.label}</div>
+                    <div class="value">${card.value}</div>
+                    ${card.sub ? `<div class="sub">${card.sub}</div>` : ''}
+                </div>
+            `).join('');
+			}
+
+			function renderSections(analysis) {
+				const content = analysis.content || {};
+				const stats = analysis.stats || {};
+				const headingStats = stats.headingStats || {};
+				const paragraphs = content.paragraphs || [];
+				const questions = content.questions || [];
+				const links = content.links || [];
+				const lists = content.lists || [];
+				const tables = content.tables || [];
+				const forms = content.forms || [];
+				const headings = content.headings || [];
+				const meta = content.meta || {};
+				const schemas = content.schemas || [];
+
+				let html = '';
+
+				// Classification (if available)
+				const classification = analysis.classification;
+				if (classification) {
+					html += createSection(
+						'classification',
+						'Page Classification',
+						classification.themes?.length || null,
+						() => renderClassification(classification),
+					);
+				}
+
+				// Heading Structure
+				html += createSection(
+					'headings',
+					'Heading Structure',
+					headingStats.totalHeadings ?? 0,
+					() => {
+						let inner = renderHeadingStats(headingStats);
+						inner += '<div class="heading-tree">' + renderHeadingTree(headings) +
+							'</div>';
+						return inner;
+					},
+				);
+
+				// Meta Tags
+				html += createSection('meta', 'Meta Tags', Object.keys(meta).length, () => {
+					return renderMetaTable(meta);
+				});
+
+				// Schema Types
+				html += createSection('schemas', 'Schema Types', stats.numSchemas ?? 0, () => {
+					return renderSchemaStats(stats.schemaStats || {}, schemas);
+				});
+
+				// Questions
+				if (questions.length > 0) {
+					html += createSection(
+						'questions',
+						'Questions Found',
+						questions.length,
+						() => {
+							return questions.map((q) =>
+								`<div class="question-item">${escapeHtml(q)}</div>`
+							).join('');
+						},
+					);
+				}
+
+				// Paragraphs
+				html += createSection('paragraphs', 'Paragraphs', paragraphs.length, () => {
+					return paragraphs.slice(0, 50).map((p) => `
+                    <div class="paragraph-item">
+                        ${escapeHtml(String(p).substring(0, 500))}${String(p).length > 500 ? '...' : ''}
+                        <div class="length">${String(p).length} chars</div>
+                    </div>
+                `).join('') + (paragraphs.length > 50
+						? `<p style="color: var(--text-secondary); text-align: center;">...and ${
+							paragraphs.length - 50
+						} more</p>`
+						: '');
+				});
+
+				// Links
+				html += createSection('links', 'Links', links.length, () => {
+					return renderLinksTable(links);
+				});
+
+				// Lists
+				if (lists.length > 0) {
+					html += createSection('lists', 'Lists', lists.length, () => {
+						return lists.slice(0, 20).map((list, i) => {
+							const items = list.items || [];
+							const listType = list.ordered ? 'Ordered' : 'Unordered';
+							return `
+                        <div class="table-item">
+                            <div class="table-header-info">
+                                <strong>List ${i + 1}</strong> (${listType}, ${items.length} items)
+                                ${list.contextHeading ? `<br><span style="color: var(--accent);">📑 Heading:</span> ${escapeHtml(list.contextHeading)}` : ''}
+                                ${list.closestText ? `<br><span style="color: var(--text-secondary);">📝 Context:</span> <em>${escapeHtml(list.closestText.substring(0, 150))}${list.closestText.length > 150 ? '...' : ''}</em>` : ''}
+                            </div>
+                            <ul class="content-list" style="padding: 0.5rem 1rem 0.5rem 2rem;">
+                                ${
+							items.slice(0, 10).map((item) =>
+								`<li style="background: none; padding: 0.25rem 0;">${
+									escapeHtml(item)
+								}</li>`
+							).join('')
+						}
+                                ${
+							items.length > 10
+								? `<li style="color: var(--text-secondary);">...and ${
+									items.length - 10
+								} more</li>`
+								: ''
+						}
+                            </ul>
+                        </div>
+                    `;
+						}).join('');
+					});
+				}
+
+				// Tables
+				if (tables.length > 0) {
+					html += createSection('tables', 'Tables', tables.length, () => {
+						return tables.slice(0, 10).map((table, i) => {
+							const headers = table.headers || [];
+							const rows = table.rows || [];
+							return `
+                        <div class="table-item">
+                            <div class="table-header-info">Table ${i + 1}${
+							table.heading ? ` - ${escapeHtml(table.heading)}` : ''
+						}</div>
+                            <table>
+                                ${
+							headers.length > 0
+								? `<thead><tr>${
+									headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')
+								}</tr></thead>`
+								: ''
+						}
+                                <tbody>
+                                    ${
+							rows.slice(0, 5).map((row) =>
+								`<tr>${(row || []).map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`
+							).join('')
+						}
+                                    ${
+							rows.length > 5
+								? `<tr><td colspan="${
+									(rows[0] || []).length || 1
+								}" style="text-align: center; color: var(--text-secondary);">...and ${
+									rows.length - 5
+								} more rows</td></tr>`
+								: ''
+						}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+						}).join('');
+					});
+				}
+
+				// Forms
+				if (forms.length > 0) {
+					html += createSection('forms', 'Forms', forms.length, () => {
+						return forms.map((form, i) => {
+							const fields = form.fields || [];
+							return `
+                        <div class="table-item">
+                            <div class="table-header-info">Form ${i + 1}${
+							form.action ? ` - Action: ${escapeHtml(form.action)}` : ''
+						}</div>
+                            <div style="padding: 1rem;">
+                                <strong>Method:</strong> ${form.method || 'GET'}<br>
+                                <strong>Fields:</strong> ${fields.length}
+                                ${
+							fields.length > 0
+								? `
+                                    <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                                        ${
+									fields.map((f) =>
+										`<li>${escapeHtml(f.name || f.type || 'unnamed')}</li>`
+									).join('')
+								}
+                                    </ul>
+                                `
+								: ''
+						}
+                            </div>
+                        </div>
+                    `;
+						}).join('');
+					});
+				}
+
+				// Raw JSON
+				html += createSection('raw', 'Raw JSON', null, () => {
+					return `<div class="json-preview">${
+						escapeHtml(JSON.stringify(analysis, null, 2))
+					}</div>`;
+				});
+
+				sections.innerHTML = html;
+
+				// Add click handlers
+				document.querySelectorAll('.section-header').forEach((header) => {
+					header.addEventListener('click', () => {
+						header.classList.toggle('open');
+						const content = header.nextElementSibling;
+						content.classList.toggle('open');
+					});
+				});
+			}
+
+			function createSection(id, title, count, contentFn) {
+				return `
+                <div class="section">
+                    <div class="section-header" data-section="${id}">
+                        <h3>
+                            ${title}
+                            ${count !== null ? `<span class="count">${count}</span>` : ''}
+                        </h3>
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="section-content">
+                        ${contentFn()}
+                    </div>
+                </div>
+            `;
+			}
+
+			function renderClassification(classification) {
+				if (!classification) {
+					return '<p class="no-classification">No classification data available</p>';
+				}
+
+				const themes = classification.themes || [];
+				const themesHtml = themes.length > 0
+					? `<div class="themes-label">Themes (${themes.length})</div>
+					   <div class="themes-container">
+							${themes.map(t => `<span class="theme-tag">${escapeHtml(t)}</span>`).join('')}
+					   </div>`
+					: '';
+
+				return `
+					<div class="classification-card">
+						<div class="classification-type">${escapeHtml(classification.type || 'Unknown')}</div>
+						<div class="classification-subtype">${escapeHtml(classification.subtype || 'N/A')}</div>
+						${classification.summary ? `<div class="classification-summary">${escapeHtml(classification.summary)}</div>` : ''}
+						${classification.reasoning ? `<div class="classification-reasoning"><strong>Reasoning:</strong> ${escapeHtml(classification.reasoning)}</div>` : ''}
+						${themesHtml}
+					</div>
+				`;
+			}
+
+			function renderHeadingStats(hs) {
+				const headingCounts = hs.headingCounts || {};
+				return `
+                <div class="heading-stats-grid">
+                    <div class="heading-stat ${hs.oneH1 ? 'success' : 'danger'}">
+                        <div class="value">${hs.oneH1 ? '✓' : '✗'}</div>
+                        <div class="label">Single H1</div>
+                    </div>
+                    <div class="heading-stat">
+                        <div class="value">${hs.maxDepth ?? 0}</div>
+                        <div class="label">Max Depth</div>
+                    </div>
+                    <div class="heading-stat ${(hs.skippedLevels ?? 0) > 0 ? 'warning' : ''}">
+                        <div class="value">${hs.skippedLevels ?? 0}</div>
+                        <div class="label">Skipped Levels</div>
+                    </div>
+                    <div class="heading-stat ${(hs.emptyHeadings ?? 0) > 0 ? 'warning' : ''}">
+                        <div class="value">${hs.emptyHeadings ?? 0}</div>
+                        <div class="label">Empty Headings</div>
+                    </div>
+                    <div class="heading-stat ${(hs.duplicateHeadings ?? 0) > 0 ? 'warning' : ''}">
+                        <div class="value">${hs.duplicateHeadings ?? 0}</div>
+                        <div class="label">Duplicates</div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    ${
+					Object.entries(headingCounts).map(([tag, count]) =>
+						`<span class="badge" style="background: var(--bg-primary); padding: 0.25rem 0.75rem; border-radius: 4px;">${tag.toUpperCase()}: ${count}</span>`
+					).join('')
+				}
+                </div>
+            `;
+			}
+
+			function renderHeadingTree(headings, level = 0) {
+				if (!headings || headings.length === 0) {
+					return '<p style="color: var(--text-secondary);">No headings found</p>';
+				}
+
+				return headings.map((h) => `
+                <div class="heading-node ${h.tag}">
+                    <span class="heading-tag">${h.tag}</span>
+                    ${escapeHtml(h.text || '(empty)')}
+                    ${
+					h.children && h.children.length > 0 ? renderHeadingTree(h.children, level + 1) : ''
+				}
+                </div>
+            `).join('');
+			}
+
+			function renderMetaTable(meta) {
+				if (!meta || Object.keys(meta).length === 0) {
+					return '<p style="color: var(--text-secondary);">No meta tags found</p>';
+				}
+
+				return `
+                <table class="meta-table">
+                    <tbody>
+                        ${
+					Object.entries(meta).map(([key, value]) => `
+                            <tr>
+                                <th>${escapeHtml(key)}</th>
+                                <td>${escapeHtml(String(value))}</td>
+                            </tr>
+                        `).join('')
+				}
+                    </tbody>
+                </table>
+            `;
+			}
+
+			function renderSchemaStats(schemaStats, schemas) {
+				let html = '<div class="schema-tags">';
+
+				if (schemaStats && typeof schemaStats === 'object') {
+					for (const [type, present] of Object.entries(schemaStats)) {
+						html += `<span class="schema-tag ${present ? 'active' : 'inactive'}">${
+							present ? '✓' : '✗'
+						} ${escapeHtml(type)}</span>`;
+					}
+				}
+
+				html += '</div>';
+
+				if (schemas && Array.isArray(schemas) && schemas.length > 0) {
+					html +=
+						'<div style="margin-top: 1rem;"><h4 style="margin-bottom: 0.5rem; color: var(--text-secondary);">Raw Schema Data</h4>';
+					html += `<div class="json-preview" style="max-height: 200px;">${
+						escapeHtml(JSON.stringify(schemas, null, 2))
+					}</div></div>`;
+				}
+
+				return html;
+			}
+
+			function renderLinksTable(links) {
+				if (!links || links.length === 0) {
+					return '<p style="color: var(--text-secondary);">No links found</p>';
+				}
+
+				const displayLinks = links.slice(0, 100);
+
+				return `
+                <table class="links-table">
+                    <thead>
+                        <tr>
+                            <th>Text</th>
+                            <th>URL</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${
+					displayLinks.map((link) => `
+                            <tr>
+                                <td>${escapeHtml(link.text || '(no text)')}</td>
+                                <td><a href="${escapeHtml(link.url)}" target="_blank" rel="noopener">${
+						escapeHtml(link.url)
+					}</a></td>
+                                <td><span class="badge ${
+						link.isExternal ? 'badge-external' : 'badge-internal'
+					}">${link.isExternal ? 'External' : 'Internal'}</span></td>
+                            </tr>
+                        `).join('')
+				}
+                    </tbody>
+                </table>
+                ${
+					links.length > 100
+						? `<p style="color: var(--text-secondary); text-align: center; margin-top: 1rem;">Showing 100 of ${links.length} links</p>`
+						: ''
+				}
+            `;
+			}
+
+			function escapeHtml(text) {
+				if (text == null) return '';
+				const div = document.createElement('div');
+				div.textContent = String(text);
+				return div.innerHTML;
+			}
+
+			// Clear data
+			function clearData() {
+				localStorage.removeItem('structuredAnalysis');
+				currentAnalysis = null;
+				dashboard.classList.remove('visible');
+				clearBtn.style.display = 'none';
+				checkStoredData();
+			}
+
+			// Event Listeners
+			fileInput.addEventListener('change', async (e) => {
+				const file = e.target.files[0];
+				if (!file) return;
+
+				try {
+					const text = await file.text();
+					const analysis = parseJSON(text);
+					renderAnalysis(analysis);
+				} catch (e) {
+					showMessage(e.message);
+				}
+
+				fileInput.value = '';
+			});
+
+			pasteBtn.addEventListener('click', () => {
+				const isVisible = jsonInput.style.display !== 'none';
+				jsonInput.style.display = isVisible ? 'none' : 'block';
+				parseBtn.style.display = isVisible ? 'none' : 'block';
+				if (!isVisible) {
+					jsonInput.focus();
+				}
+			});
+
+			parseBtn.addEventListener('click', () => {
+				try {
+					const analysis = parseJSON(jsonInput.value);
+					renderAnalysis(analysis);
+					jsonInput.value = '';
+				} catch (e) {
+					showMessage(e.message);
+				}
+			});
+
+			loadStoredBtn.addEventListener('click', () => {
+				const stored = localStorage.getItem('structuredAnalysis');
+				if (stored) {
+					try {
+						const analysis = parseJSON(stored);
+						renderAnalysis(analysis);
+					} catch (e) {
+						showMessage(e.message);
+						localStorage.removeItem('structuredAnalysis');
+						loadStoredBtn.style.display = 'none';
+					}
+				}
+			});
+
+			clearBtn.addEventListener('click', clearData);
+
+			// Allow paste anywhere when no input is focused
+			document.addEventListener('paste', (e) => {
+				if (document.activeElement === jsonInput) return;
+
+				const text = e.clipboardData.getData('text');
+				if (text) {
+					try {
+						const analysis = parseJSON(text);
+						renderAnalysis(analysis);
+					} catch (e) {
+						// Silently ignore if not valid JSON
+					}
+				}
+			});
+
+			// Initialize
+			checkStoredData();
+		</script>
+	</body>
+</html>

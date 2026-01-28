@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Kids&Us Results Viewer</title>
+	<link rel="stylesheet" href="style.css">
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+	<!-- Vega, Vega-Lite, Vega-Embed -->
+	<script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+	<script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+	<script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+</head>
+
+<body>
+	<div class="app-container">
+		<header>
+			<div class="header-left">
+				<h1>Kids&Us Results Viewer</h1>
+				<div class="view-switcher">
+					<button id="view-details" class="view-btn active">Details</button>
+					<button id="view-analytics" class="view-btn">Analytics</button>
+				</div>
+			</div>
+			<div class="file-upload">
+				<label for="file-input" class="custom-file-upload">
+					Load JSON Result
+				</label>
+				<input id="file-input" type="file" accept=".json" />
+				<span id="file-name">No file chosen</span>
+			</div>
+		</header>
+
+		<main id="main-content" class="hidden">
+			<aside class="sidebar">
+				<div id="server-files-container" class="hidden">
+					<div class="sidebar-header">
+						<h3>Available Results</h3>
+						<button id="refresh-files" title="Refresh">↻</button>
+					</div>
+					<ul id="files-list"></ul>
+				</div>
+				<div class="search-box">
+					<input type="text" id="search-places" placeholder="Search places...">
+				</div>
+				<div class="metadata-filters">
+					<label class="filter-field">
+						<span>Prompt type</span>
+						<select id="filter-type">
+							<option value="all">All types</option>
+						</select>
+					</label>
+					<label class="filter-field">
+						<span>Original place</span>
+						<select id="filter-origin">
+							<option value="all">All origins</option>
+						</select>
+					</label>
+				</div>
+				<ul id="places-list">
+					<!-- Places will be populated here -->
+				</ul>
+			</aside>
+
+			<section class="details-view" id="details-view">
+				<div class="empty-state">
+					<p>Select a place to view details</p>
+				</div>
+				<!-- Content will be populated here -->
+			</section>
+
+			<section class="analytics-view hidden" id="analytics-view">
+				<div class="analytics-toolbar">
+					<div class="sources-filter">
+						<label class="toggle-label">
+							<input type="checkbox" id="filter-with-sources">
+							<span class="toggle-slider"></span>
+							<span>Only with sources</span>
+						</label>
+						<div class="source-type-filter">
+							<label for="analytics-source-filter">Origin</label>
+							<select id="analytics-source-filter">
+								<option value="all">Companies + Summary</option>
+								<option value="companies">Companies only</option>
+								<option value="summary">Summary only</option>
+							</select>
+						</div>
+						<span id="sources-stats" class="sources-stats"></span>
+					</div>
+					<div id="analytics-filter-info" class="filter-info-inline hidden">
+						Filters: <span id="active-filters"></span>
+						<button id="clear-filters">Clear</button>
+					</div>
+				</div>
+				<div class="charts-container">
+					<div class="chart-wrapper" data-chart="topic">
+						<h3>Topics Distribution</h3>
+						<div id="topicChart" class="vega-chart-container"></div>
+					</div>
+					<div class="chart-wrapper" data-chart="subtopic">
+						<h3>Subtopics Distribution</h3>
+						<div id="subtopicChart" class="vega-chart-container"></div>
+					</div>
+					<div class="chart-wrapper" data-chart="domain">
+						<h3>Source Domains</h3>
+						<div id="domainChart" class="vega-chart-container"></div>
+					</div>
+					<div class="chart-wrapper" data-chart="place">
+						<h3>Places Distribution</h3>
+						<div id="placeChart" class="vega-chart-container"></div>
+					</div>
+					<div class="chart-wrapper" data-chart="company">
+						<h3>Companies Distribution</h3>
+						<div id="companyChart" class="vega-chart-container"></div>
+					</div>
+				</div>
+				<div id="analytics-details" class="analytics-details">
+					<!-- Filtered statements will be populated here -->
+				</div>
+			</section>
+		</main>
+	</div>
+	<script src="script.js"></script>
+</body>
+
+</html>

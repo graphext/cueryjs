@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Structured Analysis Diff</title>
+		<style>
+			:root {
+				--bg-primary: #0f172a;
+				--bg-secondary: #1e293b;
+				--bg-tertiary: #334155;
+				--text-primary: #f1f5f9;
+				--text-secondary: #94a3b8;
+				--accent: #3b82f6;
+				--accent-hover: #2563eb;
+				--success: #22c55e;
+				--warning: #f59e0b;
+				--danger: #ef4444;
+				--border: #475569;
+				--added: rgba(34, 197, 94, 0.15);
+				--removed: rgba(239, 68, 68, 0.15);
+				--changed: rgba(245, 158, 11, 0.15);
+				--added-border: #22c55e;
+				--removed-border: #ef4444;
+				--changed-border: #f59e0b;
+			}
+
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+
+			body {
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+				background: var(--bg-primary);
+				color: var(--text-primary);
+				line-height: 1.6;
+				min-height: 100vh;
+			}
+
+			.container {
+				max-width: 1800px;
+				margin: 0 auto;
+				padding: 1.5rem;
+			}
+
+			header {
+				text-align: center;
+				margin-bottom: 1.5rem;
+			}
+
+			header h1 {
+				font-size: 1.75rem;
+				margin-bottom: 0.25rem;
+			}
+
+			header p {
+				color: var(--text-secondary);
+				font-size: 0.9rem;
+			}
+
+			/* Input Section */
+			.input-section {
+				background: var(--bg-secondary);
+				border-radius: 12px;
+				padding: 1.25rem;
+				margin-bottom: 1.5rem;
+				border: 1px solid var(--border);
+			}
+
+			.input-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1.5rem;
+			}
+
+			.input-panel {
+				display: flex;
+				flex-direction: column;
+			}
+
+			.input-panel h3 {
+				font-size: 1rem;
+				margin-bottom: 0.75rem;
+				color: var(--text-secondary);
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+
+			.input-panel h3 .indicator {
+				width: 12px;
+				height: 12px;
+				border-radius: 50%;
+				background: var(--bg-tertiary);
+			}
+
+			.input-panel h3 .indicator.loaded {
+				background: var(--success);
+			}
+
+			.input-panel.left h3 .indicator.loaded {
+				background: var(--danger);
+			}
+
+			.input-panel.right h3 .indicator.loaded {
+				background: var(--success);
+			}
+
+			.input-actions {
+				display: flex;
+				gap: 0.5rem;
+				flex-wrap: wrap;
+			}
+
+			.btn {
+				background: var(--accent);
+				color: white;
+				border: none;
+				padding: 0.5rem 1rem;
+				border-radius: 6px;
+				cursor: pointer;
+				font-size: 0.85rem;
+				transition: background 0.2s;
+			}
+
+			.btn:hover {
+				background: var(--accent-hover);
+			}
+
+			.btn-secondary {
+				background: var(--bg-tertiary);
+			}
+
+			.btn-secondary:hover {
+				background: var(--border);
+			}
+
+			.btn-danger {
+				background: var(--danger);
+			}
+
+			.btn-compare {
+				background: var(--success);
+				padding: 0.75rem 2rem;
+				font-size: 1rem;
+			}
+
+			input[type='file'] {
+				display: none;
+			}
+
+			textarea {
+				width: 100%;
+				min-height: 120px;
+				background: var(--bg-primary);
+				border: 1px solid var(--border);
+				border-radius: 8px;
+				padding: 0.75rem;
+				color: var(--text-primary);
+				font-family: 'Monaco', 'Menlo', monospace;
+				font-size: 0.8rem;
+				resize: vertical;
+				margin-top: 0.75rem;
+				display: none;
+			}
+
+			textarea:focus {
+				outline: none;
+				border-color: var(--accent);
+			}
+
+			textarea.visible {
+				display: block;
+			}
+
+			.compare-actions {
+				display: flex;
+				justify-content: center;
+				gap: 1rem;
+				margin-top: 1rem;
+				padding-top: 1rem;
+				border-top: 1px solid var(--border);
+			}
+
+			/* Message */
+			.message {
+				padding: 0.75rem 1rem;
+				border-radius: 8px;
+				margin-top: 1rem;
+				display: none;
+				font-size: 0.9rem;
+			}
+
+			.message.error {
+				background: rgba(239, 68, 68, 0.2);
+				border: 1px solid var(--danger);
+				color: var(--danger);
+				display: block;
+			}
+
+			.message.success {
+				background: rgba(34, 197, 94, 0.2);
+				border: 1px solid var(--success);
+				color: var(--success);
+				display: block;
+			}
+
+			/* Diff Dashboard */
+			.dashboard {
+				display: none;
+			}
+
+			.dashboard.visible {
+				display: block;
+			}
+
+			/* Summary */
+			.diff-summary {
+				background: var(--bg-secondary);
+				border-radius: 12px;
+				padding: 1.25rem;
+				margin-bottom: 1.5rem;
+				border: 1px solid var(--border);
+			}
+
+			.diff-summary h2 {
+				font-size: 1.1rem;
+				margin-bottom: 1rem;
+				color: var(--text-secondary);
+			}
+
+			.summary-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1rem;
+			}
+
+			.summary-item {
+				display: flex;
+				flex-direction: column;
+			}
+
+			.summary-item .label {
+				font-size: 0.8rem;
+				color: var(--text-secondary);
+			}
+
+			.summary-item .value {
+				font-size: 0.9rem;
+				word-break: break-all;
+			}
+
+			.summary-item .value a {
+				color: var(--accent);
+				text-decoration: none;
+			}
+
+			/* Legend */
+			.legend {
+				display: flex;
+				gap: 1.5rem;
+				justify-content: center;
+				margin-bottom: 1.5rem;
+				flex-wrap: wrap;
+			}
+
+			.legend-item {
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+				font-size: 0.85rem;
+			}
+
+			.legend-color {
+				width: 16px;
+				height: 16px;
+				border-radius: 4px;
+			}
+
+			.legend-color.added {
+				background: var(--added);
+				border: 2px solid var(--added-border);
+			}
+
+			.legend-color.removed {
+				background: var(--removed);
+				border: 2px solid var(--removed-border);
+			}
+
+			.legend-color.changed {
+				background: var(--changed);
+				border: 2px solid var(--changed-border);
+			}
+
+			/* Stats Comparison */
+			.stats-comparison {
+				background: var(--bg-secondary);
+				border-radius: 12px;
+				margin-bottom: 1.5rem;
+				border: 1px solid var(--border);
+				overflow: hidden;
+			}
+
+			.stats-comparison h3 {
+				padding: 1rem 1.25rem;
+				background: var(--bg-tertiary);
+				font-size: 1rem;
+			}
+
+			.stats-table {
+				width: 100%;
+				border-collapse: collapse;
+			}
+
+			.stats-table th,
+			.stats-table td {
+				padding: 0.75rem 1rem;
+				text-align: left;
+				border-bottom: 1px solid var(--border);
+				font-size: 0.85rem;
+			}
+
+			.stats-table th {
+				background: var(--bg-primary);
+				color: var(--text-secondary);
+				font-weight: 600;
+			}
+
+			.stats-table tr:last-child td {
+				border-bottom: none;
+			}
+
+			.stats-table .metric {
+				font-weight: 500;
+			}
+
+			.stats-table .value-left {
+				color: var(--danger);
+			}
+
+			.stats-table .value-right {
+				color: var(--success);
+			}
+
+			.stats-table .delta {
+				font-weight: 600;
+			}
+
+			.stats-table .delta.positive {
+				color: var(--success);
+			}
+
+			.stats-table .delta.negative {
+				color: var(--danger);
+			}
+
+			.stats-table .delta.neutral {
+				color: var(--text-secondary);
+			}
+
+			.stats-table tr.changed {
+				background: var(--changed);
+			}
+
+			/* Content Sections */
+			.section {
+				background: var(--bg-secondary);
+				border-radius: 12px;
+				margin-bottom: 1rem;
+				border: 1px solid var(--border);
+				overflow: hidden;
+			}
+
+			.section-header {
+				padding: 0.75rem 1.25rem;
+				cursor: pointer;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				background: var(--bg-tertiary);
+				user-select: none;
+			}
+
+			.section-header:hover {
+				background: var(--border);
+			}
+
+			.section-header h3 {
+				font-size: 0.95rem;
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+
+			.section-header .counts {
+				display: flex;
+				gap: 0.5rem;
+			}
+
+			.section-header .count {
+				padding: 0.15rem 0.5rem;
+				border-radius: 10px;
+				font-size: 0.7rem;
+				font-weight: 600;
+			}
+
+			.count.left {
+				background: rgba(239, 68, 68, 0.2);
+				color: var(--danger);
+			}
+
+			.count.right {
+				background: rgba(34, 197, 94, 0.2);
+				color: var(--success);
+			}
+
+			.count.diff {
+				background: rgba(245, 158, 11, 0.2);
+				color: var(--warning);
+			}
+
+			.section-header .chevron {
+				transition: transform 0.2s;
+				font-size: 0.8rem;
+			}
+
+			.section-header.open .chevron {
+				transform: rotate(180deg);
+			}
+
+			.section-content {
+				display: none;
+				padding: 1rem;
+				max-height: 600px;
+				overflow-y: auto;
+			}
+
+			.section-content.open {
+				display: block;
+			}
+
+			/* Side by Side View */
+			.side-by-side {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1rem;
+			}
+
+			.side-panel {
+				background: var(--bg-primary);
+				border-radius: 8px;
+				padding: 1rem;
+				max-height: 400px;
+				overflow-y: auto;
+			}
+
+			.side-panel.left {
+				border-left: 3px solid var(--danger);
+			}
+
+			.side-panel.right {
+				border-left: 3px solid var(--success);
+			}
+
+			.side-panel h4 {
+				font-size: 0.85rem;
+				color: var(--text-secondary);
+				margin-bottom: 0.75rem;
+			}
+
+			/* Diff Items */
+			.diff-item {
+				padding: 0.5rem 0.75rem;
+				border-radius: 6px;
+				margin-bottom: 0.5rem;
+				font-size: 0.85rem;
+			}
+
+			.diff-item.added {
+				background: var(--added);
+				border-left: 3px solid var(--added-border);
+			}
+
+			.diff-item.removed {
+				background: var(--removed);
+				border-left: 3px solid var(--removed-border);
+			}
+
+			.diff-item.unchanged {
+				background: var(--bg-tertiary);
+				border-left: 3px solid var(--border);
+				color: var(--text-secondary);
+			}
+
+			/* Heading Tree Diff */
+			.heading-diff {
+				font-family: 'Monaco', 'Menlo', monospace;
+				font-size: 0.85rem;
+			}
+
+			.heading-node {
+				margin-left: 1.25rem;
+				padding: 0.25rem 0.5rem;
+				border-left: 2px solid var(--border);
+				margin-bottom: 0.25rem;
+			}
+
+			.heading-node.h1 { margin-left: 0; border-color: var(--accent); }
+			.heading-node.h2 { border-color: var(--success); }
+			.heading-node.h3 { border-color: var(--warning); }
+			.heading-node.h4 { border-color: var(--danger); }
+
+			.heading-tag {
+				display: inline-block;
+				background: var(--bg-tertiary);
+				padding: 0.1rem 0.3rem;
+				border-radius: 3px;
+				font-size: 0.7rem;
+				margin-right: 0.4rem;
+				color: var(--text-secondary);
+			}
+
+			/* Links Table */
+			.links-diff-table {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 0.8rem;
+			}
+
+			.links-diff-table th,
+			.links-diff-table td {
+				padding: 0.5rem;
+				text-align: left;
+				border-bottom: 1px solid var(--border);
+			}
+
+			.links-diff-table th {
+				background: var(--bg-tertiary);
+				color: var(--text-secondary);
+			}
+
+			.links-diff-table a {
+				color: var(--accent);
+				text-decoration: none;
+				word-break: break-all;
+			}
+
+			.links-diff-table tr.added {
+				background: var(--added);
+			}
+
+			.links-diff-table tr.removed {
+				background: var(--removed);
+			}
+
+			/* Schema Diff */
+			.schema-diff {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5rem;
+			}
+
+			.schema-tag {
+				padding: 0.4rem 0.8rem;
+				border-radius: 6px;
+				font-size: 0.8rem;
+			}
+
+			.schema-tag.both {
+				background: var(--bg-primary);
+				color: var(--text-primary);
+			}
+
+			.schema-tag.left-only {
+				background: var(--removed);
+				border: 1px solid var(--removed-border);
+			}
+
+			.schema-tag.right-only {
+				background: var(--added);
+				border: 1px solid var(--added-border);
+			}
+
+			/* JSON Preview */
+			.json-preview {
+				background: var(--bg-primary);
+				border-radius: 8px;
+				padding: 1rem;
+				font-family: 'Monaco', 'Menlo', monospace;
+				font-size: 0.75rem;
+				white-space: pre-wrap;
+				word-break: break-all;
+				max-height: 300px;
+				overflow-y: auto;
+			}
+
+			/* Footer */
+			footer {
+				text-align: center;
+				padding: 1.5rem;
+				color: var(--text-secondary);
+				font-size: 0.8rem;
+			}
+
+			footer a {
+				color: var(--accent);
+				text-decoration: none;
+			}
+
+			/* Scrollbar */
+			::-webkit-scrollbar {
+				width: 8px;
+				height: 8px;
+			}
+
+			::-webkit-scrollbar-track {
+				background: var(--bg-primary);
+			}
+
+			::-webkit-scrollbar-thumb {
+				background: var(--border);
+				border-radius: 4px;
+			}
+
+			::-webkit-scrollbar-thumb:hover {
+				background: var(--text-secondary);
+			}
+
+			@media (max-width: 1024px) {
+				.input-grid,
+				.side-by-side,
+				.summary-grid {
+					grid-template-columns: 1fr;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<header>
+				<h1>📊 Structured Analysis Diff</h1>
+				<p>Compare two StructuredAnalysis JSON objects side-by-side</p>
+			</header>
+
+			<div class="input-section">
+				<div class="input-grid">
+					<div class="input-panel left">
+						<h3><span class="indicator" id="leftIndicator"></span> Left (Base)</h3>
+						<div class="input-actions">
+							<label class="btn btn-secondary">
+								📁 Open File
+								<input type="file" id="leftFileInput" accept=".json">
+							</label>
+							<button class="btn btn-secondary" id="leftPasteBtn">📋 Paste</button>
+							<button class="btn btn-secondary" id="leftClearBtn" style="display: none">✕</button>
+						</div>
+						<textarea id="leftJsonInput" placeholder="Paste your base StructuredAnalysis JSON here..."></textarea>
+						<button class="btn" id="leftParseBtn" style="display: none">Parse</button>
+					</div>
+					<div class="input-panel right">
+						<h3><span class="indicator" id="rightIndicator"></span> Right (Compare)</h3>
+						<div class="input-actions">
+							<label class="btn btn-secondary">
+								📁 Open File
+								<input type="file" id="rightFileInput" accept=".json">
+							</label>
+							<button class="btn btn-secondary" id="rightPasteBtn">📋 Paste</button>
+							<button class="btn btn-secondary" id="rightClearBtn" style="display: none">✕</button>
+						</div>
+						<textarea id="rightJsonInput" placeholder="Paste your comparison StructuredAnalysis JSON here..."></textarea>
+						<button class="btn" id="rightParseBtn" style="display: none">Parse</button>
+					</div>
+				</div>
+				<div class="compare-actions">
+					<button class="btn btn-compare" id="compareBtn" disabled>🔍 Compare</button>
+				</div>
+				<div class="message" id="message"></div>
+			</div>
+
+			<div class="dashboard" id="dashboard">
+				<!-- Legend -->
+				<div class="legend">
+					<div class="legend-item">
+						<span class="legend-color removed"></span>
+						<span>Only in Left (Base)</span>
+					</div>
+					<div class="legend-item">
+						<span class="legend-color added"></span>
+						<span>Only in Right (Compare)</span>
+					</div>
+					<div class="legend-item">
+						<span class="legend-color changed"></span>
+						<span>Changed</span>
+					</div>
+				</div>
+
+				<!-- Summary -->
+				<div class="diff-summary">
+					<h2>Comparison Summary</h2>
+					<div class="summary-grid" id="summaryGrid"></div>
+				</div>
+
+				<!-- Stats Comparison -->
+				<div class="stats-comparison">
+					<h3>📈 Stats Comparison</h3>
+					<table class="stats-table" id="statsTable">
+						<thead>
+							<tr>
+								<th>Metric</th>
+								<th>Left (Base)</th>
+								<th>Right (Compare)</th>
+								<th>Δ Delta</th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+				</div>
+
+				<!-- Content Sections -->
+				<div id="sections"></div>
+			</div>
+		</div>
+
+		<footer>
+			<p>Part of the <a href="#">Cuery Analysis Tools</a> • <a href="analysis-viewer.html">Single Viewer</a></p>
+		</footer>
+
+		<script>
+			// State
+			let leftAnalysis = null;
+			let rightAnalysis = null;
+
+			// DOM Elements
+			const leftFileInput = document.getElementById('leftFileInput');
+			const rightFileInput = document.getElementById('rightFileInput');
+			const leftPasteBtn = document.getElementById('leftPasteBtn');
+			const rightPasteBtn = document.getElementById('rightPasteBtn');
+			const leftClearBtn = document.getElementById('leftClearBtn');
+			const rightClearBtn = document.getElementById('rightClearBtn');
+			const leftJsonInput = document.getElementById('leftJsonInput');
+			const rightJsonInput = document.getElementById('rightJsonInput');
+			const leftParseBtn = document.getElementById('leftParseBtn');
+			const rightParseBtn = document.getElementById('rightParseBtn');
+			const leftIndicator = document.getElementById('leftIndicator');
+			const rightIndicator = document.getElementById('rightIndicator');
+			const compareBtn = document.getElementById('compareBtn');
+			const message = document.getElementById('message');
+			const dashboard = document.getElementById('dashboard');
+			const summaryGrid = document.getElementById('summaryGrid');
+			const statsTable = document.getElementById('statsTable');
+			const sections = document.getElementById('sections');
+
+			// Show message
+			function showMessage(text, type = 'error') {
+				message.textContent = text;
+				message.className = `message ${type}`;
+				setTimeout(() => {
+					message.className = 'message';
+				}, 5000);
+			}
+
+			// Parse and validate JSON
+			function parseJSON(text) {
+				const data = JSON.parse(text);
+				if (!data.url) {
+					throw new Error('Invalid StructuredAnalysis: missing "url" property');
+				}
+				data.content = data.content || {};
+				data.stats = data.stats || {};
+				return data;
+			}
+
+			// Update compare button state
+			function updateCompareButton() {
+				compareBtn.disabled = !(leftAnalysis && rightAnalysis);
+			}
+
+			// Load analysis into a side
+			function loadAnalysis(side, text) {
+				try {
+					const analysis = parseJSON(text);
+					if (side === 'left') {
+						leftAnalysis = analysis;
+						leftIndicator.classList.add('loaded');
+						leftClearBtn.style.display = 'inline-block';
+						leftJsonInput.classList.remove('visible');
+						leftParseBtn.style.display = 'none';
+					} else {
+						rightAnalysis = analysis;
+						rightIndicator.classList.add('loaded');
+						rightClearBtn.style.display = 'inline-block';
+						rightJsonInput.classList.remove('visible');
+						rightParseBtn.style.display = 'none';
+					}
+					updateCompareButton();
+					showMessage(`${side === 'left' ? 'Left' : 'Right'} analysis loaded: ${analysis.url}`, 'success');
+				} catch (e) {
+					showMessage(`${side === 'left' ? 'Left' : 'Right'} parse error: ${e.message}`);
+				}
+			}
+
+			// Clear analysis
+			function clearAnalysis(side) {
+				if (side === 'left') {
+					leftAnalysis = null;
+					leftIndicator.classList.remove('loaded');
+					leftClearBtn.style.display = 'none';
+					leftJsonInput.value = '';
+				} else {
+					rightAnalysis = null;
+					rightIndicator.classList.remove('loaded');
+					rightClearBtn.style.display = 'none';
+					rightJsonInput.value = '';
+				}
+				updateCompareButton();
+				dashboard.classList.remove('visible');
+			}
+
+			// Compute diff and render
+			function compare() {
+				if (!leftAnalysis || !rightAnalysis) return;
+
+				renderSummary();
+				renderStatsComparison();
+				renderSections();
+
+				dashboard.classList.add('visible');
+				showMessage('Comparison complete!', 'success');
+			}
+
+			// Render summary
+			function renderSummary() {
+				const leftTitle = leftAnalysis.content?.meta?.title || leftAnalysis.response?.title || 'Untitled';
+				const rightTitle = rightAnalysis.content?.meta?.title || rightAnalysis.response?.title || 'Untitled';
+
+				summaryGrid.innerHTML = `
+					<div class="summary-item">
+						<span class="label">Left (Base)</span>
+						<span class="value"><a href="${escapeHtml(leftAnalysis.url)}" target="_blank">${escapeHtml(leftTitle)}</a></span>
+					</div>
+					<div class="summary-item">
+						<span class="label">Right (Compare)</span>
+						<span class="value"><a href="${escapeHtml(rightAnalysis.url)}" target="_blank">${escapeHtml(rightTitle)}</a></span>
+					</div>
+				`;
+			}
+
+			// Render stats comparison table
+			function renderStatsComparison() {
+				const ls = leftAnalysis.stats || {};
+				const rs = rightAnalysis.stats || {};
+				const lh = ls.headingStats || {};
+				const rh = rs.headingStats || {};
+
+				const metrics = [
+					{ label: 'Words', left: ls.numWords, right: rs.numWords },
+					{ label: 'Characters', left: ls.numChars, right: rs.numChars },
+					{ label: 'Paragraphs', left: ls.numParagraphs, right: rs.numParagraphs },
+					{ label: 'Avg Paragraph Length', left: ls.avgParagraphLength, right: rs.avgParagraphLength },
+					{ label: 'Total Headings', left: lh.totalHeadings, right: rh.totalHeadings },
+					{ label: 'Max Heading Depth', left: lh.maxDepth, right: rh.maxDepth },
+					{ label: 'Has Single H1', left: lh.oneH1 ? 'Yes' : 'No', right: rh.oneH1 ? 'Yes' : 'No', isBoolean: true },
+					{ label: 'Skipped Levels', left: lh.skippedLevels, right: rh.skippedLevels },
+					{ label: 'Links', left: ls.numLinks, right: rs.numLinks },
+					{ label: 'Internal Links', left: ls.numInternalLinks, right: rs.numInternalLinks },
+					{ label: 'External Links', left: ls.numExternalLinks, right: rs.numExternalLinks },
+					{ label: 'Lists', left: ls.numLists, right: rs.numLists },
+					{ label: 'Avg List Length', left: ls.avgListLength, right: rs.avgListLength },
+					{ label: 'Tables', left: ls.numTables, right: rs.numTables },
+					{ label: 'Forms', left: ls.numForms, right: rs.numForms },
+					{ label: 'Questions', left: ls.numQuestions, right: rs.numQuestions },
+					{ label: 'Schemas', left: ls.numSchemas, right: rs.numSchemas },
+				];
+
+				const tbody = statsTable.querySelector('tbody');
+				tbody.innerHTML = metrics.map(m => {
+					const lv = m.left ?? 0;
+					const rv = m.right ?? 0;
+					let delta, deltaClass;
+
+					if (m.isBoolean) {
+						delta = lv === rv ? '=' : '≠';
+						deltaClass = lv === rv ? 'neutral' : 'changed';
+					} else {
+						const diff = rv - lv;
+						delta = diff === 0 ? '—' : (diff > 0 ? `+${diff}` : `${diff}`);
+						deltaClass = diff === 0 ? 'neutral' : (diff > 0 ? 'positive' : 'negative');
+					}
+
+					const rowClass = (m.isBoolean ? lv !== rv : lv !== rv) ? 'changed' : '';
+
+					return `
+						<tr class="${rowClass}">
+							<td class="metric">${escapeHtml(m.label)}</td>
+							<td class="value-left">${m.isBoolean ? lv : (lv ?? 0).toLocaleString()}</td>
+							<td class="value-right">${m.isBoolean ? rv : (rv ?? 0).toLocaleString()}</td>
+							<td class="delta ${deltaClass}">${delta}</td>
+						</tr>
+					`;
+				}).join('');
+			}
+
+			// Render content sections
+			function renderSections() {
+				const lc = leftAnalysis.content || {};
+				const rc = rightAnalysis.content || {};
+
+				let html = '';
+
+				// Headings
+				html += renderHeadingsSection(lc.headings || [], rc.headings || []);
+
+				// Meta
+				html += renderMetaSection(lc.meta || {}, rc.meta || {});
+
+				// Schemas
+				html += renderSchemasSection(leftAnalysis.stats?.schemaStats || {}, rightAnalysis.stats?.schemaStats || {});
+
+				// Questions
+				html += renderArraySection('Questions', lc.questions || [], rc.questions || []);
+
+				// Paragraphs
+				html += renderParagraphsSection(lc.paragraphs || [], rc.paragraphs || []);
+
+				// Links
+				html += renderLinksSection(lc.links || [], rc.links || []);
+
+				// Lists
+				html += renderListsSection(lc.lists || [], rc.lists || []);
+
+				// Raw JSON
+				html += renderRawJsonSection();
+
+				sections.innerHTML = html;
+
+				// Add click handlers
+				document.querySelectorAll('.section-header').forEach(header => {
+					header.addEventListener('click', () => {
+						header.classList.toggle('open');
+						header.nextElementSibling.classList.toggle('open');
+					});
+				});
+			}
+
+			function createSection(id, title, leftCount, rightCount, contentFn) {
+				const diff = Math.abs((rightCount ?? 0) - (leftCount ?? 0));
+				return `
+					<div class="section">
+						<div class="section-header" data-section="${id}">
+							<h3>${title}</h3>
+							<div class="counts">
+								<span class="count left">${leftCount ?? 0}</span>
+								<span class="count right">${rightCount ?? 0}</span>
+								${diff > 0 ? `<span class="count diff">Δ${diff}</span>` : ''}
+								<span class="chevron">▼</span>
+							</div>
+						</div>
+						<div class="section-content">
+							${contentFn()}
+						</div>
+					</div>
+				`;
+			}
+
+			function renderHeadingsSection(leftHeadings, rightHeadings) {
+				const leftCount = countHeadings(leftHeadings);
+				const rightCount = countHeadings(rightHeadings);
+
+				return createSection('headings', '📑 Heading Structure', leftCount, rightCount, () => `
+					<div class="side-by-side">
+						<div class="side-panel left">
+							<h4>Left (Base)</h4>
+							<div class="heading-diff">${renderHeadingTree(leftHeadings)}</div>
+						</div>
+						<div class="side-panel right">
+							<h4>Right (Compare)</h4>
+							<div class="heading-diff">${renderHeadingTree(rightHeadings)}</div>
+						</div>
+					</div>
+				`);
+			}
+
+			function countHeadings(headings) {
+				if (!headings || !Array.isArray(headings)) return 0;
+				let count = headings.length;
+				for (const h of headings) {
+					if (h.children) count += countHeadings(h.children);
+				}
+				return count;
+			}
+
+			function renderHeadingTree(headings) {
+				if (!headings || headings.length === 0) {
+					return '<p style="color: var(--text-secondary);">No headings</p>';
+				}
+				return headings.map(h => `
+					<div class="heading-node ${h.tag || ''}">
+						<span class="heading-tag">${h.tag || '?'}</span>
+						${escapeHtml(h.text || '(empty)')}
+						${h.children && h.children.length > 0 ? renderHeadingTree(h.children) : ''}
+					</div>
+				`).join('');
+			}
+
+			function renderMetaSection(leftMeta, rightMeta) {
+				const allKeys = new Set([...Object.keys(leftMeta), ...Object.keys(rightMeta)]);
+				return createSection('meta', '🏷️ Meta Tags', Object.keys(leftMeta).length, Object.keys(rightMeta).length, () => {
+					let rows = '';
+					for (const key of Array.from(allKeys).sort()) {
+						const lv = leftMeta[key];
+						const rv = rightMeta[key];
+						let rowClass = '';
+						if (lv && !rv) rowClass = 'removed';
+						else if (!lv && rv) rowClass = 'added';
+						else if (lv !== rv) rowClass = 'changed';
+
+						rows += `
+							<tr class="${rowClass}">
+								<td><strong>${escapeHtml(key)}</strong></td>
+								<td>${escapeHtml(String(lv ?? '—'))}</td>
+								<td>${escapeHtml(String(rv ?? '—'))}</td>
+							</tr>
+						`;
+					}
+					return `
+						<table class="links-diff-table">
+							<thead><tr><th>Key</th><th>Left</th><th>Right</th></tr></thead>
+							<tbody>${rows}</tbody>
+						</table>
+					`;
+				});
+			}
+
+			function renderSchemasSection(leftStats, rightStats) {
+				const allTypes = new Set([...Object.keys(leftStats), ...Object.keys(rightStats)]);
+				const leftCount = Object.values(leftStats).filter(v => v).length;
+				const rightCount = Object.values(rightStats).filter(v => v).length;
+
+				return createSection('schemas', '📋 Schema Types', leftCount, rightCount, () => {
+					let html = '<div class="schema-diff">';
+					for (const type of Array.from(allTypes).sort()) {
+						const inLeft = leftStats[type];
+						const inRight = rightStats[type];
+						let cls = 'both';
+						let icon = '✓';
+						if (inLeft && !inRight) { cls = 'left-only'; icon = '←'; }
+						else if (!inLeft && inRight) { cls = 'right-only'; icon = '→'; }
+						html += `<span class="schema-tag ${cls}">${icon} ${escapeHtml(type)}</span>`;
+					}
+					html += '</div>';
+					return html;
+				});
+			}
+
+			function renderArraySection(title, leftArr, rightArr) {
+				const leftSet = new Set(leftArr);
+				const rightSet = new Set(rightArr);
+
+				const onlyLeft = leftArr.filter(x => !rightSet.has(x));
+				const onlyRight = rightArr.filter(x => !leftSet.has(x));
+				const both = leftArr.filter(x => rightSet.has(x));
+
+				return createSection(title.toLowerCase(), `❓ ${title}`, leftArr.length, rightArr.length, () => `
+					<div class="side-by-side">
+						<div class="side-panel left">
+							<h4>Only in Left (${onlyLeft.length})</h4>
+							${onlyLeft.slice(0, 20).map(q => `<div class="diff-item removed">${escapeHtml(q)}</div>`).join('') || '<p style="color: var(--text-secondary);">None</p>'}
+						</div>
+						<div class="side-panel right">
+							<h4>Only in Right (${onlyRight.length})</h4>
+							${onlyRight.slice(0, 20).map(q => `<div class="diff-item added">${escapeHtml(q)}</div>`).join('') || '<p style="color: var(--text-secondary);">None</p>'}
+						</div>
+					</div>
+					${both.length > 0 ? `
+						<div style="margin-top: 1rem;">
+							<h4 style="color: var(--text-secondary); margin-bottom: 0.5rem;">In Both (${both.length})</h4>
+							${both.slice(0, 10).map(q => `<div class="diff-item unchanged">${escapeHtml(q)}</div>`).join('')}
+							${both.length > 10 ? `<p style="color: var(--text-secondary);">...and ${both.length - 10} more</p>` : ''}
+						</div>
+					` : ''}
+				`);
+			}
+
+			function renderParagraphsSection(leftParas, rightParas) {
+				return createSection('paragraphs', '📝 Paragraphs', leftParas.length, rightParas.length, () => `
+					<div class="side-by-side">
+						<div class="side-panel left">
+							<h4>Left (${leftParas.length})</h4>
+							${leftParas.slice(0, 15).map(p => `<div class="diff-item unchanged">${escapeHtml(String(p).substring(0, 200))}${String(p).length > 200 ? '...' : ''}</div>`).join('')}
+							${leftParas.length > 15 ? `<p style="color: var(--text-secondary);">...and ${leftParas.length - 15} more</p>` : ''}
+						</div>
+						<div class="side-panel right">
+							<h4>Right (${rightParas.length})</h4>
+							${rightParas.slice(0, 15).map(p => `<div class="diff-item unchanged">${escapeHtml(String(p).substring(0, 200))}${String(p).length > 200 ? '...' : ''}</div>`).join('')}
+							${rightParas.length > 15 ? `<p style="color: var(--text-secondary);">...and ${rightParas.length - 15} more</p>` : ''}
+						</div>
+					</div>
+				`);
+			}
+
+			function renderLinksSection(leftLinks, rightLinks) {
+				const leftUrls = new Set(leftLinks.map(l => l.url));
+				const rightUrls = new Set(rightLinks.map(l => l.url));
+
+				const onlyLeft = leftLinks.filter(l => !rightUrls.has(l.url));
+				const onlyRight = rightLinks.filter(l => !leftUrls.has(l.url));
+
+				return createSection('links', '🔗 Links', leftLinks.length, rightLinks.length, () => `
+					<table class="links-diff-table">
+						<thead><tr><th>Status</th><th>Text</th><th>URL</th></tr></thead>
+						<tbody>
+							${onlyLeft.slice(0, 30).map(l => `
+								<tr class="removed">
+									<td>← Left only</td>
+									<td>${escapeHtml(l.text || '(no text)')}</td>
+									<td><a href="${escapeHtml(l.url)}" target="_blank">${escapeHtml(l.url)}</a></td>
+								</tr>
+							`).join('')}
+							${onlyRight.slice(0, 30).map(l => `
+								<tr class="added">
+									<td>→ Right only</td>
+									<td>${escapeHtml(l.text || '(no text)')}</td>
+									<td><a href="${escapeHtml(l.url)}" target="_blank">${escapeHtml(l.url)}</a></td>
+								</tr>
+							`).join('')}
+						</tbody>
+					</table>
+					<p style="color: var(--text-secondary); margin-top: 1rem; text-align: center;">
+						Showing unique links: ${onlyLeft.length} only in left, ${onlyRight.length} only in right,
+						${leftLinks.length - onlyLeft.length} in common
+					</p>
+				`);
+			}
+
+			function renderListsSection(leftLists, rightLists) {
+				return createSection('lists', '📋 Lists', leftLists.length, rightLists.length, () => `
+					<div class="side-by-side">
+						<div class="side-panel left">
+							<h4>Left (${leftLists.length} lists)</h4>
+							${leftLists.slice(0, 10).map((list, i) => {
+								const items = list.items || [];
+								return `
+									<div class="diff-item unchanged">
+										<strong>List ${i + 1}</strong> (${items.length} items)
+										${list.heading ? `<br><em>${escapeHtml(list.heading)}</em>` : ''}
+									</div>
+								`;
+							}).join('')}
+						</div>
+						<div class="side-panel right">
+							<h4>Right (${rightLists.length} lists)</h4>
+							${rightLists.slice(0, 10).map((list, i) => {
+								const items = list.items || [];
+								return `
+									<div class="diff-item unchanged">
+										<strong>List ${i + 1}</strong> (${items.length} items)
+										${list.heading ? `<br><em>${escapeHtml(list.heading)}</em>` : ''}
+									</div>
+								`;
+							}).join('')}
+						</div>
+					</div>
+				`);
+			}
+
+			function renderRawJsonSection() {
+				return createSection('raw', '{ } Raw JSON', null, null, () => `
+					<div class="side-by-side">
+						<div class="side-panel left">
+							<h4>Left (Base)</h4>
+							<div class="json-preview">${escapeHtml(JSON.stringify(leftAnalysis, null, 2))}</div>
+						</div>
+						<div class="side-panel right">
+							<h4>Right (Compare)</h4>
+							<div class="json-preview">${escapeHtml(JSON.stringify(rightAnalysis, null, 2))}</div>
+						</div>
+					</div>
+				`);
+			}
+
+			function escapeHtml(text) {
+				if (text == null) return '';
+				const div = document.createElement('div');
+				div.textContent = String(text);
+				return div.innerHTML;
+			}
+
+			// Event Listeners - Left panel
+			leftFileInput.addEventListener('change', async (e) => {
+				const file = e.target.files[0];
+				if (file) {
+					loadAnalysis('left', await file.text());
+					leftFileInput.value = '';
+				}
+			});
+
+			leftPasteBtn.addEventListener('click', () => {
+				const isVisible = leftJsonInput.classList.contains('visible');
+				leftJsonInput.classList.toggle('visible');
+				leftParseBtn.style.display = isVisible ? 'none' : 'block';
+				if (!isVisible) leftJsonInput.focus();
+			});
+
+			leftParseBtn.addEventListener('click', () => {
+				loadAnalysis('left', leftJsonInput.value);
+			});
+
+			leftClearBtn.addEventListener('click', () => clearAnalysis('left'));
+
+			// Event Listeners - Right panel
+			rightFileInput.addEventListener('change', async (e) => {
+				const file = e.target.files[0];
+				if (file) {
+					loadAnalysis('right', await file.text());
+					rightFileInput.value = '';
+				}
+			});
+
+			rightPasteBtn.addEventListener('click', () => {
+				const isVisible = rightJsonInput.classList.contains('visible');
+				rightJsonInput.classList.toggle('visible');
+				rightParseBtn.style.display = isVisible ? 'none' : 'block';
+				if (!isVisible) rightJsonInput.focus();
+			});
+
+			rightParseBtn.addEventListener('click', () => {
+				loadAnalysis('right', rightJsonInput.value);
+			});
+
+			rightClearBtn.addEventListener('click', () => clearAnalysis('right'));
+
+			// Compare button
+			compareBtn.addEventListener('click', compare);
+
+			// Global paste handler
+			document.addEventListener('paste', (e) => {
+				if (document.activeElement === leftJsonInput || document.activeElement === rightJsonInput) return;
+
+				const text = e.clipboardData.getData('text');
+				if (!text) return;
+
+				try {
+					parseJSON(text); // Validate
+					// Load into first empty slot
+					if (!leftAnalysis) {
+						loadAnalysis('left', text);
+					} else if (!rightAnalysis) {
+						loadAnalysis('right', text);
+					}
+				} catch (e) {
+					// Ignore invalid JSON
+				}
+			});
+		</script>
+	</body>
+</html>

@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Aggregated Stats Comparison</title>
+		<style>
+			:root {
+				--bg-primary: #0f172a;
+				--bg-secondary: #1e293b;
+				--bg-tertiary: #334155;
+				--text-primary: #f1f5f9;
+				--text-secondary: #94a3b8;
+				--accent: #3b82f6;
+				--accent-hover: #2563eb;
+				--success: #22c55e;
+				--warning: #f59e0b;
+				--danger: #ef4444;
+				--border: #475569;
+				--brand-a: #f472b6;
+				--brand-b: #34d399;
+			}
+
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+
+			body {
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+				background: var(--bg-primary);
+				color: var(--text-primary);
+				line-height: 1.6;
+				min-height: 100vh;
+			}
+
+			.container {
+				max-width: 1400px;
+				margin: 0 auto;
+				padding: 1.5rem;
+			}
+
+			header {
+				text-align: center;
+				margin-bottom: 1.5rem;
+			}
+
+			header h1 {
+				font-size: 1.75rem;
+				margin-bottom: 0.25rem;
+			}
+
+			header p {
+				color: var(--text-secondary);
+				font-size: 0.9rem;
+			}
+
+			/* Input Section */
+			.input-section {
+				background: var(--bg-secondary);
+				border-radius: 12px;
+				padding: 1.25rem;
+				margin-bottom: 1.5rem;
+				border: 1px solid var(--border);
+			}
+
+			.input-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1.5rem;
+			}
+
+			.input-panel {
+				display: flex;
+				flex-direction: column;
+			}
+
+			.input-panel h3 {
+				font-size: 1rem;
+				margin-bottom: 0.5rem;
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+
+			.input-panel h3 .dot {
+				width: 12px;
+				height: 12px;
+				border-radius: 50%;
+			}
+
+			.input-panel.brand-a h3 .dot {
+				background: var(--brand-a);
+			}
+
+			.input-panel.brand-b h3 .dot {
+				background: var(--brand-b);
+			}
+
+			.input-panel .subtitle {
+				font-size: 0.8rem;
+				color: var(--text-secondary);
+				margin-bottom: 0.75rem;
+			}
+
+			.brand-name-input {
+				background: var(--bg-primary);
+				border: 1px solid var(--border);
+				border-radius: 6px;
+				padding: 0.5rem 0.75rem;
+				color: var(--text-primary);
+				font-size: 0.9rem;
+				margin-bottom: 0.75rem;
+			}
+
+			.brand-name-input:focus {
+				outline: none;
+				border-color: var(--accent);
+			}
+
+			.input-panel.brand-a .brand-name-input:focus {
+				border-color: var(--brand-a);
+			}
+
+			.input-panel.brand-b .brand-name-input:focus {
+				border-color: var(--brand-b);
+			}
+
+			.input-actions {
+				display: flex;
+				gap: 0.5rem;
+				flex-wrap: wrap;
+			}
+
+			.btn {
+				background: var(--accent);
+				color: white;
+				border: none;
+				padding: 0.5rem 1rem;
+				border-radius: 6px;
+				cursor: pointer;
+				font-size: 0.85rem;
+				transition: background 0.2s;
+			}
+
+			.btn:hover {
+				background: var(--accent-hover);
+			}
+
+			.btn-secondary {
+				background: var(--bg-tertiary);
+			}
+
+			.btn-secondary:hover {
+				background: var(--border);
+			}
+
+			.btn-compare {
+				background: var(--success);
+				padding: 0.75rem 2rem;
+				font-size: 1rem;
+			}
+
+			input[type='file'] {
+				display: none;
+			}
+
+			textarea {
+				width: 100%;
+				min-height: 100px;
+				background: var(--bg-primary);
+				border: 1px solid var(--border);
+				border-radius: 8px;
+				padding: 0.75rem;
+				color: var(--text-primary);
+				font-family: 'Monaco', 'Menlo', monospace;
+				font-size: 0.8rem;
+				resize: vertical;
+				margin-top: 0.75rem;
+				display: none;
+			}
+
+			textarea:focus {
+				outline: none;
+				border-color: var(--accent);
+			}
+
+			textarea.visible {
+				display: block;
+			}
+
+			.compare-actions {
+				display: flex;
+				justify-content: center;
+				gap: 1rem;
+				margin-top: 1rem;
+				padding-top: 1rem;
+				border-top: 1px solid var(--border);
+			}
+
+			.status {
+				font-size: 0.8rem;
+				color: var(--text-secondary);
+				margin-top: 0.5rem;
+			}
+
+			.status.loaded {
+				color: var(--success);
+			}
+
+			/* Message */
+			.message {
+				padding: 0.75rem 1rem;
+				border-radius: 8px;
+				margin-top: 1rem;
+				display: none;
+				font-size: 0.9rem;
+			}
+
+			.message.error {
+				background: rgba(239, 68, 68, 0.2);
+				border: 1px solid var(--danger);
+				color: var(--danger);
+				display: block;
+			}
+
+			.message.success {
+				background: rgba(34, 197, 94, 0.2);
+				border: 1px solid var(--success);
+				color: var(--success);
+				display: block;
+			}
+
+			/* Dashboard */
+			.dashboard {
+				display: none;
+			}
+
+			.dashboard.visible {
+				display: block;
+			}
+
+			/* Legend */
+			.legend {
+				display: flex;
+				gap: 2rem;
+				justify-content: center;
+				margin-bottom: 1.5rem;
+				flex-wrap: wrap;
+			}
+
+			.legend-item {
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+				font-size: 0.9rem;
+				font-weight: 500;
+			}
+
+			.legend-dot {
+				width: 16px;
+				height: 16px;
+				border-radius: 50%;
+			}
+
+			.legend-dot.brand-a {
+				background: var(--brand-a);
+			}
+
+			.legend-dot.brand-b {
+				background: var(--brand-b);
+			}
+
+			/* Summary Cards */
+			.summary-cards {
+				display: grid;
+				grid-template-columns: repeat(3, 1fr);
+				gap: 1rem;
+				margin-bottom: 1.5rem;
+			}
+
+			.summary-card {
+				background: var(--bg-secondary);
+				border-radius: 12px;
+				padding: 1.25rem;
+				border: 1px solid var(--border);
+				text-align: center;
+			}
+
+			.summary-card .label {
+				font-size: 0.85rem;
+				color: var(--text-secondary);
+				margin-bottom: 0.5rem;
+			}
+
+			.summary-card .values {
+				display: flex;
+				justify-content: center;
+				gap: 1.5rem;
+				font-size: 1.75rem;
+				font-weight: 700;
+			}
+
+			.summary-card .value-a {
+				color: var(--brand-a);
+			}
+
+			.summary-card .value-b {
+				color: var(--brand-b);
+			}
+
+			.summary-card .vs {
+				color: var(--text-secondary);
+				font-size: 1rem;
+				align-self: center;
+			}
+
+			/* Comparison Section */
+			.comparison-section {
+				background: var(--bg-secondary);
+				border-radius: 12px;
+				margin-bottom: 1.5rem;
+				border: 1px solid var(--border);
+				overflow: hidden;
+			}
+
+			.comparison-section h3 {
+				padding: 1rem 1.25rem;
+				background: var(--bg-tertiary);
+				font-size: 1rem;
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+
+			/* Comparison Rows */
+			.comparison-rows {
+				padding: 1rem;
+			}
+
+			.comparison-row {
+				display: grid;
+				grid-template-columns: 180px 1fr 80px 80px;
+				gap: 1rem;
+				align-items: center;
+				padding: 0.75rem 0;
+				border-bottom: 1px solid var(--border);
+			}
+
+			.comparison-row:last-child {
+				border-bottom: none;
+			}
+
+			.comparison-row .metric-name {
+				font-size: 0.9rem;
+				font-weight: 500;
+			}
+
+			.comparison-row .metric-desc {
+				font-size: 0.75rem;
+				color: var(--text-secondary);
+			}
+
+			.comparison-row .bar-container {
+				display: flex;
+				height: 24px;
+				background: var(--bg-primary);
+				border-radius: 4px;
+				overflow: hidden;
+			}
+
+			.comparison-row .bar {
+				height: 100%;
+				display: flex;
+				align-items: center;
+				justify-content: flex-end;
+				padding: 0 0.5rem;
+				font-size: 0.7rem;
+				font-weight: 600;
+				color: white;
+				min-width: 2px;
+				transition: width 0.3s ease;
+			}
+
+			.comparison-row .bar.brand-a {
+				background: var(--brand-a);
+			}
+
+			.comparison-row .bar.brand-b {
+				background: var(--brand-b);
+			}
+
+			.comparison-row .value {
+				text-align: right;
+				font-size: 0.9rem;
+				font-weight: 600;
+			}
+
+			.comparison-row .value.brand-a {
+				color: var(--brand-a);
+			}
+
+			.comparison-row .value.brand-b {
+				color: var(--brand-b);
+			}
+
+			.comparison-row .winner {
+				font-size: 0.7rem;
+				padding: 0.15rem 0.5rem;
+				border-radius: 10px;
+				text-align: center;
+			}
+
+			.comparison-row .winner.a {
+				background: rgba(244, 114, 182, 0.2);
+				color: var(--brand-a);
+			}
+
+			.comparison-row .winner.b {
+				background: rgba(52, 211, 153, 0.2);
+				color: var(--brand-b);
+			}
+
+			.comparison-row .winner.tie {
+				background: var(--bg-tertiary);
+				color: var(--text-secondary);
+			}
+
+			/* Schema Comparison */
+			.schema-comparison {
+				padding: 1rem;
+			}
+
+			.schema-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+				gap: 0.75rem;
+			}
+
+			.schema-item {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 0.75rem 1rem;
+				background: var(--bg-primary);
+				border-radius: 8px;
+			}
+
+			.schema-item .name {
+				font-size: 0.85rem;
+			}
+
+			.schema-item .counts {
+				display: flex;
+				gap: 0.5rem;
+			}
+
+			.schema-item .count {
+				padding: 0.15rem 0.5rem;
+				border-radius: 10px;
+				font-size: 0.75rem;
+				font-weight: 600;
+			}
+
+			.schema-item .count.a {
+				background: rgba(244, 114, 182, 0.2);
+				color: var(--brand-a);
+			}
+
+			.schema-item .count.b {
+				background: rgba(52, 211, 153, 0.2);
+				color: var(--brand-b);
+			}
+
+			.schema-item .count.zero {
+				background: var(--bg-tertiary);
+				color: var(--text-secondary);
+			}
+
+			/* Heading Stats */
+			.heading-stats-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+				gap: 1rem;
+				padding: 1rem;
+			}
+
+			.heading-stat-card {
+				background: var(--bg-primary);
+				border-radius: 8px;
+				padding: 1rem;
+				text-align: center;
+			}
+
+			.heading-stat-card .label {
+				font-size: 0.8rem;
+				color: var(--text-secondary);
+				margin-bottom: 0.5rem;
+			}
+
+			.heading-stat-card .values {
+				display: flex;
+				justify-content: center;
+				gap: 0.75rem;
+				font-size: 1.25rem;
+				font-weight: 700;
+			}
+
+			.heading-stat-card .value-a {
+				color: var(--brand-a);
+			}
+
+			.heading-stat-card .value-b {
+				color: var(--brand-b);
+			}
+
+			/* Heading Counts */
+			.heading-counts {
+				padding: 1rem;
+				border-top: 1px solid var(--border);
+			}
+
+			.heading-counts h4 {
+				font-size: 0.9rem;
+				color: var(--text-secondary);
+				margin-bottom: 0.75rem;
+			}
+
+			.heading-tags {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.75rem;
+			}
+
+			.heading-tag-item {
+				background: var(--bg-primary);
+				border-radius: 8px;
+				padding: 0.5rem 1rem;
+				display: flex;
+				align-items: center;
+				gap: 0.75rem;
+			}
+
+			.heading-tag-item .tag {
+				font-weight: 600;
+				font-size: 0.85rem;
+				color: var(--text-secondary);
+			}
+
+			.heading-tag-item .tag-values {
+				display: flex;
+				gap: 0.5rem;
+				font-size: 0.85rem;
+			}
+
+			/* Insights */
+			.insights {
+				background: var(--bg-secondary);
+				border-radius: 12px;
+				padding: 1.25rem;
+				margin-bottom: 1.5rem;
+				border: 1px solid var(--border);
+			}
+
+			.insights h3 {
+				font-size: 1rem;
+				margin-bottom: 1rem;
+				display: flex;
+				align-items: center;
+				gap: 0.5rem;
+			}
+
+			.insight-list {
+				display: flex;
+				flex-direction: column;
+				gap: 0.75rem;
+			}
+
+			.insight-item {
+				padding: 0.75rem 1rem;
+				background: var(--bg-primary);
+				border-radius: 8px;
+				font-size: 0.9rem;
+				border-left: 3px solid var(--border);
+			}
+
+			.insight-item.advantage-a {
+				border-left-color: var(--brand-a);
+			}
+
+			.insight-item.advantage-b {
+				border-left-color: var(--brand-b);
+			}
+
+			.insight-item .brand {
+				font-weight: 600;
+			}
+
+			.insight-item .brand.a {
+				color: var(--brand-a);
+			}
+
+			.insight-item .brand.b {
+				color: var(--brand-b);
+			}
+
+			/* Footer */
+			footer {
+				text-align: center;
+				padding: 1.5rem;
+				color: var(--text-secondary);
+				font-size: 0.8rem;
+			}
+
+			footer a {
+				color: var(--accent);
+				text-decoration: none;
+			}
+
+			/* Classification Section */
+			.classification-comparison {
+				padding: 1rem;
+			}
+
+			.page-types-grid,
+			.page-subtypes-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+				gap: 0.75rem;
+				margin-bottom: 1rem;
+			}
+
+			.type-item {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 0.75rem 1rem;
+				background: var(--bg-primary);
+				border-radius: 8px;
+			}
+
+			.type-item .name {
+				font-size: 0.85rem;
+				font-weight: 500;
+			}
+
+			.type-item .percentages {
+				display: flex;
+				gap: 0.5rem;
+			}
+
+			.type-item .pct {
+				padding: 0.15rem 0.5rem;
+				border-radius: 10px;
+				font-size: 0.75rem;
+				font-weight: 600;
+			}
+
+			.type-item .pct.a {
+				background: rgba(244, 114, 182, 0.2);
+				color: var(--brand-a);
+			}
+
+			.type-item .pct.b {
+				background: rgba(52, 211, 153, 0.2);
+				color: var(--brand-b);
+			}
+
+			.type-item .pct.zero {
+				background: var(--bg-tertiary);
+				color: var(--text-secondary);
+			}
+
+			.themes-section {
+				margin-top: 1rem;
+				padding-top: 1rem;
+				border-top: 1px solid var(--border);
+			}
+
+			.themes-section h4 {
+				font-size: 0.9rem;
+				color: var(--text-secondary);
+				margin-bottom: 0.75rem;
+			}
+
+			.themes-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1rem;
+			}
+
+			.themes-panel {
+				background: var(--bg-primary);
+				border-radius: 8px;
+				padding: 1rem;
+			}
+
+			.themes-panel.brand-a {
+				border-left: 3px solid var(--brand-a);
+			}
+
+			.themes-panel.brand-b {
+				border-left: 3px solid var(--brand-b);
+			}
+
+			.themes-panel h5 {
+				font-size: 0.85rem;
+				margin-bottom: 0.5rem;
+			}
+
+			.themes-panel.brand-a h5 {
+				color: var(--brand-a);
+			}
+
+			.themes-panel.brand-b h5 {
+				color: var(--brand-b);
+			}
+
+			.themes-list {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.4rem;
+			}
+
+			.theme-tag {
+				padding: 0.25rem 0.5rem;
+				border-radius: 12px;
+				font-size: 0.75rem;
+				background: var(--bg-tertiary);
+				color: var(--text-secondary);
+			}
+
+			.theme-tag.brand-a {
+				background: rgba(244, 114, 182, 0.2);
+				color: var(--brand-a);
+			}
+
+			.theme-tag.brand-b {
+				background: rgba(52, 211, 153, 0.2);
+				color: var(--brand-b);
+			}
+
+			.theme-tag.shared {
+				background: rgba(59, 130, 246, 0.2);
+				color: var(--accent);
+			}
+
+			.no-data {
+				color: var(--text-secondary);
+				font-style: italic;
+				font-size: 0.85rem;
+				padding: 1rem;
+			}
+
+			/* Scrollbar */
+			::-webkit-scrollbar {
+				width: 8px;
+				height: 8px;
+			}
+
+			::-webkit-scrollbar-track {
+				background: var(--bg-primary);
+			}
+
+			::-webkit-scrollbar-thumb {
+				background: var(--border);
+				border-radius: 4px;
+			}
+
+			::-webkit-scrollbar-thumb:hover {
+				background: var(--text-secondary);
+			}
+
+			@media (max-width: 1024px) {
+				.input-grid {
+					grid-template-columns: 1fr;
+				}
+
+				.summary-cards {
+					grid-template-columns: 1fr;
+				}
+
+				.comparison-row {
+					grid-template-columns: 1fr;
+					gap: 0.5rem;
+				}
+
+				.comparison-row .bar-container {
+					order: 3;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<header>
+				<h1>📊 Content Stats Comparison</h1>
+				<p>Compare aggregated page statistics between two brands for SEO analysis</p>
+			</header>
+
+			<div class="input-section">
+				<div class="input-grid">
+					<div class="input-panel brand-a">
+						<h3><span class="dot"></span> Your Brand</h3>
+						<p class="subtitle">Your content or the baseline to compare against</p>
+						<input type="text" class="brand-name-input" id="brandAName" placeholder="Brand name (e.g., Your Company)" value="Your Brand">
+						<div class="input-actions">
+							<label class="btn btn-secondary">
+								📁 Open File
+								<input type="file" id="brandAFileInput" accept=".json">
+							</label>
+							<button class="btn btn-secondary" id="brandAPasteBtn">📋 Paste</button>
+							<button class="btn btn-secondary" id="brandAClearBtn" style="display: none">✕</button>
+						</div>
+						<textarea id="brandAJsonInput" placeholder="Paste AggregatedStats JSON here..."></textarea>
+						<button class="btn" id="brandAParseBtn" style="display: none">Parse</button>
+						<div class="status" id="brandAStatus"></div>
+					</div>
+					<div class="input-panel brand-b">
+						<h3><span class="dot"></span> Competitor</h3>
+						<p class="subtitle">Competitor content to benchmark against</p>
+						<input type="text" class="brand-name-input" id="brandBName" placeholder="Brand name (e.g., Competitor)" value="Competitor">
+						<div class="input-actions">
+							<label class="btn btn-secondary">
+								📁 Open File
+								<input type="file" id="brandBFileInput" accept=".json">
+							</label>
+							<button class="btn btn-secondary" id="brandBPasteBtn">📋 Paste</button>
+							<button class="btn btn-secondary" id="brandBClearBtn" style="display: none">✕</button>
+						</div>
+						<textarea id="brandBJsonInput" placeholder="Paste AggregatedStats JSON here..."></textarea>
+						<button class="btn" id="brandBParseBtn" style="display: none">Parse</button>
+						<div class="status" id="brandBStatus"></div>
+					</div>
+				</div>
+				<div class="compare-actions">
+					<button class="btn btn-compare" id="compareBtn" disabled>📊 Compare Stats</button>
+				</div>
+				<div class="message" id="message"></div>
+			</div>
+
+			<div class="dashboard" id="dashboard">
+				<!-- Legend -->
+				<div class="legend">
+					<div class="legend-item">
+						<span class="legend-dot brand-a"></span>
+						<span id="legendA">Your Brand</span>
+					</div>
+					<div class="legend-item">
+						<span class="legend-dot brand-b"></span>
+						<span id="legendB">Competitor</span>
+					</div>
+				</div>
+
+				<!-- Summary Cards -->
+				<div class="summary-cards" id="summaryCards"></div>
+
+				<!-- Insights -->
+				<div class="insights" id="insights">
+					<h3>💡 Key Insights</h3>
+					<div class="insight-list" id="insightList"></div>
+				</div>
+
+				<!-- Content Metrics -->
+				<div class="comparison-section">
+					<h3>📝 Content Metrics</h3>
+					<div class="comparison-rows" id="contentMetrics"></div>
+				</div>
+
+				<!-- Link Metrics -->
+				<div class="comparison-section">
+					<h3>🔗 Link Profile</h3>
+					<div class="comparison-rows" id="linkMetrics"></div>
+				</div>
+
+				<!-- Structure Metrics -->
+				<div class="comparison-section">
+					<h3>📋 Page Structure</h3>
+					<div class="comparison-rows" id="structureMetrics"></div>
+				</div>
+
+				<!-- Heading Stats -->
+				<div class="comparison-section">
+					<h3>📑 Heading Analysis</h3>
+					<div class="heading-stats-grid" id="headingStats"></div>
+					<div class="heading-counts" id="headingCounts">
+						<h4>Average Heading Distribution</h4>
+						<div class="heading-tags" id="headingTags"></div>
+					</div>
+				</div>
+
+				<!-- Schema Usage -->
+				<div class="comparison-section">
+					<h3>🏷️ Schema.org Markup Usage</h3>
+					<div class="schema-comparison" id="schemaComparison">
+						<div class="schema-grid" id="schemaGrid"></div>
+					</div>
+				</div>
+
+				<!-- Page Classification -->
+				<div class="comparison-section" id="classificationSection" style="display: none;">
+					<h3>🎯 Page Classification</h3>
+					<div class="classification-comparison" id="classificationComparison"></div>
+				</div>
+			</div>
+		</div>
+
+		<footer>
+			<p>Part of the <a href="#">Cuery Analysis Tools</a> • <a href="analysis-viewer.html">Single Viewer</a> • <a href="analysis-diff.html">Diff Tool</a></p>
+		</footer>
+
+		<script>
+			// State
+			let brandAStats = null;
+			let brandBStats = null;
+
+			// DOM Elements
+			const brandAFileInput = document.getElementById('brandAFileInput');
+			const brandBFileInput = document.getElementById('brandBFileInput');
+			const brandAPasteBtn = document.getElementById('brandAPasteBtn');
+			const brandBPasteBtn = document.getElementById('brandBPasteBtn');
+			const brandAClearBtn = document.getElementById('brandAClearBtn');
+			const brandBClearBtn = document.getElementById('brandBClearBtn');
+			const brandAJsonInput = document.getElementById('brandAJsonInput');
+			const brandBJsonInput = document.getElementById('brandBJsonInput');
+			const brandAParseBtn = document.getElementById('brandAParseBtn');
+			const brandBParseBtn = document.getElementById('brandBParseBtn');
+			const brandAName = document.getElementById('brandAName');
+			const brandBName = document.getElementById('brandBName');
+			const brandAStatus = document.getElementById('brandAStatus');
+			const brandBStatus = document.getElementById('brandBStatus');
+			const compareBtn = document.getElementById('compareBtn');
+			const message = document.getElementById('message');
+			const dashboard = document.getElementById('dashboard');
+
+			// Show message
+			function showMessage(text, type = 'error') {
+				message.textContent = text;
+				message.className = `message ${type}`;
+				setTimeout(() => {
+					message.className = 'message';
+				}, 5000);
+			}
+
+			// Parse and validate AggregatedStats JSON
+			function parseStats(text) {
+				const data = JSON.parse(text);
+				// Basic validation - check for expected properties
+				if (typeof data.count !== 'number') {
+					throw new Error('Invalid AggregatedStats: missing "count" property');
+				}
+				return data;
+			}
+
+			// Update compare button state
+			function updateCompareButton() {
+				compareBtn.disabled = !(brandAStats && brandBStats);
+			}
+
+			// Load stats
+			function loadStats(brand, text) {
+				try {
+					const stats = parseStats(text);
+					if (brand === 'a') {
+						brandAStats = stats;
+						brandAStatus.textContent = `✓ Loaded (${stats.count} pages analyzed)`;
+						brandAStatus.classList.add('loaded');
+						brandAClearBtn.style.display = 'inline-block';
+						brandAJsonInput.classList.remove('visible');
+						brandAParseBtn.style.display = 'none';
+					} else {
+						brandBStats = stats;
+						brandBStatus.textContent = `✓ Loaded (${stats.count} pages analyzed)`;
+						brandBStatus.classList.add('loaded');
+						brandBClearBtn.style.display = 'inline-block';
+						brandBJsonInput.classList.remove('visible');
+						brandBParseBtn.style.display = 'none';
+					}
+					updateCompareButton();
+					showMessage(`${brand === 'a' ? 'Your brand' : 'Competitor'} stats loaded!`, 'success');
+				} catch (e) {
+					showMessage(`Parse error: ${e.message}`);
+				}
+			}
+
+			// Clear stats
+			function clearStats(brand) {
+				if (brand === 'a') {
+					brandAStats = null;
+					brandAStatus.textContent = '';
+					brandAStatus.classList.remove('loaded');
+					brandAClearBtn.style.display = 'none';
+					brandAJsonInput.value = '';
+				} else {
+					brandBStats = null;
+					brandBStatus.textContent = '';
+					brandBStatus.classList.remove('loaded');
+					brandBClearBtn.style.display = 'none';
+					brandBJsonInput.value = '';
+				}
+				updateCompareButton();
+				dashboard.classList.remove('visible');
+			}
+
+			// Compare stats
+			function compare() {
+				if (!brandAStats || !brandBStats) return;
+
+				const nameA = brandAName.value || 'Your Brand';
+				const nameB = brandBName.value || 'Competitor';
+
+				// Update legend
+				document.getElementById('legendA').textContent = nameA;
+				document.getElementById('legendB').textContent = nameB;
+
+				renderSummaryCards(nameA, nameB);
+				renderInsights(nameA, nameB);
+				renderContentMetrics(nameA, nameB);
+				renderLinkMetrics(nameA, nameB);
+				renderStructureMetrics(nameA, nameB);
+				renderHeadingStats(nameA, nameB);
+				renderSchemaComparison(nameA, nameB);
+				renderClassificationComparison(nameA, nameB);
+
+				dashboard.classList.add('visible');
+				showMessage('Comparison complete!', 'success');
+			}
+
+			// Render summary cards
+			function renderSummaryCards(nameA, nameB) {
+				const cards = [
+					{ label: 'Pages Analyzed', a: brandAStats.count, b: brandBStats.count },
+					{ label: 'Avg Words', a: brandAStats.avgWords ?? 0, b: brandBStats.avgWords ?? 0 },
+					{ label: 'Avg Links', a: brandAStats.avgLinks ?? 0, b: brandBStats.avgLinks ?? 0 }
+				];
+
+				document.getElementById('summaryCards').innerHTML = cards.map(c => `
+					<div class="summary-card">
+						<div class="label">${c.label}</div>
+						<div class="values">
+							<span class="value-a">${Math.round(c.a).toLocaleString()}</span>
+							<span class="vs">vs</span>
+							<span class="value-b">${Math.round(c.b).toLocaleString()}</span>
+						</div>
+					</div>
+				`).join('');
+			}
+
+			// Render insights
+			function renderInsights(nameA, nameB) {
+				const insights = [];
+				const a = brandAStats;
+				const b = brandBStats;
+
+				// Word count comparison
+				const wordDiff = ((a.avgWords ?? 0) - (b.avgWords ?? 0)) / (b.avgWords || 1) * 100;
+				if (Math.abs(wordDiff) > 20) {
+					const winner = wordDiff > 0 ? 'a' : 'b';
+					const winnerName = winner === 'a' ? nameA : nameB;
+					insights.push({
+						advantage: winner,
+						text: `<span class="brand ${winner}">${winnerName}</span> has ${Math.abs(Math.round(wordDiff))}% ${wordDiff > 0 ? 'more' : 'fewer'} words on average. ${wordDiff > 0 ? 'More comprehensive content can improve rankings.' : 'Consider expanding content depth.'}`
+					});
+				}
+
+				// Internal linking
+				const intLinkDiffA = (a.avgInternalLinks ?? 0);
+				const intLinkDiffB = (b.avgInternalLinks ?? 0);
+				if (intLinkDiffA > intLinkDiffB * 1.5) {
+					insights.push({
+						advantage: 'a',
+						text: `<span class="brand a">${nameA}</span> has stronger internal linking (${Math.round(intLinkDiffA)} vs ${Math.round(intLinkDiffB)} avg). Good for distributing page authority.`
+					});
+				} else if (intLinkDiffB > intLinkDiffA * 1.5) {
+					insights.push({
+						advantage: 'b',
+						text: `<span class="brand b">${nameB}</span> has stronger internal linking (${Math.round(intLinkDiffB)} vs ${Math.round(intLinkDiffA)} avg). Consider improving your internal link structure.`
+					});
+				}
+
+				// Schema usage
+				const schemaCountA = Object.values(a.schemaStats || {}).filter(v => v > 0).length;
+				const schemaCountB = Object.values(b.schemaStats || {}).filter(v => v > 0).length;
+				if (schemaCountA > schemaCountB + 2) {
+					insights.push({
+						advantage: 'a',
+						text: `<span class="brand a">${nameA}</span> uses more schema types (${schemaCountA} vs ${schemaCountB}). Rich snippets can improve CTR.`
+					});
+				} else if (schemaCountB > schemaCountA + 2) {
+					insights.push({
+						advantage: 'b',
+						text: `<span class="brand b">${nameB}</span> uses more schema types (${schemaCountB} vs ${schemaCountA}). Consider adding structured data markup.`
+					});
+				}
+
+				// Heading structure
+				const hsA = a.headingStats || {};
+				const hsB = b.headingStats || {};
+				if ((hsA.pctOneH1 ?? 0) > (hsB.pctOneH1 ?? 0) + 20) {
+					insights.push({
+						advantage: 'a',
+						text: `<span class="brand a">${nameA}</span> has better H1 optimization (${Math.round(hsA.pctOneH1 ?? 0)}% with single H1 vs ${Math.round(hsB.pctOneH1 ?? 0)}%).`
+					});
+				} else if ((hsB.pctOneH1 ?? 0) > (hsA.pctOneH1 ?? 0) + 20) {
+					insights.push({
+						advantage: 'b',
+						text: `<span class="brand b">${nameB}</span> has better H1 optimization (${Math.round(hsB.pctOneH1 ?? 0)}% vs ${Math.round(hsA.pctOneH1 ?? 0)}%). Ensure each page has exactly one H1.`
+					});
+				}
+
+				// Lists for scannability
+				if ((a.avgLists ?? 0) > (b.avgLists ?? 0) * 1.5 && (a.avgLists ?? 0) > 2) {
+					insights.push({
+						advantage: 'a',
+						text: `<span class="brand a">${nameA}</span> uses more lists (${(a.avgLists ?? 0).toFixed(1)} vs ${(b.avgLists ?? 0).toFixed(1)} avg). Lists improve content scannability and can earn featured snippets.`
+					});
+				} else if ((b.avgLists ?? 0) > (a.avgLists ?? 0) * 1.5 && (b.avgLists ?? 0) > 2) {
+					insights.push({
+						advantage: 'b',
+						text: `<span class="brand b">${nameB}</span> uses more lists (${(b.avgLists ?? 0).toFixed(1)} vs ${(a.avgLists ?? 0).toFixed(1)} avg). Consider adding more listicle-style content.`
+					});
+				}
+
+				// FAQs/Questions
+				if ((a.avgQuestions ?? 0) > (b.avgQuestions ?? 0) + 2) {
+					insights.push({
+						advantage: 'a',
+						text: `<span class="brand a">${nameA}</span> addresses more questions (${(a.avgQuestions ?? 0).toFixed(1)} vs ${(b.avgQuestions ?? 0).toFixed(1)} avg). FAQ content can improve featured snippet eligibility.`
+					});
+				} else if ((b.avgQuestions ?? 0) > (a.avgQuestions ?? 0) + 2) {
+					insights.push({
+						advantage: 'b',
+						text: `<span class="brand b">${nameB}</span> addresses more questions (${(b.avgQuestions ?? 0).toFixed(1)} vs ${(a.avgQuestions ?? 0).toFixed(1)} avg). Consider adding FAQ sections.`
+					});
+				}
+
+				// Page Type Diversity
+				const pageTypesA = a.pageTypes || [];
+				const pageTypesB = b.pageTypes || [];
+				if (pageTypesA.length > pageTypesB.length + 2) {
+					insights.push({
+						advantage: 'a',
+						text: `<span class="brand a">${nameA}</span> has more diverse page types (${pageTypesA.length} vs ${pageTypesB.length}). Content variety can improve topical authority.`
+					});
+				} else if (pageTypesB.length > pageTypesA.length + 2) {
+					insights.push({
+						advantage: 'b',
+						text: `<span class="brand b">${nameB}</span> has more diverse page types (${pageTypesB.length} vs ${pageTypesA.length}). Consider expanding content types.`
+					});
+				}
+
+				// Theme Coverage
+				const themesA = a.themes || [];
+				const themesB = b.themes || [];
+				if (themesA.length > themesB.length * 1.5 && themesA.length > 3) {
+					insights.push({
+						advantage: 'a',
+						text: `<span class="brand a">${nameA}</span> covers more content themes (${themesA.length} vs ${themesB.length}). Broader thematic coverage can attract diverse audiences.`
+					});
+				} else if (themesB.length > themesA.length * 1.5 && themesB.length > 3) {
+					insights.push({
+						advantage: 'b',
+						text: `<span class="brand b">${nameB}</span> covers more content themes (${themesB.length} vs ${themesA.length}). Consider expanding your content themes.`
+					});
+				}
+
+				if (insights.length === 0) {
+					insights.push({
+						advantage: null,
+						text: 'Both brands have similar content characteristics. Focus on content quality and user intent alignment.'
+					});
+				}
+
+				document.getElementById('insightList').innerHTML = insights.map(i => `
+					<div class="insight-item ${i.advantage ? 'advantage-' + i.advantage : ''}">${i.text}</div>
+				`).join('');
+			}
+
+			// Render comparison row
+			function renderComparisonRow(label, valueA, valueB, desc = '', higherIsBetter = true) {
+				const max = Math.max(valueA, valueB) || 1;
+				const pctA = (valueA / max) * 100;
+				const pctB = (valueB / max) * 100;
+
+				let winner = 'tie';
+				if (valueA > valueB * 1.05) winner = higherIsBetter ? 'a' : 'b';
+				else if (valueB > valueA * 1.05) winner = higherIsBetter ? 'b' : 'a';
+
+				const winnerLabel = winner === 'a' ? '◀' : winner === 'b' ? '▶' : '=';
+
+				return `
+					<div class="comparison-row">
+						<div>
+							<div class="metric-name">${label}</div>
+							${desc ? `<div class="metric-desc">${desc}</div>` : ''}
+						</div>
+						<div class="bar-container">
+							<div class="bar brand-a" style="width: ${pctA}%"></div>
+							<div class="bar brand-b" style="width: ${pctB}%"></div>
+						</div>
+						<div class="value brand-a">${formatValue(valueA)}</div>
+						<div class="value brand-b">${formatValue(valueB)}</div>
+					</div>
+				`;
+			}
+
+			function formatValue(v) {
+				if (v == null) return '—';
+				if (typeof v === 'number') {
+					return v % 1 === 0 ? v.toLocaleString() : v.toFixed(1);
+				}
+				return String(v);
+			}
+
+			// Render content metrics
+			function renderContentMetrics(nameA, nameB) {
+				const a = brandAStats;
+				const b = brandBStats;
+
+				document.getElementById('contentMetrics').innerHTML = [
+					renderComparisonRow('Avg Words', a.avgWords ?? 0, b.avgWords ?? 0, 'Total word count'),
+					renderComparisonRow('Avg Characters', a.avgChars ?? 0, b.avgChars ?? 0, 'Total character count'),
+					renderComparisonRow('Avg Paragraphs', a.avgParagraphs ?? 0, b.avgParagraphs ?? 0, 'Content blocks'),
+					renderComparisonRow('Avg Paragraph Length', a.avgParagraphLength ?? 0, b.avgParagraphLength ?? 0, 'Characters per paragraph'),
+					renderComparisonRow('Avg Questions', a.avgQuestions ?? 0, b.avgQuestions ?? 0, 'FAQ-style content')
+				].join('');
+			}
+
+			// Render link metrics
+			function renderLinkMetrics(nameA, nameB) {
+				const a = brandAStats;
+				const b = brandBStats;
+
+				document.getElementById('linkMetrics').innerHTML = [
+					renderComparisonRow('Total Links', a.avgLinks ?? 0, b.avgLinks ?? 0),
+					renderComparisonRow('Internal Links', a.avgInternalLinks ?? 0, b.avgInternalLinks ?? 0, 'Site navigation'),
+					renderComparisonRow('External Links', a.avgExternalLinks ?? 0, b.avgExternalLinks ?? 0, 'Outbound references')
+				].join('');
+			}
+
+			// Render structure metrics
+			function renderStructureMetrics(nameA, nameB) {
+				const a = brandAStats;
+				const b = brandBStats;
+
+				document.getElementById('structureMetrics').innerHTML = [
+					renderComparisonRow('Avg Lists', a.avgLists ?? 0, b.avgLists ?? 0, 'Bullet/numbered lists'),
+					renderComparisonRow('Avg List Items', a.avgListLength ?? 0, b.avgListLength ?? 0, 'Items per list'),
+					renderComparisonRow('Avg Tables', a.avgTables ?? 0, b.avgTables ?? 0, 'Data tables'),
+					renderComparisonRow('Avg Forms', a.avgForms ?? 0, b.avgForms ?? 0, 'Interactive elements'),
+					renderComparisonRow('Avg Schemas', a.avgSchemas ?? 0, b.avgSchemas ?? 0, 'Structured data markup')
+				].join('');
+			}
+
+			// Render heading stats
+			function renderHeadingStats(nameA, nameB) {
+				const hsA = brandAStats.headingStats || {};
+				const hsB = brandBStats.headingStats || {};
+
+				const stats = [
+					{ label: 'Avg Headings', a: hsA.avgHeadings ?? 0, b: hsB.avgHeadings ?? 0 },
+					{ label: '% Single H1', a: (hsA.pctOneH1 ?? 0) + '%', b: (hsB.pctOneH1 ?? 0) + '%' },
+					{ label: 'Avg Max Depth', a: hsA.avgMaxDepth ?? 0, b: hsB.avgMaxDepth ?? 0 },
+					{ label: 'Avg Subheadings', a: hsA.avgSubheadings ?? 0, b: hsB.avgSubheadings ?? 0 },
+					{ label: 'Avg Skipped Levels', a: hsA.avgSkippedLevels ?? 0, b: hsB.avgSkippedLevels ?? 0 },
+					{ label: 'Avg Empty Headings', a: hsA.avgEmptyHeadings ?? 0, b: hsB.avgEmptyHeadings ?? 0 }
+				];
+
+				document.getElementById('headingStats').innerHTML = stats.map(s => `
+					<div class="heading-stat-card">
+						<div class="label">${s.label}</div>
+						<div class="values">
+							<span class="value-a">${formatValue(s.a)}</span>
+							<span class="value-b">${formatValue(s.b)}</span>
+						</div>
+					</div>
+				`).join('');
+
+				// Heading tag distribution
+				const allTags = new Set([
+					...Object.keys(hsA.avgHeadingCounts || {}),
+					...Object.keys(hsB.avgHeadingCounts || {})
+				]);
+
+				const sortedTags = Array.from(allTags).sort((a, b) => {
+					const numA = parseInt(a.replace(/\D/g, '')) || 0;
+					const numB = parseInt(b.replace(/\D/g, '')) || 0;
+					return numA - numB;
+				});
+
+				document.getElementById('headingTags').innerHTML = sortedTags.map(tag => {
+					const valA = (hsA.avgHeadingCounts || {})[tag] ?? 0;
+					const valB = (hsB.avgHeadingCounts || {})[tag] ?? 0;
+					return `
+						<div class="heading-tag-item">
+							<span class="tag">${tag.toUpperCase()}</span>
+							<div class="tag-values">
+								<span class="value-a">${formatValue(valA)}</span>
+								<span style="color: var(--text-secondary)">vs</span>
+								<span class="value-b">${formatValue(valB)}</span>
+							</div>
+						</div>
+					`;
+				}).join('');
+			}
+
+			// Render classification comparison
+			function renderClassificationComparison(nameA, nameB) {
+				const a = brandAStats;
+				const b = brandBStats;
+
+				const hasClassificationData = (a.pageTypes && a.pageTypes.length > 0) ||
+					(b.pageTypes && b.pageTypes.length > 0) ||
+					(a.themes && a.themes.length > 0) ||
+					(b.themes && b.themes.length > 0);
+
+				const classificationSection = document.getElementById('classificationSection');
+				const classificationComparison = document.getElementById('classificationComparison');
+
+				if (!hasClassificationData) {
+					classificationSection.style.display = 'none';
+					return;
+				}
+
+				classificationSection.style.display = 'block';
+
+				let html = '';
+
+				// Page Types comparison
+				const pageTypesA = a.pageTypes || [];
+				const pageTypesB = b.pageTypes || [];
+				const allPageTypes = new Set([...pageTypesA.map(t => t.type), ...pageTypesB.map(t => t.type)]);
+
+				if (allPageTypes.size > 0) {
+					html += `<h4 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Page Types Distribution</h4>`;
+					html += `<div class="page-types-grid">`;
+					for (const type of allPageTypes) {
+						const pctA = pageTypesA.find(t => t.type === type)?.percentage ?? 0;
+						const pctB = pageTypesB.find(t => t.type === type)?.percentage ?? 0;
+						html += `
+							<div class="type-item">
+								<span class="name">${escapeHtml(type)}</span>
+								<div class="percentages">
+									<span class="pct ${pctA > 0 ? 'a' : 'zero'}">${pctA}%</span>
+									<span class="pct ${pctB > 0 ? 'b' : 'zero'}">${pctB}%</span>
+								</div>
+							</div>
+						`;
+					}
+					html += `</div>`;
+				}
+
+				// Page SubTypes comparison
+				const pageSubTypesA = a.pageSubTypes || [];
+				const pageSubTypesB = b.pageSubTypes || [];
+				const allSubTypes = new Set([...pageSubTypesA.map(t => t.subtype), ...pageSubTypesB.map(t => t.subtype)]);
+
+				if (allSubTypes.size > 0) {
+					html += `<h4 style="font-size: 0.9rem; color: var(--text-secondary); margin: 1rem 0 0.75rem;">Page Subtypes Distribution</h4>`;
+					html += `<div class="page-subtypes-grid">`;
+					for (const subtype of allSubTypes) {
+						const pctA = pageSubTypesA.find(t => t.subtype === subtype)?.percentage ?? 0;
+						const pctB = pageSubTypesB.find(t => t.subtype === subtype)?.percentage ?? 0;
+						html += `
+							<div class="type-item">
+								<span class="name">${escapeHtml(subtype)}</span>
+								<div class="percentages">
+									<span class="pct ${pctA > 0 ? 'a' : 'zero'}">${pctA}%</span>
+									<span class="pct ${pctB > 0 ? 'b' : 'zero'}">${pctB}%</span>
+								</div>
+							</div>
+						`;
+					}
+					html += `</div>`;
+				}
+
+				// Themes comparison
+				const themesA = new Set(a.themes || []);
+				const themesB = new Set(b.themes || []);
+
+				if (themesA.size > 0 || themesB.size > 0) {
+					const sharedThemes = [...themesA].filter(t => themesB.has(t));
+					const uniqueA = [...themesA].filter(t => !themesB.has(t));
+					const uniqueB = [...themesB].filter(t => !themesA.has(t));
+
+					html += `
+						<div class="themes-section">
+							<h4>Content Themes</h4>
+							<div class="themes-grid">
+								<div class="themes-panel brand-a">
+									<h5>${escapeHtml(nameA)} (${themesA.size} themes)</h5>
+									<div class="themes-list">
+										${[...themesA].map(t => {
+											const isShared = themesB.has(t);
+											return `<span class="theme-tag ${isShared ? 'shared' : 'brand-a'}" title="${isShared ? 'Shared' : nameA + ' only'}">${escapeHtml(t)}</span>`;
+										}).join('') || '<span class="no-data">No themes</span>'}
+									</div>
+								</div>
+								<div class="themes-panel brand-b">
+									<h5>${escapeHtml(nameB)} (${themesB.size} themes)</h5>
+									<div class="themes-list">
+										${[...themesB].map(t => {
+											const isShared = themesA.has(t);
+											return `<span class="theme-tag ${isShared ? 'shared' : 'brand-b'}" title="${isShared ? 'Shared' : nameB + ' only'}">${escapeHtml(t)}</span>`;
+										}).join('') || '<span class="no-data">No themes</span>'}
+									</div>
+								</div>
+							</div>
+							${sharedThemes.length > 0 ? `
+								<div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-secondary);">
+									<strong>${sharedThemes.length}</strong> shared theme${sharedThemes.length !== 1 ? 's' : ''}
+								</div>
+							` : ''}
+						</div>
+					`;
+				}
+
+				classificationComparison.innerHTML = html || '<p class="no-data">No classification data available</p>';
+			}
+
+			// Render schema comparison
+			function renderSchemaComparison(nameA, nameB) {
+				const schemaA = brandAStats.schemaStats || {};
+				const schemaB = brandBStats.schemaStats || {};
+
+				const allSchemas = new Set([...Object.keys(schemaA), ...Object.keys(schemaB)]);
+				const sortedSchemas = Array.from(allSchemas).sort();
+
+				document.getElementById('schemaGrid').innerHTML = sortedSchemas.map(schema => {
+					const valA = schemaA[schema] ?? 0;
+					const valB = schemaB[schema] ?? 0;
+
+					// Convert to percentage of pages
+					const pctA = brandAStats.count > 0 ? Math.round((valA / brandAStats.count) * 100) : 0;
+					const pctB = brandBStats.count > 0 ? Math.round((valB / brandBStats.count) * 100) : 0;
+
+					return `
+						<div class="schema-item">
+							<span class="name">${escapeHtml(schema)}</span>
+							<div class="counts">
+								<span class="count ${pctA > 0 ? 'a' : 'zero'}">${pctA}%</span>
+								<span class="count ${pctB > 0 ? 'b' : 'zero'}">${pctB}%</span>
+							</div>
+						</div>
+					`;
+				}).join('') || '<p style="color: var(--text-secondary); padding: 1rem;">No schema markup detected</p>';
+			}
+
+			function escapeHtml(text) {
+				if (text == null) return '';
+				const div = document.createElement('div');
+				div.textContent = String(text);
+				return div.innerHTML;
+			}
+
+			// Event Listeners - Brand A
+			brandAFileInput.addEventListener('change', async (e) => {
+				const file = e.target.files[0];
+				if (file) {
+					loadStats('a', await file.text());
+					brandAFileInput.value = '';
+				}
+			});
+
+			brandAPasteBtn.addEventListener('click', () => {
+				const isVisible = brandAJsonInput.classList.contains('visible');
+				brandAJsonInput.classList.toggle('visible');
+				brandAParseBtn.style.display = isVisible ? 'none' : 'block';
+				if (!isVisible) brandAJsonInput.focus();
+			});
+
+			brandAParseBtn.addEventListener('click', () => {
+				loadStats('a', brandAJsonInput.value);
+			});
+
+			brandAClearBtn.addEventListener('click', () => clearStats('a'));
+
+			// Event Listeners - Brand B
+			brandBFileInput.addEventListener('change', async (e) => {
+				const file = e.target.files[0];
+				if (file) {
+					loadStats('b', await file.text());
+					brandBFileInput.value = '';
+				}
+			});
+
+			brandBPasteBtn.addEventListener('click', () => {
+				const isVisible = brandBJsonInput.classList.contains('visible');
+				brandBJsonInput.classList.toggle('visible');
+				brandBParseBtn.style.display = isVisible ? 'none' : 'block';
+				if (!isVisible) brandBJsonInput.focus();
+			});
+
+			brandBParseBtn.addEventListener('click', () => {
+				loadStats('b', brandBJsonInput.value);
+			});
+
+			brandBClearBtn.addEventListener('click', () => clearStats('b'));
+
+			// Compare button
+			compareBtn.addEventListener('click', compare);
+
+			// Global paste handler
+			document.addEventListener('paste', (e) => {
+				if (document.activeElement === brandAJsonInput ||
+					document.activeElement === brandBJsonInput ||
+					document.activeElement === brandAName ||
+					document.activeElement === brandBName) return;
+
+				const text = e.clipboardData.getData('text');
+				if (!text) return;
+
+				try {
+					parseStats(text);
+					if (!brandAStats) {
+						loadStats('a', text);
+					} else if (!brandBStats) {
+						loadStats('b', text);
+					}
+				} catch (e) {
+					// Ignore invalid JSON
+				}
+			});
+		</script>
+	</body>
+</html>

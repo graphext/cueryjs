@@ -1,0 +1,257 @@
+[
+  {
+    "Language name": "Arabic",
+    "Language code": "ar",
+    "Criterion ID": "1019"
+  },
+  {
+    "Language name": "Bengali",
+    "Language code": "bn",
+    "Criterion ID": "1056"
+  },
+  {
+    "Language name": "Bulgarian",
+    "Language code": "bg",
+    "Criterion ID": "1020"
+  },
+  {
+    "Language name": "Catalan",
+    "Language code": "ca",
+    "Criterion ID": "1038"
+  },
+  {
+    "Language name": "Chinese (simplified)",
+    "Language code": "zh_CN",
+    "Criterion ID": "1017"
+  },
+  {
+    "Language name": "Chinese (traditional)",
+    "Language code": "zh_TW",
+    "Criterion ID": "1018"
+  },
+  {
+    "Language name": "Croatian",
+    "Language code": "hr",
+    "Criterion ID": "1039"
+  },
+  {
+    "Language name": "Czech",
+    "Language code": "cs",
+    "Criterion ID": "1021"
+  },
+  {
+    "Language name": "Danish",
+    "Language code": "da",
+    "Criterion ID": "1009"
+  },
+  {
+    "Language name": "Dutch",
+    "Language code": "nl",
+    "Criterion ID": "1010"
+  },
+  {
+    "Language name": "English",
+    "Language code": "en",
+    "Criterion ID": "1000"
+  },
+  {
+    "Language name": "Estonian",
+    "Language code": "et",
+    "Criterion ID": "1043"
+  },
+  {
+    "Language name": "Filipino",
+    "Language code": "tl",
+    "Criterion ID": "1042"
+  },
+  {
+    "Language name": "Finnish",
+    "Language code": "fi",
+    "Criterion ID": "1011"
+  },
+  {
+    "Language name": "French",
+    "Language code": "fr",
+    "Criterion ID": "1002"
+  },
+  {
+    "Language name": "German",
+    "Language code": "de",
+    "Criterion ID": "1001"
+  },
+  {
+    "Language name": "Greek",
+    "Language code": "el",
+    "Criterion ID": "1022"
+  },
+  {
+    "Language name": "Gujarati",
+    "Language code": "gu",
+    "Criterion ID": "1072"
+  },
+  {
+    "Language name": "Hebrew",
+    "Language code": "iw",
+    "Criterion ID": "1027"
+  },
+  {
+    "Language name": "Hindi",
+    "Language code": "hi",
+    "Criterion ID": "1023"
+  },
+  {
+    "Language name": "Hungarian",
+    "Language code": "hu",
+    "Criterion ID": "1024"
+  },
+  {
+    "Language name": "Icelandic",
+    "Language code": "is",
+    "Criterion ID": "1026"
+  },
+  {
+    "Language name": "Indonesian",
+    "Language code": "id",
+    "Criterion ID": "1025"
+  },
+  {
+    "Language name": "Italian",
+    "Language code": "it",
+    "Criterion ID": "1004"
+  },
+  {
+    "Language name": "Japanese",
+    "Language code": "ja",
+    "Criterion ID": "1005"
+  },
+  {
+    "Language name": "Kannada",
+    "Language code": "kn",
+    "Criterion ID": "1086"
+  },
+  {
+    "Language name": "Korean",
+    "Language code": "ko",
+    "Criterion ID": "1012"
+  },
+  {
+    "Language name": "Latvian",
+    "Language code": "lv",
+    "Criterion ID": "1028"
+  },
+  {
+    "Language name": "Lithuanian",
+    "Language code": "lt",
+    "Criterion ID": "1029"
+  },
+  {
+    "Language name": "Malay",
+    "Language code": "ms",
+    "Criterion ID": "1102"
+  },
+  {
+    "Language name": "Malayalam",
+    "Language code": "ml",
+    "Criterion ID": "1098"
+  },
+  {
+    "Language name": "Marathi",
+    "Language code": "mr",
+    "Criterion ID": "1101"
+  },
+  {
+    "Language name": "Norwegian",
+    "Language code": "no",
+    "Criterion ID": "1013"
+  },
+  {
+    "Language name": "Persian",
+    "Language code": "fa",
+    "Criterion ID": "1064"
+  },
+  {
+    "Language name": "Polish",
+    "Language code": "pl",
+    "Criterion ID": "1030"
+  },
+  {
+    "Language name": "Portuguese",
+    "Language code": "pt",
+    "Criterion ID": "1014"
+  },
+  {
+    "Language name": "Punjabi",
+    "Language code": "pa",
+    "Criterion ID": "1110"
+  },
+  {
+    "Language name": "Romanian",
+    "Language code": "ro",
+    "Criterion ID": "1032"
+  },
+  {
+    "Language name": "Russian",
+    "Language code": "ru",
+    "Criterion ID": "1031"
+  },
+  {
+    "Language name": "Serbian",
+    "Language code": "sr",
+    "Criterion ID": "1035"
+  },
+  {
+    "Language name": "Slovak",
+    "Language code": "sk",
+    "Criterion ID": "1033"
+  },
+  {
+    "Language name": "Slovenian",
+    "Language code": "sl",
+    "Criterion ID": "1034"
+  },
+  {
+    "Language name": "Spanish",
+    "Language code": "es",
+    "Criterion ID": "1003"
+  },
+  {
+    "Language name": "Swedish",
+    "Language code": "sv",
+    "Criterion ID": "1015"
+  },
+  {
+    "Language name": "Tamil",
+    "Language code": "ta",
+    "Criterion ID": "1130"
+  },
+  {
+    "Language name": "Telugu",
+    "Language code": "te",
+    "Criterion ID": "1131"
+  },
+  {
+    "Language name": "Thai",
+    "Language code": "th",
+    "Criterion ID": "1044"
+  },
+  {
+    "Language name": "Turkish",
+    "Language code": "tr",
+    "Criterion ID": "1037"
+  },
+  {
+    "Language name": "Ukrainian",
+    "Language code": "uk",
+    "Criterion ID": "1036"
+  },
+  {
+    "Language name": "Urdu",
+    "Language code": "ur",
+    "Criterion ID": "1041"
+  },
+  {
+    "Language name": "Vietnamese",
+    "Language code": "vi",
+    "Criterion ID": "1040"
+  }
+]

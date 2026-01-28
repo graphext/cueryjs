@@ -1,0 +1,142 @@
+{
+  "_comment": "Ejemplo de estructura del JSON output para analytics",
+  "generatedAt": "2025-11-26T12:00:00.000Z",
+  "model": "gpt-4.1",
+  "places": ["Castellón", "..."],
+  "prompts": ["mejor academia de inglés para niños en Castellón", "..."],
+  "results": [
+    {
+      "answer": "En Castellón, hay varias opciones de academias de inglés para niños...",
+      "sources": [
+        {
+          "url": "https://britishcouncil.es/...",
+          "title": "British Council Castellón",
+          "domain": "britishcouncil.es",
+          "cited": true
+        }
+      ],
+      "searchQueries": ["mejor academia inglés niños castellón"],
+      "searchSources": [
+        {
+          "url": "https://...",
+          "title": "...",
+          "domain": "...",
+          "rank": 1
+        }
+      ],
+      "prompt": "mejor academia de inglés para niños en Castellón",
+      "place": "Castellón",
+      "structured_output": {
+        "answer_id": "chatgpt_page_0",
+        "query_intent": "mejor academia de inglés para niños en Castellón",
+        "timestamp_utc": "2025-11-26T12:00:00.000Z",
+        "model_used": "gpt-4.1",
+        "scraper_name": "Brightdata",
+        "mentions_companies": true,
+        "companies_mentioned": [
+          {
+            "company_name": "British Council Castellón",
+            "mention_rank_position": 1,
+            "summary_recommendation_rank_position": null,
+            "pros": [
+              {
+                "text": "El British Council es conocido por su calidad en la enseñanza del inglés, con profesorado nativo y materiales actualizados. \\[1\\]",
+                "inferred_topic": "Profesores y Personal",
+                "inferred_subtopic": "Profesorado nativo o altamente cualificado",
+                "influencing_sources": [
+                  {
+                    "url": "https://britishcouncil.es/cursos/ninos-castellon",
+                    "domain": "britishcouncil.es",
+                    "title": "British Council - Cursos de inglés para niños en Castellón",
+                    "citation_number": 1
+                  }
+                ]
+              },
+              {
+                "text": "Ofrecen exámenes de certificación oficial como el Cambridge English. \\[2\\]",
+                "inferred_topic": "Preparación de Exámenes Oficiales",
+                "inferred_subtopic": "Certificación Cambridge",
+                "influencing_sources": [
+                  {
+                    "url": "https://britishcouncil.es/examenes",
+                    "domain": "britishcouncil.es",
+                    "title": "Exámenes Cambridge - British Council",
+                    "citation_number": 2
+                  }
+                ]
+              }
+            ],
+            "cons": [],
+            "neutral_statements": [
+              {
+                "text": "Utiliza el enfoque del aprendizaje basado en juegos y actividades, lo que es ideal para niños. \\[3\\]",
+                "inferred_topic": "Metodología y Enfoque de Enseñanza",
+                "inferred_subtopic": "Aprendizaje basado en juegos y actividades",
+                "influencing_sources": [
+                  {
+                    "url": "https://britishcouncil.es/metodologia",
+                    "domain": "britishcouncil.es",
+                    "title": "Metodología British Council",
+                    "citation_number": 3
+                  }
+                ]
+              }
+            ],
+            "links": []
+          }
+        ],
+        "summary_recommendation": [
+          {
+            "criterion": "Si buscas metodología de inmersión",
+            "criterion_position": 1,
+            "inferred_topic": "Metodología y Enfoque de Enseñanza",
+            "inferred_subtopic": "Inmersión total",
+            "influencing_sources": [],
+            "recommendations": [
+              {
+                "company_name": "Kids&Us",
+                "summary_recommendation_rank_position": 1,
+                "reason": "Kids&Us tiene un método basado en inmersión total desde los 1 año. \\[4\\]",
+                "links": [],
+                "inferred_topic": "Metodología y Enfoque de Enseñanza",
+                "inferred_subtopic": "Inmersión total",
+                "influencing_sources": [
+                  {
+                    "url": "https://kidsandus.es/metodo",
+                    "domain": "kidsandus.es",
+                    "title": "Método Kids&Us",
+                    "citation_number": 4
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "topic_source_summary": {
+    "Profesores y Personal": {
+      "top_sources": [
+        { "url": "https://britishcouncil.es/...", "domain": "britishcouncil.es", "frequency": 15 },
+        { "url": "https://kidsandus.es/...", "domain": "kidsandus.es", "frequency": 12 }
+      ],
+      "subtopics": {
+        "Profesorado nativo o altamente cualificado": [
+          { "url": "https://britishcouncil.es/...", "domain": "britishcouncil.es", "frequency": 8 }
+        ]
+      }
+    },
+    "Metodología y Enfoque de Enseñanza": {
+      "top_sources": [
+        { "url": "https://kidsandus.es/...", "domain": "kidsandus.es", "frequency": 22 }
+      ],
+      "subtopics": {
+        "Aprendizaje basado en juegos y actividades": [
+          { "url": "https://kidsandus.es/...", "domain": "kidsandus.es", "frequency": 10 }
+        ]
+      }
+    }
+  }
+}
+

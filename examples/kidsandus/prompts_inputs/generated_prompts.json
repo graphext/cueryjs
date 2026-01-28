@@ -1,0 +1,884 @@
+[
+  {
+    "type": "titleLocation",
+    "place": "Aluche",
+    "originalPlace": "Aluche",
+    "originId": "f054262d-9e4f-4fe3-9085-f0dcd17916a3",
+    "prompt": "mejor academia de inglés para niños en Aluche, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Campamento",
+    "originalPlace": "Aluche",
+    "originId": "f054262d-9e4f-4fe3-9085-f0dcd17916a3",
+    "prompt": "mejor academia de inglés para niños en Campamento, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Las Águilas",
+    "originalPlace": "Aluche",
+    "originId": "f054262d-9e4f-4fe3-9085-f0dcd17916a3",
+    "prompt": "mejor academia de inglés para niños en Las Águilas, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Aravaca",
+    "originalPlace": "Aravaca",
+    "originId": "37a9d59e-a325-4aae-bec9-ddd227e24774",
+    "prompt": "mejor academia de inglés para niños en Aravaca, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Moncloa-Aravaca",
+    "originalPlace": "Aravaca",
+    "originId": "37a9d59e-a325-4aae-bec9-ddd227e24774",
+    "prompt": "mejor academia de inglés para niños en Moncloa-Aravaca, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Arganzuela",
+    "originalPlace": "Arganzuela",
+    "originId": "6206db59-8485-4a18-b4b5-b7c4543ce28a",
+    "prompt": "mejor academia de inglés para niños en Arganzuela, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Carabanchel",
+    "originalPlace": "Arganzuela",
+    "originId": "6206db59-8485-4a18-b4b5-b7c4543ce28a",
+    "prompt": "mejor academia de inglés para niños en Carabanchel, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Comillas",
+    "originalPlace": "Arganzuela",
+    "originId": "6206db59-8485-4a18-b4b5-b7c4543ce28a",
+    "prompt": "mejor academia de inglés para niños en Comillas, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Imperial",
+    "originalPlace": "Arganzuela",
+    "originId": "6206db59-8485-4a18-b4b5-b7c4543ce28a",
+    "prompt": "mejor academia de inglés para niños en Imperial, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Las Acacias",
+    "originalPlace": "Arganzuela",
+    "originId": "6206db59-8485-4a18-b4b5-b7c4543ce28a",
+    "prompt": "mejor academia de inglés para niños en Las Acacias, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "San Isidro",
+    "originalPlace": "Arganzuela",
+    "originId": "6206db59-8485-4a18-b4b5-b7c4543ce28a",
+    "prompt": "mejor academia de inglés para niños en San Isidro, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Avenida de San Luis",
+    "originalPlace": "Avenida de San Luis",
+    "originId": "7ea40059-e9de-490c-b6ee-a5e5f2deaa42",
+    "prompt": "mejor academia de inglés para niños en Avenida de San Luis, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Apóstol Santiago",
+    "originalPlace": "Avenida de San Luis",
+    "originId": "7ea40059-e9de-490c-b6ee-a5e5f2deaa42",
+    "prompt": "mejor academia de inglés para niños en Apóstol Santiago, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Pinar del Rey",
+    "originalPlace": "Avenida de San Luis",
+    "originId": "7ea40059-e9de-490c-b6ee-a5e5f2deaa42",
+    "prompt": "mejor academia de inglés para niños en Pinar del Rey, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "U.V.A. Hortaleza",
+    "originalPlace": "Avenida de San Luis",
+    "originId": "7ea40059-e9de-490c-b6ee-a5e5f2deaa42",
+    "prompt": "mejor academia de inglés para niños en U.V.A. Hortaleza, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Barajas",
+    "originalPlace": "Barajas",
+    "originId": "72d23798-cf50-41c7-8eb3-1edb9ebf4ac1",
+    "prompt": "mejor academia de inglés para niños en Barajas, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Barrio de Salamanca",
+    "originalPlace": "Barrio de Salamanca",
+    "originId": "7e582b10-b96f-43a5-977c-12b826c584c7",
+    "prompt": "mejor academia de inglés para niños en Barrio de Salamanca, Madrid"
+  },
+  {
+    "type": "suburb",
+    "place": "Guindalera",
+    "originalPlace": "Barrio de Salamanca",
+    "originId": "7e582b10-b96f-43a5-977c-12b826c584c7",
+    "prompt": "mejor academia de inglés para niños en Guindalera, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Calle de María de Molina",
+    "originalPlace": "Barrio de Salamanca",
+    "originId": "7e582b10-b96f-43a5-977c-12b826c584c7",
+    "prompt": "mejor academia de inglés para niños en Calle de María de Molina, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Castellana",
+    "originalPlace": "Barrio de Salamanca",
+    "originId": "7e582b10-b96f-43a5-977c-12b826c584c7",
+    "prompt": "mejor academia de inglés para niños en Castellana, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Chamartín",
+    "originalPlace": "Chamartín",
+    "originId": "ade8b794-4340-4fa9-a959-5f0843f7811c",
+    "prompt": "mejor academia de inglés para niños en Chamartín, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "El Viso",
+    "originalPlace": "Barrio de Salamanca",
+    "originId": "7e582b10-b96f-43a5-977c-12b826c584c7",
+    "prompt": "mejor academia de inglés para niños en El Viso, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Lista",
+    "originalPlace": "Barrio de Salamanca",
+    "originId": "7e582b10-b96f-43a5-977c-12b826c584c7",
+    "prompt": "mejor academia de inglés para niños en Lista, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Prosperidad",
+    "originalPlace": "Prosperidad",
+    "originId": "67119ea8-bf7b-42d6-95ce-ff97293a4ef4",
+    "prompt": "mejor academia de inglés para niños en Prosperidad, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Salamanca",
+    "originalPlace": "Barrio de Salamanca",
+    "originId": "7e582b10-b96f-43a5-977c-12b826c584c7",
+    "prompt": "mejor academia de inglés para niños en Salamanca, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Canillas",
+    "originalPlace": "Canillas",
+    "originId": "cc524734-f7f4-419e-b54b-f7e45419b295",
+    "prompt": "mejor academia de inglés para niños en Canillas, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Piovera",
+    "originalPlace": "Canillas",
+    "originId": "cc524734-f7f4-419e-b54b-f7e45419b295",
+    "prompt": "mejor academia de inglés para niños en Piovera, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Carabanchel Aviación",
+    "originalPlace": "Carabanchel Aviación",
+    "originId": "7924bc67-2c7d-4064-8975-9bd08ed9c965",
+    "prompt": "mejor academia de inglés para niños en Carabanchel Aviación, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Buenavista",
+    "originalPlace": "Carabanchel Aviación",
+    "originId": "7924bc67-2c7d-4064-8975-9bd08ed9c965",
+    "prompt": "mejor academia de inglés para niños en Buenavista, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Cuatro Vientos",
+    "originalPlace": "Carabanchel Aviación",
+    "originId": "7924bc67-2c7d-4064-8975-9bd08ed9c965",
+    "prompt": "mejor academia de inglés para niños en Cuatro Vientos, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Latina",
+    "originalPlace": "Latina",
+    "originId": "988400ea-144b-4653-8c0d-fa0ba4bd9903",
+    "prompt": "mejor academia de inglés para niños en Latina, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Carabanchel Oporto",
+    "originalPlace": "Carabanchel Oporto",
+    "originId": "81b099d4-fcc1-4922-a01b-1ab0c95bb314",
+    "prompt": "mejor academia de inglés para niños en Carabanchel Oporto, Madrid"
+  },
+  {
+    "type": "suburb",
+    "place": "Opañel",
+    "originalPlace": "Carabanchel Oporto",
+    "originId": "81b099d4-fcc1-4922-a01b-1ab0c95bb314",
+    "prompt": "mejor academia de inglés para niños en Opañel, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Vista Alegre",
+    "originalPlace": "Carabanchel Oporto",
+    "originId": "81b099d4-fcc1-4922-a01b-1ab0c95bb314",
+    "prompt": "mejor academia de inglés para niños en Vista Alegre, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Carabanchel Pau",
+    "originalPlace": "Carabanchel Pau",
+    "originId": "21f9eca3-0999-4308-9cf5-d668f0237b9a",
+    "prompt": "mejor academia de inglés para niños en Carabanchel Pau, Madrid"
+  },
+  {
+    "type": "suburb",
+    "place": "Los Morales",
+    "originalPlace": "Carabanchel Pau",
+    "originId": "21f9eca3-0999-4308-9cf5-d668f0237b9a",
+    "prompt": "mejor academia de inglés para niños en Los Morales, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Ciudad Jardín",
+    "originalPlace": "Chamartín",
+    "originId": "ade8b794-4340-4fa9-a959-5f0843f7811c",
+    "prompt": "mejor academia de inglés para niños en Ciudad Jardín, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Hispanoamérica",
+    "originalPlace": "Chamartín",
+    "originId": "ade8b794-4340-4fa9-a959-5f0843f7811c",
+    "prompt": "mejor academia de inglés para niños en Hispanoamérica, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Nueva España",
+    "originalPlace": "Chamartín",
+    "originId": "ade8b794-4340-4fa9-a959-5f0843f7811c",
+    "prompt": "mejor academia de inglés para niños en Nueva España, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Chamberí",
+    "originalPlace": "Chamberí",
+    "originId": "ba34338f-2755-4b4c-b155-5346a502032e",
+    "prompt": "mejor academia de inglés para niños en Chamberí, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Almagro",
+    "originalPlace": "Chamberí",
+    "originId": "ba34338f-2755-4b4c-b155-5346a502032e",
+    "prompt": "mejor academia de inglés para niños en Almagro, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Ríos Rosas",
+    "originalPlace": "Chamberí",
+    "originId": "ba34338f-2755-4b4c-b155-5346a502032e",
+    "prompt": "mejor academia de inglés para niños en Ríos Rosas, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Trafalgar",
+    "originalPlace": "Chamberí",
+    "originId": "ba34338f-2755-4b4c-b155-5346a502032e",
+    "prompt": "mejor academia de inglés para niños en Trafalgar, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Concepción",
+    "originalPlace": "Concepción",
+    "originId": "10b994cf-b011-44bb-83c2-6f84a9a65214",
+    "prompt": "mejor academia de inglés para niños en Concepción, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Calle de Juan Pérez Zúñiga",
+    "originalPlace": "Concepción",
+    "originId": "10b994cf-b011-44bb-83c2-6f84a9a65214",
+    "prompt": "mejor academia de inglés para niños en Calle de Juan Pérez Zúñiga, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Calle de la Virgen del Val",
+    "originalPlace": "Concepción",
+    "originId": "10b994cf-b011-44bb-83c2-6f84a9a65214",
+    "prompt": "mejor academia de inglés para niños en Calle de la Virgen del Val, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Ciudad Lineal",
+    "originalPlace": "Concepción",
+    "originId": "10b994cf-b011-44bb-83c2-6f84a9a65214",
+    "prompt": "mejor academia de inglés para niños en Ciudad Lineal, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "San Pascual",
+    "originalPlace": "Concepción",
+    "originId": "10b994cf-b011-44bb-83c2-6f84a9a65214",
+    "prompt": "mejor academia de inglés para niños en San Pascual, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "El Cañaveral",
+    "originalPlace": "El Cañaveral",
+    "originId": "23a686f4-4320-4534-ad4c-a59abfa77e76",
+    "prompt": "mejor academia de inglés para niños en El Cañaveral, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Casco Histórico de Vicálvaro",
+    "originalPlace": "El Cañaveral",
+    "originId": "23a686f4-4320-4534-ad4c-a59abfa77e76",
+    "prompt": "mejor academia de inglés para niños en Casco Histórico de Vicálvaro, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Charco Alto",
+    "originalPlace": "El Cañaveral",
+    "originId": "23a686f4-4320-4534-ad4c-a59abfa77e76",
+    "prompt": "mejor academia de inglés para niños en Charco Alto, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Erial de la Abuela",
+    "originalPlace": "El Cañaveral",
+    "originId": "23a686f4-4320-4534-ad4c-a59abfa77e76",
+    "prompt": "mejor academia de inglés para niños en Erial de la Abuela, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "El Retiro",
+    "originalPlace": "El Retiro",
+    "originId": "2a1cd737-8b05-4d46-a8e0-30945272523c",
+    "prompt": "mejor academia de inglés para niños en El Retiro, Madrid"
+  },
+  {
+    "type": "suburb",
+    "place": "Ibiza",
+    "originalPlace": "El Retiro",
+    "originId": "2a1cd737-8b05-4d46-a8e0-30945272523c",
+    "prompt": "mejor academia de inglés para niños en Ibiza, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Estrella",
+    "originalPlace": "El Retiro",
+    "originId": "2a1cd737-8b05-4d46-a8e0-30945272523c",
+    "prompt": "mejor academia de inglés para niños en Estrella, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Jerónimos",
+    "originalPlace": "El Retiro",
+    "originId": "2a1cd737-8b05-4d46-a8e0-30945272523c",
+    "prompt": "mejor academia de inglés para niños en Jerónimos, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Niño Jesús",
+    "originalPlace": "El Retiro",
+    "originId": "2a1cd737-8b05-4d46-a8e0-30945272523c",
+    "prompt": "mejor academia de inglés para niños en Niño Jesús, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Ensanche de Vallecas",
+    "originalPlace": "Ensanche de Vallecas",
+    "originId": "e7219d41-fc18-4241-8280-dd4c57af73f1",
+    "prompt": "mejor academia de inglés para niños en Ensanche de Vallecas, Madrid"
+  },
+  {
+    "type": "suburb",
+    "place": "Villa de Vallecas",
+    "originalPlace": "Ensanche de Vallecas",
+    "originId": "e7219d41-fc18-4241-8280-dd4c57af73f1",
+    "prompt": "mejor academia de inglés para niños en Villa de Vallecas, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Casco Histórico de Vallecas",
+    "originalPlace": "Ensanche de Vallecas",
+    "originId": "e7219d41-fc18-4241-8280-dd4c57af73f1",
+    "prompt": "mejor academia de inglés para niños en Casco Histórico de Vallecas, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Santa Eugenia",
+    "originalPlace": "Ensanche de Vallecas",
+    "originId": "e7219d41-fc18-4241-8280-dd4c57af73f1",
+    "prompt": "mejor academia de inglés para niños en Santa Eugenia, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "La Gavia",
+    "originalPlace": "La Gavia",
+    "originId": "85a799a5-3f86-4aed-bcff-3c23bfe0eb51",
+    "prompt": "mejor academia de inglés para niños en La Gavia, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Alto del Retiro",
+    "originalPlace": "La Gavia",
+    "originId": "85a799a5-3f86-4aed-bcff-3c23bfe0eb51",
+    "prompt": "mejor academia de inglés para niños en Alto del Retiro, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "La Vaguada",
+    "originalPlace": "La Vaguada",
+    "originId": "cb76a1a6-4984-4e3f-9604-8d1846179e36",
+    "prompt": "mejor academia de inglés para niños en La Vaguada, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Altamira",
+    "originalPlace": "La Vaguada",
+    "originId": "cb76a1a6-4984-4e3f-9604-8d1846179e36",
+    "prompt": "mejor academia de inglés para niños en Altamira, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "El Pilar",
+    "originalPlace": "La Vaguada",
+    "originId": "cb76a1a6-4984-4e3f-9604-8d1846179e36",
+    "prompt": "mejor academia de inglés para niños en El Pilar, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "La Paz",
+    "originalPlace": "La Vaguada",
+    "originId": "cb76a1a6-4984-4e3f-9604-8d1846179e36",
+    "prompt": "mejor academia de inglés para niños en La Paz, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Las Rosas",
+    "originalPlace": "Las Rosas",
+    "originId": "dff55695-162e-4779-98de-13424a8d2935",
+    "prompt": "mejor academia de inglés para niños en Las Rosas, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Las Tablas",
+    "originalPlace": "Las Tablas",
+    "originId": "daf7588f-1f27-4168-9a0c-bd891ad3e187",
+    "prompt": "mejor academia de inglés para niños en Las Tablas, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Punto de Atención al Ciudadano",
+    "originalPlace": "Las Tablas",
+    "originId": "daf7588f-1f27-4168-9a0c-bd891ad3e187",
+    "prompt": "mejor academia de inglés para niños en Punto de Atención al Ciudadano, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Las Tablas Norte",
+    "originalPlace": "Las Tablas Norte",
+    "originId": "142a5a6d-3233-4723-a6f6-5775e7430a0e",
+    "prompt": "mejor academia de inglés para niños en Las Tablas Norte, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Lucero",
+    "originalPlace": "Latina",
+    "originId": "988400ea-144b-4653-8c0d-fa0ba4bd9903",
+    "prompt": "mejor academia de inglés para niños en Lucero, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Legazpi",
+    "originalPlace": "Legazpi",
+    "originId": "a6e231a4-109e-49fd-8093-0bc893fb6bd7",
+    "prompt": "mejor academia de inglés para niños en Legazpi, Madrid"
+  },
+  {
+    "type": "suburb",
+    "place": "Delicias",
+    "originalPlace": "Legazpi",
+    "originId": "a6e231a4-109e-49fd-8093-0bc893fb6bd7",
+    "prompt": "mejor academia de inglés para niños en Delicias, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Chopera",
+    "originalPlace": "Legazpi",
+    "originId": "a6e231a4-109e-49fd-8093-0bc893fb6bd7",
+    "prompt": "mejor academia de inglés para niños en Chopera, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Madrid Villaverde",
+    "originalPlace": "Madrid Villaverde",
+    "originId": "4a906a8e-7be8-4494-b425-627eb2595b6b",
+    "prompt": "mejor academia de inglés para niños en Madrid Villaverde, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Butarque",
+    "originalPlace": "Madrid Villaverde",
+    "originId": "4a906a8e-7be8-4494-b425-627eb2595b6b",
+    "prompt": "mejor academia de inglés para niños en Butarque, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Los Rosales",
+    "originalPlace": "Madrid Villaverde",
+    "originId": "4a906a8e-7be8-4494-b425-627eb2595b6b",
+    "prompt": "mejor academia de inglés para niños en Los Rosales, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Villaverde",
+    "originalPlace": "Madrid Villaverde",
+    "originId": "4a906a8e-7be8-4494-b425-627eb2595b6b",
+    "prompt": "mejor academia de inglés para niños en Villaverde, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Mirasierra",
+    "originalPlace": "Mirasierra",
+    "originId": "68b703d6-e64e-4de7-98ba-3c33c31179f3",
+    "prompt": "mejor academia de inglés para niños en Mirasierra, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Peñagrande",
+    "originalPlace": "Mirasierra",
+    "originId": "68b703d6-e64e-4de7-98ba-3c33c31179f3",
+    "prompt": "mejor academia de inglés para niños en Peñagrande, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Montecarmelo",
+    "originalPlace": "Montecarmelo",
+    "originId": "0d263302-0963-416d-9a58-88e4c071fa17",
+    "prompt": "mejor academia de inglés para niños en Montecarmelo, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "El Goloso",
+    "originalPlace": "Montecarmelo",
+    "originId": "0d263302-0963-416d-9a58-88e4c071fa17",
+    "prompt": "mejor academia de inglés para niños en El Goloso, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Valverde",
+    "originalPlace": "Montecarmelo",
+    "originId": "0d263302-0963-416d-9a58-88e4c071fa17",
+    "prompt": "mejor academia de inglés para niños en Valverde, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Moratalaz",
+    "originalPlace": "Moratalaz",
+    "originId": "1172e608-d1d0-4310-a379-50a434b5226b",
+    "prompt": "mejor academia de inglés para niños en Moratalaz, Madrid"
+  },
+  {
+    "type": "suburb",
+    "place": "Horcajo",
+    "originalPlace": "Moratalaz",
+    "originId": "1172e608-d1d0-4310-a379-50a434b5226b",
+    "prompt": "mejor academia de inglés para niños en Horcajo, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Calle de Luis de Hoyos Sáinz",
+    "originalPlace": "Moratalaz",
+    "originId": "1172e608-d1d0-4310-a379-50a434b5226b",
+    "prompt": "mejor academia de inglés para niños en Calle de Luis de Hoyos Sáinz, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Marroquina",
+    "originalPlace": "Moratalaz",
+    "originId": "1172e608-d1d0-4310-a379-50a434b5226b",
+    "prompt": "mejor academia de inglés para niños en Marroquina, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Pavones",
+    "originalPlace": "Moratalaz",
+    "originId": "1172e608-d1d0-4310-a379-50a434b5226b",
+    "prompt": "mejor academia de inglés para niños en Pavones, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Vinateros",
+    "originalPlace": "Moratalaz",
+    "originId": "1172e608-d1d0-4310-a379-50a434b5226b",
+    "prompt": "mejor academia de inglés para niños en Vinateros, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Rivas La Luna",
+    "originalPlace": "Rivas La Luna",
+    "originId": "eb5fbeda-b1fa-4a41-93c9-c4b36207a8d9",
+    "prompt": "mejor academia de inglés para niños en Rivas La Luna, Rivas-Vaciamadrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "El Quemadero",
+    "originalPlace": "Rivas La Luna",
+    "originId": "eb5fbeda-b1fa-4a41-93c9-c4b36207a8d9",
+    "prompt": "mejor academia de inglés para niños en El Quemadero, Rivas-Vaciamadrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Tetuán",
+    "originalPlace": "Tetuán",
+    "originId": "7a34d583-9565-45c0-af8b-225f337473c3",
+    "prompt": "mejor academia de inglés para niños en Tetuán, Madrid"
+  },
+  {
+    "type": "suburb",
+    "place": "Castillejos",
+    "originalPlace": "Tetuán",
+    "originId": "7a34d583-9565-45c0-af8b-225f337473c3",
+    "prompt": "mejor academia de inglés para niños en Castillejos, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Bellas Vistas",
+    "originalPlace": "Tetuán",
+    "originId": "7a34d583-9565-45c0-af8b-225f337473c3",
+    "prompt": "mejor academia de inglés para niños en Bellas Vistas, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Berruguete",
+    "originalPlace": "Tetuán",
+    "originId": "7a34d583-9565-45c0-af8b-225f337473c3",
+    "prompt": "mejor academia de inglés para niños en Berruguete, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Cuatro Caminos",
+    "originalPlace": "Tetuán",
+    "originId": "7a34d583-9565-45c0-af8b-225f337473c3",
+    "prompt": "mejor academia de inglés para niños en Cuatro Caminos, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Valdeacederas",
+    "originalPlace": "Tetuán",
+    "originId": "7a34d583-9565-45c0-af8b-225f337473c3",
+    "prompt": "mejor academia de inglés para niños en Valdeacederas, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Usera",
+    "originalPlace": "Usera",
+    "originId": "8214520b-6a5f-42b1-bb2b-c508dee12d22",
+    "prompt": "mejor academia de inglés para niños en Usera, Madrid"
+  },
+  {
+    "type": "suburb",
+    "place": "Almendrales",
+    "originalPlace": "Usera",
+    "originId": "8214520b-6a5f-42b1-bb2b-c508dee12d22",
+    "prompt": "mejor academia de inglés para niños en Almendrales, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Orcasur",
+    "originalPlace": "Usera",
+    "originId": "8214520b-6a5f-42b1-bb2b-c508dee12d22",
+    "prompt": "mejor academia de inglés para niños en Orcasur, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Pradolongo",
+    "originalPlace": "Usera",
+    "originId": "8214520b-6a5f-42b1-bb2b-c508dee12d22",
+    "prompt": "mejor academia de inglés para niños en Pradolongo, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "San Fermín",
+    "originalPlace": "Usera",
+    "originId": "8214520b-6a5f-42b1-bb2b-c508dee12d22",
+    "prompt": "mejor academia de inglés para niños en San Fermín, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Valdebebas",
+    "originalPlace": "Valdebebas",
+    "originId": "59ef287c-f3fe-421b-84a7-074a56c7ddc7",
+    "prompt": "mejor academia de inglés para niños en Valdebebas, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Montoro",
+    "originalPlace": "Valdebebas",
+    "originId": "59ef287c-f3fe-421b-84a7-074a56c7ddc7",
+    "prompt": "mejor academia de inglés para niños en Montoro, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Valdefuentes",
+    "originalPlace": "Valdebebas",
+    "originId": "59ef287c-f3fe-421b-84a7-074a56c7ddc7",
+    "prompt": "mejor academia de inglés para niños en Valdefuentes, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Valdebebas Sur",
+    "originalPlace": "Valdebebas Sur",
+    "originId": "a1928561-270d-42b4-b5f2-b8073ebd14cc",
+    "prompt": "mejor academia de inglés para niños en Valdebebas Sur, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Cabeza Gorda",
+    "originalPlace": "Valdebebas Sur",
+    "originId": "a1928561-270d-42b4-b5f2-b8073ebd14cc",
+    "prompt": "mejor academia de inglés para niños en Cabeza Gorda, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Hortaleza",
+    "originalPlace": "Valdebebas Sur",
+    "originId": "a1928561-270d-42b4-b5f2-b8073ebd14cc",
+    "prompt": "mejor academia de inglés para niños en Hortaleza, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Vallecas",
+    "originalPlace": "Vallecas",
+    "originId": "e8a1b3a2-115f-4937-bd1f-dace3768bea0",
+    "prompt": "mejor academia de inglés para niños en Vallecas, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Numancia",
+    "originalPlace": "Vallecas",
+    "originId": "e8a1b3a2-115f-4937-bd1f-dace3768bea0",
+    "prompt": "mejor academia de inglés para niños en Numancia, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Palomeras Bajas",
+    "originalPlace": "Vallecas",
+    "originId": "e8a1b3a2-115f-4937-bd1f-dace3768bea0",
+    "prompt": "mejor academia de inglés para niños en Palomeras Bajas, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Portazgo",
+    "originalPlace": "Vallecas",
+    "originId": "e8a1b3a2-115f-4937-bd1f-dace3768bea0",
+    "prompt": "mejor academia de inglés para niños en Portazgo, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Ventas",
+    "originalPlace": "Ventas",
+    "originId": "c90fb9a4-cc42-4934-9d3d-19f9dcd1ba24",
+    "prompt": "mejor academia de inglés para niños en Ventas, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Calle de Alcalá",
+    "originalPlace": "Ventas",
+    "originId": "c90fb9a4-cc42-4934-9d3d-19f9dcd1ba24",
+    "prompt": "mejor academia de inglés para niños en Calle de Alcalá, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Calle del Alcalde López Casero",
+    "originalPlace": "Ventas",
+    "originId": "c90fb9a4-cc42-4934-9d3d-19f9dcd1ba24",
+    "prompt": "mejor academia de inglés para niños en Calle del Alcalde López Casero, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Quintana",
+    "originalPlace": "Ventas",
+    "originId": "c90fb9a4-cc42-4934-9d3d-19f9dcd1ba24",
+    "prompt": "mejor academia de inglés para niños en Quintana, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Vicálvaro",
+    "originalPlace": "Vicálvaro",
+    "originId": "53b89ae5-ea14-49ca-ae07-da9812da91d6",
+    "prompt": "mejor academia de inglés para niños en Vicálvaro, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Valdebernardo",
+    "originalPlace": "Vicálvaro",
+    "originId": "53b89ae5-ea14-49ca-ae07-da9812da91d6",
+    "prompt": "mejor academia de inglés para niños en Valdebernardo, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Valderribas",
+    "originalPlace": "Vicálvaro",
+    "originId": "53b89ae5-ea14-49ca-ae07-da9812da91d6",
+    "prompt": "mejor academia de inglés para niños en Valderribas, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Valderrivas",
+    "originalPlace": "Vicálvaro",
+    "originId": "53b89ae5-ea14-49ca-ae07-da9812da91d6",
+    "prompt": "mejor academia de inglés para niños en Valderrivas, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "Villaverde Butarque",
+    "originalPlace": "Villaverde Butarque",
+    "originId": "877c2fcf-1b34-48a2-8f4d-c50d4ac20353",
+    "prompt": "mejor academia de inglés para niños en Villaverde Butarque, Madrid"
+  },
+  {
+    "type": "titleLocation",
+    "place": "la Vaguada",
+    "originalPlace": "la Vaguada",
+    "originId": "5373a5df-44ae-49b6-a69f-9c8d200e766f",
+    "prompt": "mejor academia de inglés para niños en la Vaguada, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Centro",
+    "originalPlace": "Arganzuela",
+    "originId": "a359561c-df31-413d-9276-f053d5b46db4",
+    "prompt": "mejor academia de inglés para niños en Centro, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Embajadores",
+    "originalPlace": "Arganzuela",
+    "originId": "a359561c-df31-413d-9276-f053d5b46db4",
+    "prompt": "mejor academia de inglés para niños en Embajadores, Madrid"
+  },
+  {
+    "type": "neighborhood",
+    "place": "Retiro",
+    "originalPlace": "El Retiro",
+    "originId": "c7c12572-58ba-4e0c-b86a-c821f99e7be5",
+    "prompt": "mejor academia de inglés para niños en Retiro, Madrid"
+  }
+]

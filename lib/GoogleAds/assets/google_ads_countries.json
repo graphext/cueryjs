@@ -1,0 +1,1092 @@
+[
+  {
+    "Name": "Afghanistan",
+    "Country Code": "AF",
+    "Criteria ID": "2004"
+  },
+  {
+    "Name": "Albania",
+    "Country Code": "AL",
+    "Criteria ID": "2008"
+  },
+  {
+    "Name": "Antarctica",
+    "Country Code": "AQ",
+    "Criteria ID": "2010"
+  },
+  {
+    "Name": "Algeria",
+    "Country Code": "DZ",
+    "Criteria ID": "2012"
+  },
+  {
+    "Name": "American Samoa",
+    "Country Code": "AS",
+    "Criteria ID": "2016"
+  },
+  {
+    "Name": "Andorra",
+    "Country Code": "AD",
+    "Criteria ID": "2020"
+  },
+  {
+    "Name": "Angola",
+    "Country Code": "AO",
+    "Criteria ID": "2024"
+  },
+  {
+    "Name": "Antigua and Barbuda",
+    "Country Code": "AG",
+    "Criteria ID": "2028"
+  },
+  {
+    "Name": "Azerbaijan",
+    "Country Code": "AZ",
+    "Criteria ID": "2031"
+  },
+  {
+    "Name": "Argentina",
+    "Country Code": "AR",
+    "Criteria ID": "2032"
+  },
+  {
+    "Name": "Australia",
+    "Country Code": "AU",
+    "Criteria ID": "2036"
+  },
+  {
+    "Name": "Austria",
+    "Country Code": "AT",
+    "Criteria ID": "2040"
+  },
+  {
+    "Name": "The Bahamas",
+    "Country Code": "BS",
+    "Criteria ID": "2044"
+  },
+  {
+    "Name": "Bahrain",
+    "Country Code": "BH",
+    "Criteria ID": "2048"
+  },
+  {
+    "Name": "Bangladesh",
+    "Country Code": "BD",
+    "Criteria ID": "2050"
+  },
+  {
+    "Name": "Armenia",
+    "Country Code": "AM",
+    "Criteria ID": "2051"
+  },
+  {
+    "Name": "Barbados",
+    "Country Code": "BB",
+    "Criteria ID": "2052"
+  },
+  {
+    "Name": "Belgium",
+    "Country Code": "BE",
+    "Criteria ID": "2056"
+  },
+  {
+    "Name": "Bhutan",
+    "Country Code": "BT",
+    "Criteria ID": "2064"
+  },
+  {
+    "Name": "Bolivia",
+    "Country Code": "BO",
+    "Criteria ID": "2068"
+  },
+  {
+    "Name": "Bosnia and Herzegovina",
+    "Country Code": "BA",
+    "Criteria ID": "2070"
+  },
+  {
+    "Name": "Botswana",
+    "Country Code": "BW",
+    "Criteria ID": "2072"
+  },
+  {
+    "Name": "Brazil",
+    "Country Code": "BR",
+    "Criteria ID": "2076"
+  },
+  {
+    "Name": "Belize",
+    "Country Code": "BZ",
+    "Criteria ID": "2084"
+  },
+  {
+    "Name": "Solomon Islands",
+    "Country Code": "SB",
+    "Criteria ID": "2090"
+  },
+  {
+    "Name": "Brunei",
+    "Country Code": "BN",
+    "Criteria ID": "2096"
+  },
+  {
+    "Name": "Bulgaria",
+    "Country Code": "BG",
+    "Criteria ID": "2100"
+  },
+  {
+    "Name": "Myanmar (Burma)",
+    "Country Code": "MM",
+    "Criteria ID": "2104"
+  },
+  {
+    "Name": "Burundi",
+    "Country Code": "BI",
+    "Criteria ID": "2108"
+  },
+  {
+    "Name": "Belarus",
+    "Country Code": "BY",
+    "Criteria ID": "2112"
+  },
+  {
+    "Name": "Cambodia",
+    "Country Code": "KH",
+    "Criteria ID": "2116"
+  },
+  {
+    "Name": "Cameroon",
+    "Country Code": "CM",
+    "Criteria ID": "2120"
+  },
+  {
+    "Name": "Canada",
+    "Country Code": "CA",
+    "Criteria ID": "2124"
+  },
+  {
+    "Name": "Cabo Verde",
+    "Country Code": "CV",
+    "Criteria ID": "2132"
+  },
+  {
+    "Name": "Central African Republic",
+    "Country Code": "CF",
+    "Criteria ID": "2140"
+  },
+  {
+    "Name": "Sri Lanka",
+    "Country Code": "LK",
+    "Criteria ID": "2144"
+  },
+  {
+    "Name": "Chad",
+    "Country Code": "TD",
+    "Criteria ID": "2148"
+  },
+  {
+    "Name": "Chile",
+    "Country Code": "CL",
+    "Criteria ID": "2152"
+  },
+  {
+    "Name": "China",
+    "Country Code": "CN",
+    "Criteria ID": "2156"
+  },
+  {
+    "Name": "Christmas Island",
+    "Country Code": "CX",
+    "Criteria ID": "2162"
+  },
+  {
+    "Name": "Cocos (Keeling) Islands",
+    "Country Code": "CC",
+    "Criteria ID": "2166"
+  },
+  {
+    "Name": "Colombia",
+    "Country Code": "CO",
+    "Criteria ID": "2170"
+  },
+  {
+    "Name": "Comoros",
+    "Country Code": "KM",
+    "Criteria ID": "2174"
+  },
+  {
+    "Name": "Republic of the Congo",
+    "Country Code": "CG",
+    "Criteria ID": "2178"
+  },
+  {
+    "Name": "Democratic Republic of the Congo",
+    "Country Code": "CD",
+    "Criteria ID": "2180"
+  },
+  {
+    "Name": "Cook Islands",
+    "Country Code": "CK",
+    "Criteria ID": "2184"
+  },
+  {
+    "Name": "Costa Rica",
+    "Country Code": "CR",
+    "Criteria ID": "2188"
+  },
+  {
+    "Name": "Croatia",
+    "Country Code": "HR",
+    "Criteria ID": "2191"
+  },
+  {
+    "Name": "Cyprus",
+    "Country Code": "CY",
+    "Criteria ID": "2196"
+  },
+  {
+    "Name": "Czechia",
+    "Country Code": "CZ",
+    "Criteria ID": "2203"
+  },
+  {
+    "Name": "Benin",
+    "Country Code": "BJ",
+    "Criteria ID": "2204"
+  },
+  {
+    "Name": "Denmark",
+    "Country Code": "DK",
+    "Criteria ID": "2208"
+  },
+  {
+    "Name": "Dominica",
+    "Country Code": "DM",
+    "Criteria ID": "2212"
+  },
+  {
+    "Name": "Dominican Republic",
+    "Country Code": "DO",
+    "Criteria ID": "2214"
+  },
+  {
+    "Name": "Ecuador",
+    "Country Code": "EC",
+    "Criteria ID": "2218"
+  },
+  {
+    "Name": "El Salvador",
+    "Country Code": "SV",
+    "Criteria ID": "2222"
+  },
+  {
+    "Name": "Equatorial Guinea",
+    "Country Code": "GQ",
+    "Criteria ID": "2226"
+  },
+  {
+    "Name": "Ethiopia",
+    "Country Code": "ET",
+    "Criteria ID": "2231"
+  },
+  {
+    "Name": "Eritrea",
+    "Country Code": "ER",
+    "Criteria ID": "2232"
+  },
+  {
+    "Name": "Estonia",
+    "Country Code": "EE",
+    "Criteria ID": "2233"
+  },
+  {
+    "Name": "South Georgia and the South Sandwich Islands",
+    "Country Code": "GS",
+    "Criteria ID": "2239"
+  },
+  {
+    "Name": "Fiji",
+    "Country Code": "FJ",
+    "Criteria ID": "2242"
+  },
+  {
+    "Name": "Finland",
+    "Country Code": "FI",
+    "Criteria ID": "2246"
+  },
+  {
+    "Name": "France",
+    "Country Code": "FR",
+    "Criteria ID": "2250"
+  },
+  {
+    "Name": "French Polynesia",
+    "Country Code": "PF",
+    "Criteria ID": "2258"
+  },
+  {
+    "Name": "French Southern and Antarctic Lands",
+    "Country Code": "TF",
+    "Criteria ID": "2260"
+  },
+  {
+    "Name": "Djibouti",
+    "Country Code": "DJ",
+    "Criteria ID": "2262"
+  },
+  {
+    "Name": "Gabon",
+    "Country Code": "GA",
+    "Criteria ID": "2266"
+  },
+  {
+    "Name": "Georgia",
+    "Country Code": "GE",
+    "Criteria ID": "2268"
+  },
+  {
+    "Name": "The Gambia",
+    "Country Code": "GM",
+    "Criteria ID": "2270"
+  },
+  {
+    "Name": "Germany",
+    "Country Code": "DE",
+    "Criteria ID": "2276"
+  },
+  {
+    "Name": "Ghana",
+    "Country Code": "GH",
+    "Criteria ID": "2288"
+  },
+  {
+    "Name": "Kiribati",
+    "Country Code": "KI",
+    "Criteria ID": "2296"
+  },
+  {
+    "Name": "Greece",
+    "Country Code": "GR",
+    "Criteria ID": "2300"
+  },
+  {
+    "Name": "Grenada",
+    "Country Code": "GD",
+    "Criteria ID": "2308"
+  },
+  {
+    "Name": "Guam",
+    "Country Code": "GU",
+    "Criteria ID": "2316"
+  },
+  {
+    "Name": "Guatemala",
+    "Country Code": "GT",
+    "Criteria ID": "2320"
+  },
+  {
+    "Name": "Guinea",
+    "Country Code": "GN",
+    "Criteria ID": "2324"
+  },
+  {
+    "Name": "Guyana",
+    "Country Code": "GY",
+    "Criteria ID": "2328"
+  },
+  {
+    "Name": "Haiti",
+    "Country Code": "HT",
+    "Criteria ID": "2332"
+  },
+  {
+    "Name": "Heard Island and McDonald Islands",
+    "Country Code": "HM",
+    "Criteria ID": "2334"
+  },
+  {
+    "Name": "Vatican City",
+    "Country Code": "VA",
+    "Criteria ID": "2336"
+  },
+  {
+    "Name": "Honduras",
+    "Country Code": "HN",
+    "Criteria ID": "2340"
+  },
+  {
+    "Name": "Hungary",
+    "Country Code": "HU",
+    "Criteria ID": "2348"
+  },
+  {
+    "Name": "Iceland",
+    "Country Code": "IS",
+    "Criteria ID": "2352"
+  },
+  {
+    "Name": "India",
+    "Country Code": "IN",
+    "Criteria ID": "2356"
+  },
+  {
+    "Name": "Indonesia",
+    "Country Code": "ID",
+    "Criteria ID": "2360"
+  },
+  {
+    "Name": "Iraq",
+    "Country Code": "IQ",
+    "Criteria ID": "2368"
+  },
+  {
+    "Name": "Ireland",
+    "Country Code": "IE",
+    "Criteria ID": "2372"
+  },
+  {
+    "Name": "Israel",
+    "Country Code": "IL",
+    "Criteria ID": "2376"
+  },
+  {
+    "Name": "Italy",
+    "Country Code": "IT",
+    "Criteria ID": "2380"
+  },
+  {
+    "Name": "Cote d'Ivoire",
+    "Country Code": "CI",
+    "Criteria ID": "2384"
+  },
+  {
+    "Name": "Jamaica",
+    "Country Code": "JM",
+    "Criteria ID": "2388"
+  },
+  {
+    "Name": "Japan",
+    "Country Code": "JP",
+    "Criteria ID": "2392"
+  },
+  {
+    "Name": "Kazakhstan",
+    "Country Code": "KZ",
+    "Criteria ID": "2398"
+  },
+  {
+    "Name": "Jordan",
+    "Country Code": "JO",
+    "Criteria ID": "2400"
+  },
+  {
+    "Name": "Kenya",
+    "Country Code": "KE",
+    "Criteria ID": "2404"
+  },
+  {
+    "Name": "South Korea",
+    "Country Code": "KR",
+    "Criteria ID": "2410"
+  },
+  {
+    "Name": "Kuwait",
+    "Country Code": "KW",
+    "Criteria ID": "2414"
+  },
+  {
+    "Name": "Kyrgyzstan",
+    "Country Code": "KG",
+    "Criteria ID": "2417"
+  },
+  {
+    "Name": "Laos",
+    "Country Code": "LA",
+    "Criteria ID": "2418"
+  },
+  {
+    "Name": "Lebanon",
+    "Country Code": "LB",
+    "Criteria ID": "2422"
+  },
+  {
+    "Name": "Lesotho",
+    "Country Code": "LS",
+    "Criteria ID": "2426"
+  },
+  {
+    "Name": "Latvia",
+    "Country Code": "LV",
+    "Criteria ID": "2428"
+  },
+  {
+    "Name": "Liberia",
+    "Country Code": "LR",
+    "Criteria ID": "2430"
+  },
+  {
+    "Name": "Libya",
+    "Country Code": "LY",
+    "Criteria ID": "2434"
+  },
+  {
+    "Name": "Liechtenstein",
+    "Country Code": "LI",
+    "Criteria ID": "2438"
+  },
+  {
+    "Name": "Lithuania",
+    "Country Code": "LT",
+    "Criteria ID": "2440"
+  },
+  {
+    "Name": "Luxembourg",
+    "Country Code": "LU",
+    "Criteria ID": "2442"
+  },
+  {
+    "Name": "Madagascar",
+    "Country Code": "MG",
+    "Criteria ID": "2450"
+  },
+  {
+    "Name": "Malawi",
+    "Country Code": "MW",
+    "Criteria ID": "2454"
+  },
+  {
+    "Name": "Malaysia",
+    "Country Code": "MY",
+    "Criteria ID": "2458"
+  },
+  {
+    "Name": "Maldives",
+    "Country Code": "MV",
+    "Criteria ID": "2462"
+  },
+  {
+    "Name": "Mali",
+    "Country Code": "ML",
+    "Criteria ID": "2466"
+  },
+  {
+    "Name": "Malta",
+    "Country Code": "MT",
+    "Criteria ID": "2470"
+  },
+  {
+    "Name": "Mauritania",
+    "Country Code": "MR",
+    "Criteria ID": "2478"
+  },
+  {
+    "Name": "Mauritius",
+    "Country Code": "MU",
+    "Criteria ID": "2480"
+  },
+  {
+    "Name": "Mexico",
+    "Country Code": "MX",
+    "Criteria ID": "2484"
+  },
+  {
+    "Name": "Monaco",
+    "Country Code": "MC",
+    "Criteria ID": "2492"
+  },
+  {
+    "Name": "Mongolia",
+    "Country Code": "MN",
+    "Criteria ID": "2496"
+  },
+  {
+    "Name": "Moldova",
+    "Country Code": "MD",
+    "Criteria ID": "2498"
+  },
+  {
+    "Name": "Montenegro",
+    "Country Code": "ME",
+    "Criteria ID": "2499"
+  },
+  {
+    "Name": "Morocco",
+    "Country Code": "MA",
+    "Criteria ID": "2504"
+  },
+  {
+    "Name": "Mozambique",
+    "Country Code": "MZ",
+    "Criteria ID": "2508"
+  },
+  {
+    "Name": "Oman",
+    "Country Code": "OM",
+    "Criteria ID": "2512"
+  },
+  {
+    "Name": "Namibia",
+    "Country Code": "",
+    "Criteria ID": "2516"
+  },
+  {
+    "Name": "Nauru",
+    "Country Code": "NR",
+    "Criteria ID": "2520"
+  },
+  {
+    "Name": "Nepal",
+    "Country Code": "NP",
+    "Criteria ID": "2524"
+  },
+  {
+    "Name": "Netherlands",
+    "Country Code": "NL",
+    "Criteria ID": "2528"
+  },
+  {
+    "Name": "Curacao",
+    "Country Code": "CW",
+    "Criteria ID": "2531"
+  },
+  {
+    "Name": "Sint Maarten",
+    "Country Code": "SX",
+    "Criteria ID": "2534"
+  },
+  {
+    "Name": "Caribbean Netherlands",
+    "Country Code": "BQ",
+    "Criteria ID": "2535"
+  },
+  {
+    "Name": "New Caledonia",
+    "Country Code": "NC",
+    "Criteria ID": "2540"
+  },
+  {
+    "Name": "Vanuatu",
+    "Country Code": "VU",
+    "Criteria ID": "2548"
+  },
+  {
+    "Name": "New Zealand",
+    "Country Code": "NZ",
+    "Criteria ID": "2554"
+  },
+  {
+    "Name": "Nicaragua",
+    "Country Code": "NI",
+    "Criteria ID": "2558"
+  },
+  {
+    "Name": "Niger",
+    "Country Code": "NE",
+    "Criteria ID": "2562"
+  },
+  {
+    "Name": "Nigeria",
+    "Country Code": "NG",
+    "Criteria ID": "2566"
+  },
+  {
+    "Name": "Niue",
+    "Country Code": "NU",
+    "Criteria ID": "2570"
+  },
+  {
+    "Name": "Norfolk Island",
+    "Country Code": "NF",
+    "Criteria ID": "2574"
+  },
+  {
+    "Name": "Norway",
+    "Country Code": "NO",
+    "Criteria ID": "2578"
+  },
+  {
+    "Name": "Northern Mariana Islands",
+    "Country Code": "MP",
+    "Criteria ID": "2580"
+  },
+  {
+    "Name": "United States Minor Outlying Islands",
+    "Country Code": "UM",
+    "Criteria ID": "2581"
+  },
+  {
+    "Name": "Micronesia",
+    "Country Code": "FM",
+    "Criteria ID": "2583"
+  },
+  {
+    "Name": "Marshall Islands",
+    "Country Code": "MH",
+    "Criteria ID": "2584"
+  },
+  {
+    "Name": "Palau",
+    "Country Code": "PW",
+    "Criteria ID": "2585"
+  },
+  {
+    "Name": "Pakistan",
+    "Country Code": "PK",
+    "Criteria ID": "2586"
+  },
+  {
+    "Name": "Panama",
+    "Country Code": "PA",
+    "Criteria ID": "2591"
+  },
+  {
+    "Name": "Papua New Guinea",
+    "Country Code": "PG",
+    "Criteria ID": "2598"
+  },
+  {
+    "Name": "Paraguay",
+    "Country Code": "PY",
+    "Criteria ID": "2600"
+  },
+  {
+    "Name": "Peru",
+    "Country Code": "PE",
+    "Criteria ID": "2604"
+  },
+  {
+    "Name": "Philippines",
+    "Country Code": "PH",
+    "Criteria ID": "2608"
+  },
+  {
+    "Name": "Pitcairn Islands",
+    "Country Code": "PN",
+    "Criteria ID": "2612"
+  },
+  {
+    "Name": "Poland",
+    "Country Code": "PL",
+    "Criteria ID": "2616"
+  },
+  {
+    "Name": "Portugal",
+    "Country Code": "PT",
+    "Criteria ID": "2620"
+  },
+  {
+    "Name": "Guinea-Bissau",
+    "Country Code": "GW",
+    "Criteria ID": "2624"
+  },
+  {
+    "Name": "Timor-Leste",
+    "Country Code": "TL",
+    "Criteria ID": "2626"
+  },
+  {
+    "Name": "Qatar",
+    "Country Code": "QA",
+    "Criteria ID": "2634"
+  },
+  {
+    "Name": "Romania",
+    "Country Code": "RO",
+    "Criteria ID": "2642"
+  },
+  {
+    "Name": "Russia",
+    "Country Code": "RU",
+    "Criteria ID": "2643"
+  },
+  {
+    "Name": "Rwanda",
+    "Country Code": "RW",
+    "Criteria ID": "2646"
+  },
+  {
+    "Name": "Saint Barthelemy",
+    "Country Code": "BL",
+    "Criteria ID": "2652"
+  },
+  {
+    "Name": "Saint Helena, Ascension and Tristan da Cunha",
+    "Country Code": "SH",
+    "Criteria ID": "2654"
+  },
+  {
+    "Name": "Saint Kitts and Nevis",
+    "Country Code": "KN",
+    "Criteria ID": "2659"
+  },
+  {
+    "Name": "Saint Lucia",
+    "Country Code": "LC",
+    "Criteria ID": "2662"
+  },
+  {
+    "Name": "Saint Martin",
+    "Country Code": "MF",
+    "Criteria ID": "2663"
+  },
+  {
+    "Name": "Saint Pierre and Miquelon",
+    "Country Code": "PM",
+    "Criteria ID": "2666"
+  },
+  {
+    "Name": "Saint Vincent and the Grenadines",
+    "Country Code": "VC",
+    "Criteria ID": "2670"
+  },
+  {
+    "Name": "San Marino",
+    "Country Code": "SM",
+    "Criteria ID": "2674"
+  },
+  {
+    "Name": "Sao Tome and Principe",
+    "Country Code": "ST",
+    "Criteria ID": "2678"
+  },
+  {
+    "Name": "Saudi Arabia",
+    "Country Code": "SA",
+    "Criteria ID": "2682"
+  },
+  {
+    "Name": "Senegal",
+    "Country Code": "SN",
+    "Criteria ID": "2686"
+  },
+  {
+    "Name": "Serbia",
+    "Country Code": "RS",
+    "Criteria ID": "2688"
+  },
+  {
+    "Name": "Seychelles",
+    "Country Code": "SC",
+    "Criteria ID": "2690"
+  },
+  {
+    "Name": "Sierra Leone",
+    "Country Code": "SL",
+    "Criteria ID": "2694"
+  },
+  {
+    "Name": "Singapore",
+    "Country Code": "SG",
+    "Criteria ID": "2702"
+  },
+  {
+    "Name": "Slovakia",
+    "Country Code": "SK",
+    "Criteria ID": "2703"
+  },
+  {
+    "Name": "Vietnam",
+    "Country Code": "VN",
+    "Criteria ID": "2704"
+  },
+  {
+    "Name": "Slovenia",
+    "Country Code": "SI",
+    "Criteria ID": "2705"
+  },
+  {
+    "Name": "Somalia",
+    "Country Code": "SO",
+    "Criteria ID": "2706"
+  },
+  {
+    "Name": "South Africa",
+    "Country Code": "ZA",
+    "Criteria ID": "2710"
+  },
+  {
+    "Name": "Zimbabwe",
+    "Country Code": "ZW",
+    "Criteria ID": "2716"
+  },
+  {
+    "Name": "Spain",
+    "Country Code": "ES",
+    "Criteria ID": "2724"
+  },
+  {
+    "Name": "South Sudan",
+    "Country Code": "SS",
+    "Criteria ID": "2728"
+  },
+  {
+    "Name": "Sudan",
+    "Country Code": "SD",
+    "Criteria ID": "2736"
+  },
+  {
+    "Name": "Suriname",
+    "Country Code": "SR",
+    "Criteria ID": "2740"
+  },
+  {
+    "Name": "Eswatini",
+    "Country Code": "SZ",
+    "Criteria ID": "2748"
+  },
+  {
+    "Name": "Sweden",
+    "Country Code": "SE",
+    "Criteria ID": "2752"
+  },
+  {
+    "Name": "Switzerland",
+    "Country Code": "CH",
+    "Criteria ID": "2756"
+  },
+  {
+    "Name": "Tajikistan",
+    "Country Code": "TJ",
+    "Criteria ID": "2762"
+  },
+  {
+    "Name": "Thailand",
+    "Country Code": "TH",
+    "Criteria ID": "2764"
+  },
+  {
+    "Name": "Togo",
+    "Country Code": "TG",
+    "Criteria ID": "2768"
+  },
+  {
+    "Name": "Tokelau",
+    "Country Code": "TK",
+    "Criteria ID": "2772"
+  },
+  {
+    "Name": "Tonga",
+    "Country Code": "TO",
+    "Criteria ID": "2776"
+  },
+  {
+    "Name": "Trinidad and Tobago",
+    "Country Code": "TT",
+    "Criteria ID": "2780"
+  },
+  {
+    "Name": "United Arab Emirates",
+    "Country Code": "AE",
+    "Criteria ID": "2784"
+  },
+  {
+    "Name": "Tunisia",
+    "Country Code": "TN",
+    "Criteria ID": "2788"
+  },
+  {
+    "Name": "Turkiye",
+    "Country Code": "TR",
+    "Criteria ID": "2792"
+  },
+  {
+    "Name": "Turkmenistan",
+    "Country Code": "TM",
+    "Criteria ID": "2795"
+  },
+  {
+    "Name": "Tuvalu",
+    "Country Code": "TV",
+    "Criteria ID": "2798"
+  },
+  {
+    "Name": "Uganda",
+    "Country Code": "UG",
+    "Criteria ID": "2800"
+  },
+  {
+    "Name": "Ukraine",
+    "Country Code": "UA",
+    "Criteria ID": "2804"
+  },
+  {
+    "Name": "North Macedonia",
+    "Country Code": "MK",
+    "Criteria ID": "2807"
+  },
+  {
+    "Name": "Egypt",
+    "Country Code": "EG",
+    "Criteria ID": "2818"
+  },
+  {
+    "Name": "United Kingdom",
+    "Country Code": "GB",
+    "Criteria ID": "2826"
+  },
+  {
+    "Name": "Guernsey",
+    "Country Code": "GG",
+    "Criteria ID": "2831"
+  },
+  {
+    "Name": "Jersey",
+    "Country Code": "JE",
+    "Criteria ID": "2832"
+  },
+  {
+    "Name": "Isle of Man",
+    "Country Code": "IM",
+    "Criteria ID": "2833"
+  },
+  {
+    "Name": "Tanzania",
+    "Country Code": "TZ",
+    "Criteria ID": "2834"
+  },
+  {
+    "Name": "United States",
+    "Country Code": "US",
+    "Criteria ID": "2840"
+  },
+  {
+    "Name": "Burkina Faso",
+    "Country Code": "BF",
+    "Criteria ID": "2854"
+  },
+  {
+    "Name": "Uruguay",
+    "Country Code": "UY",
+    "Criteria ID": "2858"
+  },
+  {
+    "Name": "Uzbekistan",
+    "Country Code": "UZ",
+    "Criteria ID": "2860"
+  },
+  {
+    "Name": "Venezuela",
+    "Country Code": "VE",
+    "Criteria ID": "2862"
+  },
+  {
+    "Name": "Wallis and Futuna",
+    "Country Code": "WF",
+    "Criteria ID": "2876"
+  },
+  {
+    "Name": "Samoa",
+    "Country Code": "WS",
+    "Criteria ID": "2882"
+  },
+  {
+    "Name": "Yemen",
+    "Country Code": "YE",
+    "Criteria ID": "2887"
+  },
+  {
+    "Name": "Zambia",
+    "Country Code": "ZM",
+    "Criteria ID": "2894"
+  }
+]
