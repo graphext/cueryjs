@@ -15,7 +15,7 @@ src/
 ### Root `/src/` (Utilities)
 - Pure functions, no OpenAI calls
 - Shared across tools
-- Examples: `async.ts`, `cache.ts`, `normalizers.ts`, `urls.ts`, `utils.ts`
+- Examples: `async.ts`, `cache.ts`, `urls.ts`, `utils.ts`
 - Orchestrators: `api.ts`, `audit.ts`
 
 ### `/src/tools/` (LLM Tools)

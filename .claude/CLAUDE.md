@@ -37,7 +37,7 @@ cueryjs/
 │   ├── async.ts                # Async utilities (mapParallel, withRetries, sleep)
 │   ├── cache.ts                # Caching utilities
 │   ├── models.ts               # LLM model definitions
-│   ├── normalizers.ts          # Text normalization (brand names, etc.)
+│   │   ├── normalizers.ts      # Text normalization (brand names, etc.)
 │   ├── openai.ts               # OpenAI API wrapper with Zod validation
 │   ├── urls.ts                 # URL manipulation utilities
 │   ├── utils.ts                # General utilities
