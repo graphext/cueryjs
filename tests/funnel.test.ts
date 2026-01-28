@@ -1,6 +1,6 @@
 import { assertEquals, assertRejects } from '@std/assert';
 
-import { customizeFunnel, FunnelSchema } from '../src/funnel.ts';
+import { customizeFunnel, FunnelWithExplanationSchema } from '../src/funnel.ts';
 
 Deno.test('customizeFunnel - successful OpenAI call', async () => {
 	const result = await customizeFunnel(
@@ -34,7 +34,7 @@ Deno.test('customizeFunnel - successful OpenAI call', async () => {
 	assertEquals(firstCategory.keywordSeeds.length > 0, true);
 
 	// Validate against schema
-	const validated = FunnelSchema.parse(result);
+	const validated = FunnelWithExplanationSchema.parse(result);
 	assertEquals(validated, result);
 });
 

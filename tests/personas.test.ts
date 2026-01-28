@@ -6,19 +6,20 @@ Deno.test('personas - successful OpenAI call', async () => {
 	const result = await generatePersonas({
 		sector: 'technology',
 		market: 'B2B',
-		brand: 'holded'
+		brand: 'holded',
+		language: 'english'
 	});
 
 	// Check that we got a response with personas
 	assertEquals(typeof result, 'object');
-	assertEquals(Array.isArray(result), true);
-	assertEquals(result.length >= 3, true);
+	assertEquals(Array.isArray(result.personas), true);
+	assertEquals(result.personas.length >= 3, true);
 
 	// Check structure of first persona
-	assertEquals(typeof result[0]['name'], 'string');
-	assertEquals(typeof result[0]['description'], 'string');
-	assertEquals(result[0]['name'].length > 0, true);
-	assertEquals(result[0]['description'].length > 0, true);
+	assertEquals(typeof result.personas[0].name, 'string');
+	assertEquals(typeof result.personas[0].description, 'string');
+	assertEquals(result.personas[0].name.length > 0, true);
+	assertEquals(result.personas[0].description.length > 0, true);
 });
 
 Deno.test('personas - fails with invalid API key', async () => {
@@ -35,7 +36,8 @@ Deno.test('personas - fails with invalid API key', async () => {
 				await generatePersonas({
 					sector: 'technology',
 					market: 'B2B',
-					brand: 'holded'
+					brand: 'holded',
+					language: 'english'
 				});
 			},
 			Error

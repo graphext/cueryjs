@@ -1,6 +1,6 @@
 import { assertEquals, assertExists } from '@std/assert';
 
-import { assignTopic, extractTopics } from '../src/topics.ts';
+import { assignTopic, extractTopics, createLabelSchema } from '../src/topics.ts';
 import type { TaxonomyType } from '../src/topics.ts';
 
 Deno.test('assignTopic - successful classification with Taxonomy format', async () => {
@@ -21,9 +21,10 @@ Deno.test('assignTopic - successful classification with Taxonomy format', async 
 		]
 	};
 
+	const labelSchema = createLabelSchema(taxonomy);
 	const text = 'Machine learning models are revolutionizing how we process data and make predictions';
 
-	const result = await assignTopic(text, taxonomy);
+	const result = await assignTopic(text, taxonomy, labelSchema);
 
 	assertExists(result);
 	assertEquals(typeof result!.topic, 'string');
@@ -44,9 +45,10 @@ Deno.test('assignTopic - successful classification with SEO content and array', 
 		}
 	];
 
+	const labelSchema = createLabelSchema({ topics: taxonomy });
 	const text = 'Our SEO strategy focuses on keyword optimization and link building to improve rankings';
 
-	const result = await assignTopic(text, taxonomy);
+	const result = await assignTopic(text, taxonomy, labelSchema);
 
 	assertExists(result);
 	assertEquals(typeof result!.topic, 'string');
@@ -65,7 +67,8 @@ Deno.test('assignTopic - returns null for null text', async () => {
 		]
 	};
 
-	const result = await assignTopic(null, taxonomy);
+	const labelSchema = createLabelSchema(taxonomy);
+	const result = await assignTopic(null, taxonomy, labelSchema);
 
 	assertEquals(result, null);
 });
@@ -80,7 +83,8 @@ Deno.test('assignTopic - returns null for empty text', async () => {
 		]
 	};
 
-	const result = await assignTopic('', taxonomy);
+	const labelSchema = createLabelSchema(taxonomy);
+	const result = await assignTopic('', taxonomy, labelSchema);
 
 	assertEquals(result, null);
 });
@@ -95,7 +99,8 @@ Deno.test('assignTopic - returns null for whitespace-only text', async () => {
 		]
 	};
 
-	const result = await assignTopic('   \n\t  ', taxonomy);
+	const labelSchema = createLabelSchema(taxonomy);
+	const result = await assignTopic('   \n\t  ', taxonomy, labelSchema);
 
 	assertEquals(result, null);
 });
@@ -118,9 +123,10 @@ Deno.test('assignTopic - classifies business strategy text', async () => {
 		]
 	};
 
+	const labelSchema = createLabelSchema(taxonomy);
 	const text = 'We need to develop a comprehensive business strategy that aligns with our long-term goals and market positioning';
 
-	const result = await assignTopic(text, taxonomy);
+	const result = await assignTopic(text, taxonomy, labelSchema);
 
 	assertExists(result);
 	assertEquals(result!.topic, 'Business');
@@ -145,9 +151,10 @@ Deno.test('assignTopic - classifies marketing content', async () => {
 		]
 	};
 
+	const labelSchema = createLabelSchema(taxonomy);
 	const text = 'We are launching a new social media campaign on Instagram and TikTok to reach younger audiences';
 
-	const result = await assignTopic(text, taxonomy);
+	const result = await assignTopic(text, taxonomy, labelSchema);
 
 	assertExists(result);
 	assertEquals(result!.topic, 'Marketing');

@@ -1,8 +1,8 @@
 import { assertEquals } from '@std/assert';
 
-import { rankBrandsInText } from './brands.ts';
-import type { Entity } from './entities.ts';
-import type { FlaggedBrand } from './schemas/brand.schema.ts';
+import { rankBrandsInText } from '../src/brands.ts';
+import type { Entity } from '../src/entities.ts';
+import type { FlaggedBrand } from '../src/schemas/brand.schema.ts';
 
 Deno.test('rankBrandsInText - should not duplicate brand when entity matches FlaggedBrand with different casing', () => {
 	const text = `Quizás te refieres a Kids&Us. Aquí tienes lo que es:

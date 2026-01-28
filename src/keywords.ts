@@ -5,7 +5,7 @@ import { buildBrandContext } from './brandContext.ts';
 import type { KeywordsOptions } from './schemas/keyword.schema.ts';
 import { KeywordsResponseSchema, type KeywordsResponse } from './schemas/keyword.schema.ts';
 import { dedent } from './utils.ts';
-import { keywords as getGoogleAdsKeywords, type KeywordRecord } from '../lib/GoogleAds/keywordPlanner.ts';
+import { keywords as getGoogleAdsKeywords, type KeywordRecord } from './apis/googleAds/keywordPlanner.ts';
 
 export interface ExpandKeywordsParams {
 	seedKeywords: Array<string | Array<string>>;

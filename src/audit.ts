@@ -1,5 +1,5 @@
 /* eslint no-console: ["warn", { allow: ["log", "warn", "error"] }] */
-import type { KeywordRecord } from '../lib/GoogleAds/keywordPlanner.ts';
+import type { KeywordRecord } from './apis/googleAds/keywordPlanner.ts';
 
 import {
 	type ModelResponse,

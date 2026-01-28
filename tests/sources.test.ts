@@ -1,9 +1,9 @@
 import { assertEquals } from '@std/assert';
 
-import { enrichSource, rankBrandsInSourceArray } from './sources.ts';
-import type { Entity } from './entities.ts';
-import type { FlaggedBrand } from './schemas/brand.schema.ts';
-import type { Source, EnrichedSource } from './schemas/sources.schema.ts';
+import { enrichSource, rankBrandsInSourceArray } from '../src/sources.ts';
+import type { Entity } from '../src/entities.ts';
+import type { FlaggedBrand } from '../src/schemas/brand.schema.ts';
+import type { Source, EnrichedSource } from '../src/schemas/sources.schema.ts';
 
 // Helper to create a minimal Source
 function createSource(title: string, url: string, domain: string): Source {
