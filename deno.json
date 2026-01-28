@@ -10,10 +10,7 @@
 		"@zod/zod": "jsr:@zod/zod@^4.1.12",
 		"tldts": "npm:tldts@^6.1.71",
 		"cheerio": "npm:cheerio@^1.1.2",
-		"defuddle": "npm:defuddle@^0.9.3",
-		"turndown": "npm:turndown@^7.2.0",
 		"google-auth-library": "npm:google-auth-library@^10.4.0",
-		"@dsnp/parquetjs": "npm:@dsnp/parquetjs@^1.8.7",
 		"@std/path": "jsr:@std/path@^1",
 		"@std/assert": "jsr:@std/assert@^1",
 		"@std/dotenv": "jsr:@std/dotenv@^0.225"
