@@ -55,9 +55,9 @@ export async function extractAnyEntities(
 }
 
 /**
- * Extracts entities in pre-specified categories from a batch of texts.
+ * Extracts entities in pre-specified categories from a single text.
  */
-export async function extractEntities(
+export async function extractEntitiesFromText(
 	text: string | null,
 	entityDefinitions: string | Record<string, string>,
 	instructions: string = '',
@@ -110,7 +110,7 @@ export async function extractEntitiesBatch(
 	return mapParallel(
 		texts,
 		maxConcurrency,
-		(text: string | null) => extractEntities(text, definitions, instructions, model, modelParams)
+		(text: string | null) => extractEntitiesFromText(text, definitions, instructions, model, modelParams)
 	);
 }
 
