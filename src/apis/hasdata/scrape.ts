@@ -1,8 +1,6 @@
 /* eslint no-console: ["warn", { allow: ["log", "warn", "error"] }] */
 
-import mapParallel from '../../mapParallel.ts';
-import type { RetryConfig } from '../../retry.ts';
-import { withRetries } from '../../retry.ts';
+import { mapParallel, withRetries, type RetryConfig } from '../../async.ts';
 
 
 const HASDATA_CONCURRENCY = 29;

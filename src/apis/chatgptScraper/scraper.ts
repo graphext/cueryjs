@@ -5,7 +5,7 @@
  * Uses composition: providers supply functions, this module orchestrates them.
  */
 
-import mapParallel from '../../mapParallel.ts';
+import { mapParallel } from '../../async.ts';
 
 import type { ModelResult } from '../../schemas/models.schema.ts';
 import type { Source, SearchSource } from '../../schemas/sources.schema.ts';

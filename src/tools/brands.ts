@@ -1,14 +1,54 @@
 import { z } from '@zod/zod';
-import mapParallel from './mapParallel.ts';
-import { askOpenAISafe } from './openai.ts';
+import { mapParallel } from '../async.ts';
+import { askOpenAISafe } from '../openai.ts';
 
-import { buildBrandContext } from './brandContext.ts';
-import type { CompetitorSearchOptions, BrandSearchOptions, BrandListResponse } from './schemas/brand.schema.ts';
-import { BrandSchema, BrandListSchema, type Brand, type FlaggedBrand, type Product } from './schemas/brand.schema.ts';
+import type { CompetitorSearchOptions, BrandSearchOptions, BrandListResponse } from '../schemas/brand.schema.ts';
+import { BrandSchema, BrandListSchema, type Brand, type FlaggedBrand, type Product } from '../schemas/brand.schema.ts';
 import { searchWithFormat } from './search.ts';
-import { dedent } from './utils.ts';
-import { extractDomain } from './urls.ts';
+import { dedent } from '../utils.ts';
+import { extractDomain } from '../urls.ts';
 import type { Entity } from './entities.ts';
+
+interface BrandContextOptions {
+	brand?: string | Array<string>;
+	brandDomain?: string | Array<string>;
+	sector?: string | null;
+	market?: string | null;
+	briefing?: string | null;
+}
+
+export function buildBrandContext({
+	brand,
+	brandDomain,
+	sector,
+	market,
+	briefing
+}: BrandContextOptions): string {
+	let brandContext: string;
+	if (brandDomain) {
+		const domainText = Array.isArray(brandDomain) ? brandDomain.join(', ') : brandDomain;
+		if (brand) {
+			const nameText = Array.isArray(brand) ? brand.join(', ') : brand;
+			brandContext = ` "${nameText}" (domain: ${domainText})`;
+		} else {
+			brandContext = ` with domain "${domainText}"`;
+		}
+	} else {
+		brandContext = ` "${brand}"`;
+	}
+	if (sector) {
+		brandContext += ` in the ${sector} sector`;
+	}
+	if (market) {
+		brandContext += ` operating in ${market}`;
+	}
+	if (briefing) {
+		brandContext += ` Briefing: ${briefing}`;
+	}
+	return brandContext;
+}
+
+export type { BrandContextOptions };
 
 const DEFAULT_SEARCH_MODEL = 'gpt-4.1';
 
@@ -331,7 +371,7 @@ export function concatBrands(
  * - Converts to lowercase
  * - Normalizes & to " and " (with spaces to separate words)
  * - Removes accents/diacritics
- * - Expands CamelCase to spaces (e.g., "KidsAndUs" -> "kids and us")
+ * - Expands CamelCase to spaces (e.g., "AcmeCorp" -> "acme corp")
  * - Expands embedded "and" (e.g., "benandjerrys" -> "ben and jerrys")
  * - Separates numbers from letters (e.g., "7eleven" -> "7 eleven")
  * - Converts hyphens to spaces (e.g., "Coca-Cola" -> "coca cola")
@@ -366,7 +406,7 @@ export function normalizeBrandName(name: string): string {
 
 /**
  * Creates an ultra-normalized key for brand matching (removes all spaces and non-alphanumerics).
- * Used to match brands like "Kids&Us" with entities like "kidsandus",
+ * Used to match brands like "Acme&Co" with entities like "acmeco",
  * or "Ben & Jerry's" with "benandjerrys".
  */
 export function createBrandMatchKey(brandName: string): string {
@@ -472,7 +512,7 @@ export function rankBrandsInText(
 	const brandEntities = entities?.filter(entity => entity.type.toLowerCase() === 'brand') ?? [];
 
 	// Build a map from ultra-normalized FlaggedBrand name to the entity text variation (if any)
-	// Using createBrandMatchKey to handle cases like "kidsandus" matching "Kids&Us"
+	// Using createBrandMatchKey to handle cases like "acmeco" matching "Acme&Co"
 	const entityTextByNormalizedBrand = new Map<string, string>();
 	for (const entity of brandEntities) {
 		entityTextByNormalizedBrand.set(createBrandMatchKey(entity.name), entity.name);
@@ -566,4 +606,4 @@ export async function rankBrandsInTexts(
 	return texts.map((text, index) => rankBrandsInText(text, brands, entities?.[index]));
 }
 
-export type * from './schemas/brand.schema.ts';
+export type * from '../schemas/brand.schema.ts';

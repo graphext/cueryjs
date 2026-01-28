@@ -1,9 +1,9 @@
-import mapParallel from './mapParallel.ts';
-import { askOpenAISafe, type AIConversation } from './openai.ts';
+import { mapParallel } from '../async.ts';
+import { askOpenAISafe, type AIConversation } from '../openai.ts';
 
-import { type BrandContext } from './schemas/brand.schema.ts';
-import { ABSentimentsSchema, type ABSentiment } from './schemas/sentiment.schema.ts';
-import { dedent } from './utils.ts';
+import { type BrandContext } from '../schemas/brand.schema.ts';
+import { ABSentimentsSchema, type ABSentiment } from '../schemas/sentiment.schema.ts';
+import { dedent } from '../utils.ts';
 
 const ABS_PROMPT_SYSTEM = dedent(`
 You're an expert in Aspect-Based Sentiment Analysis. Your task involves identifying specific

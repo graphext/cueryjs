@@ -1,7 +1,7 @@
 import { assertEquals } from '@std/assert';
 
-import { enrichSource, rankBrandsInSourceArray } from '../src/sources.ts';
-import type { Entity } from '../src/entities.ts';
+import { enrichSource, rankBrandsInSourceArray } from '../src/tools/sources.ts';
+import type { Entity } from '../src/tools/entities.ts';
 import type { FlaggedBrand } from '../src/schemas/brand.schema.ts';
 import type { Source, EnrichedSource } from '../src/schemas/sources.schema.ts';
 
@@ -31,54 +31,54 @@ function createBrand(shortName: string, domain: string, isCompetitor: boolean = 
 // =============================================================================
 
 Deno.test('enrichSource - should detect brand in title', () => {
-	const source = createSource('Kids&Us opens new center in Madrid', 'https://news.com/article', 'news.com');
-	const brands = [createBrand('Kids&Us', 'kidsandus.es')];
+	const source = createSource('Acme&Co opens new center in Madrid', 'https://news.com/article', 'news.com');
+	const brands = [createBrand('Acme&Co', 'acmeco.com')];
 
 	const result = enrichSource(source, brands);
 
-	assertEquals(result.mentionedBrands, ['Kids&Us']);
+	assertEquals(result.mentionedBrands, ['Acme&Co']);
 	assertEquals(result.mentionedCompetitors, []);
 	assertEquals(result.linkedBrand, null);
 	assertEquals(result.linkedCompetitor, null);
 });
 
 Deno.test('enrichSource - should detect brand in URL', () => {
-	const source = createSource('New center opening', 'https://news.com/kids&us-expansion', 'news.com');
-	const brands = [createBrand('Kids&Us', 'kidsandus.es')];
+	const source = createSource('New center opening', 'https://news.com/acme&co-expansion', 'news.com');
+	const brands = [createBrand('Acme&Co', 'acmeco.com')];
 
 	const result = enrichSource(source, brands);
 
-	assertEquals(result.mentionedBrands, ['Kids&Us']);
+	assertEquals(result.mentionedBrands, ['Acme&Co']);
 	assertEquals(result.mentionedCompetitors, []);
 });
 
 Deno.test('enrichSource - should detect linked brand by domain', () => {
-	const source = createSource('Welcome to our school', 'https://kidsandus.es/home', 'kidsandus.es');
-	const brands = [createBrand('Kids&Us', 'kidsandus.es')];
+	const source = createSource('Welcome to our school', 'https://acmeco.com/home', 'acmeco.com');
+	const brands = [createBrand('Acme&Co', 'acmeco.com')];
 
 	const result = enrichSource(source, brands);
 
-	assertEquals(result.linkedBrand, 'Kids&Us');
+	assertEquals(result.linkedBrand, 'Acme&Co');
 	assertEquals(result.linkedCompetitor, null);
 });
 
 Deno.test('enrichSource - should separate brands from competitors', () => {
-	const source = createSource('Kids&Us vs Kumon comparison', 'https://review.com/article', 'review.com');
+	const source = createSource('Acme&Co vs Kumon comparison', 'https://review.com/article', 'review.com');
 	const brands = [
-		createBrand('Kids&Us', 'kidsandus.es', false),
+		createBrand('Acme&Co', 'acmeco.com', false),
 		createBrand('Kumon', 'kumon.com', true)
 	];
 
 	const result = enrichSource(source, brands);
 
-	assertEquals(result.mentionedBrands, ['Kids&Us']);
+	assertEquals(result.mentionedBrands, ['Acme&Co']);
 	assertEquals(result.mentionedCompetitors, ['Kumon']);
 });
 
 Deno.test('enrichSource - should detect linked competitor by domain', () => {
 	const source = createSource('Our learning method', 'https://kumon.com/about', 'kumon.com');
 	const brands = [
-		createBrand('Kids&Us', 'kidsandus.es', false),
+		createBrand('Acme&Co', 'acmeco.com', false),
 		createBrand('Kumon', 'kumon.com', true)
 	];
 
@@ -93,8 +93,8 @@ Deno.test('enrichSource - should detect linked competitor by domain', () => {
 // =============================================================================
 
 Deno.test('enrichSource - should match brand with & when title has "and"', () => {
-	const source = createSource('Kids and Us opens new center', 'https://news.com/article', 'news.com');
-	const brands = [createBrand('Kids&Us', 'kidsandus.es')];
+	const source = createSource('Acme and Co opens new center', 'https://news.com/article', 'news.com');
+	const brands = [createBrand('Acme&Co', 'acmeco.com')];
 
 	const result = enrichSource(source, brands);
 
@@ -104,22 +104,22 @@ Deno.test('enrichSource - should match brand with & when title has "and"', () =>
 });
 
 Deno.test('enrichSource - should match CamelCase brand in lowercase title', () => {
-	const source = createSource('kidsandus is a great school', 'https://news.com/article', 'news.com');
-	const brands = [createBrand('KidsAndUs', 'kidsandus.es')];
+	const source = createSource('acmeandco is a great company', 'https://news.com/article', 'news.com');
+	const brands = [createBrand('AcmeAndCo', 'acmeco.com')];
 
 	const result = enrichSource(source, brands);
 
 	// Current implementation: title.includes(brandName.toLowerCase())
-	// 'kidsandus is a great school'.includes('kidsandus') = true
-	assertEquals(result.mentionedBrands, ['KidsAndUs']);
+	// 'acmeandco is a great company'.includes('acmeandco') = true
+	assertEquals(result.mentionedBrands, ['AcmeAndCo']);
 });
 
 Deno.test('enrichSource - should deduplicate brands with same normalized form', () => {
-	const source = createSource('Kids&Us news', 'https://news.com/article', 'news.com');
+	const source = createSource('Acme&Co news', 'https://news.com/article', 'news.com');
 	// Two brands that normalize to the same key
 	const brands = [
-		createBrand('Kids&Us', 'kidsandus.es', false),
-		createBrand('kids&us', 'other.com', false)
+		createBrand('Acme&Co', 'acmeco.com', false),
+		createBrand('acme&co', 'other.com', false)
 	];
 
 	const result = enrichSource(source, brands);
@@ -134,7 +134,7 @@ Deno.test('enrichSource - should deduplicate brands with same normalized form', 
 
 Deno.test('enrichSource - should add entity brand as competitor when not in brands list', () => {
 	const source = createSource('Kumon opens new center', 'https://news.com/article', 'news.com');
-	const brands = [createBrand('Kids&Us', 'kidsandus.es')];
+	const brands = [createBrand('Acme&Co', 'acmeco.com')];
 	const entities: Array<Entity> = [{ name: 'Kumon', type: 'brand' }];
 
 	const result = enrichSource(source, brands, entities);
@@ -144,21 +144,21 @@ Deno.test('enrichSource - should add entity brand as competitor when not in bran
 });
 
 Deno.test('enrichSource - should use brand shortName when entity matches normalized brand', () => {
-	const source = createSource('kids&us opens new center', 'https://news.com/article', 'news.com');
-	const brands = [createBrand('Kids&Us', 'kidsandus.es')];
-	const entities: Array<Entity> = [{ name: 'kidsandus', type: 'brand' }];
+	const source = createSource('acme&co opens new center', 'https://news.com/article', 'news.com');
+	const brands = [createBrand('Acme&Co', 'acmeco.com')];
+	const entities: Array<Entity> = [{ name: 'acmeco', type: 'brand' }];
 
 	const result = enrichSource(source, brands, entities);
 
 	// Entity matches brand by normalized key, so should use brand's shortName
 	// But entity goes to competitors, and brand detection is separate
-	assertEquals(result.mentionedBrands, ['Kids&Us']);
+	assertEquals(result.mentionedBrands, ['Acme&Co']);
 	// Entity should not duplicate if normalized key matches
 });
 
 Deno.test('enrichSource - should ignore non-brand entities', () => {
 	const source = createSource('Madrid is a great city', 'https://news.com/article', 'news.com');
-	const brands = [createBrand('Kids&Us', 'kidsandus.es')];
+	const brands = [createBrand('Acme&Co', 'acmeco.com')];
 	const entities: Array<Entity> = [{ name: 'Madrid', type: 'location' }];
 
 	const result = enrichSource(source, brands, entities);
@@ -184,7 +184,7 @@ Deno.test('enrichSource - should handle empty brands list', () => {
 
 Deno.test('enrichSource - should handle source with no brand mentions', () => {
 	const source = createSource('Generic news article', 'https://news.com/article', 'news.com');
-	const brands = [createBrand('Kids&Us', 'kidsandus.es')];
+	const brands = [createBrand('Acme&Co', 'acmeco.com')];
 
 	const result = enrichSource(source, brands);
 
@@ -194,13 +194,13 @@ Deno.test('enrichSource - should handle source with no brand mentions', () => {
 
 Deno.test('enrichSource - should preserve original source properties', () => {
 	const source: Source = {
-		title: 'Kids&Us news',
+		title: 'Acme&Co news',
 		url: 'https://news.com/article',
 		domain: 'news.com',
 		cited: true,
 		positions: [1, 2, 3]
 	};
-	const brands = [createBrand('Kids&Us', 'kidsandus.es')];
+	const brands = [createBrand('Acme&Co', 'acmeco.com')];
 
 	const result = enrichSource(source, brands);
 
@@ -258,14 +258,14 @@ Deno.test('rankBrandsInSourceArray - should deduplicate brands across sources', 
 	const sources: Array<EnrichedSource> = [
 		{
 			...createSource('First', 'https://a.com', 'a.com'),
-			mentionedBrands: ['Kids&Us'],
+			mentionedBrands: ['Acme&Co'],
 			mentionedCompetitors: [],
 			linkedBrand: null,
 			linkedCompetitor: null
 		},
 		{
 			...createSource('Second', 'https://b.com', 'b.com'),
-			mentionedBrands: ['Kids&Us'], // Same brand again
+			mentionedBrands: ['Acme&Co'], // Same brand again
 			mentionedCompetitors: [],
 			linkedBrand: null,
 			linkedCompetitor: null
@@ -274,7 +274,7 @@ Deno.test('rankBrandsInSourceArray - should deduplicate brands across sources', 
 
 	const result = rankBrandsInSourceArray(sources);
 
-	assertEquals(result.mentionedBrands, ['Kids&Us']);
+	assertEquals(result.mentionedBrands, ['Acme&Co']);
 	assertEquals(result.mentionedBrands.length, 1);
 });
 
@@ -282,14 +282,14 @@ Deno.test('rankBrandsInSourceArray - should deduplicate normalized variants', ()
 	const sources: Array<EnrichedSource> = [
 		{
 			...createSource('First', 'https://a.com', 'a.com'),
-			mentionedBrands: ['Kids&Us'],
+			mentionedBrands: ['Acme&Co'],
 			mentionedCompetitors: [],
 			linkedBrand: null,
 			linkedCompetitor: null
 		},
 		{
 			...createSource('Second', 'https://b.com', 'b.com'),
-			mentionedBrands: ['KidsAndUs'], // Different form, same normalized key
+			mentionedBrands: ['AcmeAndCo'], // Different form, same normalized key
 			mentionedCompetitors: [],
 			linkedBrand: null,
 			linkedCompetitor: null
@@ -298,9 +298,9 @@ Deno.test('rankBrandsInSourceArray - should deduplicate normalized variants', ()
 
 	const result = rankBrandsInSourceArray(sources);
 
-	// Should only include first one (Kids&Us)
+	// Should only include first one (Acme&Co)
 	assertEquals(result.mentionedBrands.length, 1);
-	assertEquals(result.mentionedBrands[0], 'Kids&Us');
+	assertEquals(result.mentionedBrands[0], 'Acme&Co');
 });
 
 Deno.test('rankBrandsInSourceArray - should rank linked brands separately', () => {
@@ -348,7 +348,7 @@ Deno.test('rankBrandsInSourceArray - should handle empty sources array', () => {
 // =============================================================================
 
 const BRAND_VARIATIONS = [
-	{ brand: 'Kids&Us', variations: ['Kids&Us', 'kids&us', 'KidsAndUs', 'kidsandus'] },
+	{ brand: 'Acme&Co', variations: ['Acme&Co', 'acme&co', 'AcmeAndCo', 'acmeco'] },
 	{ brand: 'Ben & Jerry\'s', variations: ['Ben & Jerry\'s', 'ben & jerry\'s', 'BenAndJerrys', 'benandjerrys'] },
 	{ brand: 'H&M', variations: ['H&M', 'h&m', 'HandM', 'H and M'] }
 ];

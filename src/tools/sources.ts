@@ -1,12 +1,12 @@
-import mapParallel from './mapParallel.ts';
+import { mapParallel } from '../async.ts';
 import { createBrandMatchKey } from './brands.ts';
-import { type FlaggedBrand } from './schemas/brand.schema.ts';
-import type { CategorizedSource, EnrichedSource, Source } from './schemas/sources.schema.ts';
+import { type FlaggedBrand } from '../schemas/brand.schema.ts';
+import type { CategorizedSource, EnrichedSource, Source } from '../schemas/sources.schema.ts';
 import { assignTopic, createLabelSchema, toTopics, type TopicLabel } from './topics.ts';
-import type { AIParams } from './openai.ts';
+import type { AIParams } from '../openai.ts';
 import type { Entity } from './entities.ts';
 
-export type { Source, EnrichedSource, CategorizedSource } from './schemas/sources.schema.ts';
+export type { Source, EnrichedSource, CategorizedSource } from '../schemas/sources.schema.ts';
 
 /**
  * Checks if brand or competitor is mentioned in the source title or URL.

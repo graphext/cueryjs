@@ -13,8 +13,7 @@
  *    - http://suggestqueries.google.com/complete/search?output=toolbar&hl=en&q=best+electric+cars
  *
 */
-import { withRetries, type RetryConfig, DEFAULTS as RETRY_CONFIG } from './retry.ts';
-import { sleep } from './sleep.ts';
+import { withRetries, type RetryConfig, RETRY_DEFAULTS, sleep } from './async.ts';
 
 interface AutocompleteOptions {
 	query: string;
@@ -31,7 +30,7 @@ export async function autocomplete({
 	query,
 	language,
 	countryCode,
-	retryConfig = RETRY_CONFIG
+	retryConfig = RETRY_DEFAULTS
 }: AutocompleteOptions): Promise<Array<string>> {
 
 	const baseUrl = 'https://suggestqueries.google.com/complete/search';

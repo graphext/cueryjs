@@ -1,12 +1,12 @@
-import mapParallel from './mapParallel.ts';
-import { askOpenAISafe, type AIParams, type AIOutput } from './openai.ts';
+import { mapParallel } from '../async.ts';
+import { askOpenAISafe, type AIParams, type AIOutput } from '../openai.ts';
 
-import type { BatchSearchOptions, FormattedSearchOptions, SearchOptions, SearchResult } from './schemas/search.schema.ts';
-import type { Source } from './schemas/sources.schema.ts';
-import { extractDomain } from './urls.ts';
-import { dedent } from './utils.ts';
+import type { BatchSearchOptions, FormattedSearchOptions, SearchOptions, SearchResult } from '../schemas/search.schema.ts';
+import type { Source } from '../schemas/sources.schema.ts';
+import { extractDomain } from '../urls.ts';
+import { dedent } from '../utils.ts';
 
-export type { SearchResult } from './schemas/search.schema.ts';
+export type { SearchResult } from '../schemas/search.schema.ts';
 
 /**
  * Call OpenAI Responses API with Web Search enabled (async).

@@ -1,9 +1,9 @@
-import mapParallel from './mapParallel.ts';
-import { askOpenAISafe } from './openai.ts';
+import { mapParallel } from '../async.ts';
+import { askOpenAISafe } from '../openai.ts';
 
 
-import { dedent } from './utils.ts';
-import type { BrandContext } from './schemas/brand.schema.ts';
+import { dedent } from '../utils.ts';
+import type { BrandContext } from '../schemas/brand.schema.ts';
 
 const TRANSLATE_PROMPT = dedent(`
 You are an expert in understanding search intent and conversational AI interactions.

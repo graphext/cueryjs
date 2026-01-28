@@ -1,4 +1,12 @@
 /**
+ * General utility functions for text processing, record formatting, and arrays.
+ */
+
+// ============================================================================
+// Text Processing
+// ============================================================================
+
+/**
  * Remove leading whitespace from a string, similar to Python's textwrap.dedent.
  * Also collapses newlines within paragraphs (except for markdown list items).
  */
@@ -73,6 +81,23 @@ function cleanDoc(text: string): string {
 }
 
 /**
+ * Clean a string to make it suitable for use as a column name.
+ * Converts to lowercase, replaces non-alphanumeric characters with underscores,
+ * and removes consecutive underscores.
+ */
+export function cleanColumnName(name: string): string {
+	return name
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '_')
+		.replace(/^_+|_+$/g, '')
+		.replace(/_+/g, '_');
+}
+
+// ============================================================================
+// Record Formatting
+// ============================================================================
+
+/**
  * Formats records in attribute-wise format (column-oriented).
  * Each section shows all values for a single attribute across all records.
  * Equivalent to records_attr_wise.jinja template.
@@ -118,19 +143,13 @@ export function formatRecordsAttrWise(records: Array<Record<string, unknown>>): 
 	return sections.join('\n\n');
 }
 
-/**
- * Clean a string to make it suitable for use as a column name.
- * Converts to lowercase, replaces non-alphanumeric characters with underscores,
- * and removes consecutive underscores.
- */
-export function cleanColumnName(name: string): string {
-	return name
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '_')
-		.replace(/^_+|_+$/g, '')
-		.replace(/_+/g, '_');
-}
+// ============================================================================
+// Array Utilities
+// ============================================================================
 
+/**
+ * Randomly sample n elements from an array using Fisher-Yates shuffle.
+ */
 export function sampleArray<T>(array: Array<T>, n: number): Array<T> {
 	if (n >= array.length) {
 		return [...array];
@@ -145,93 +164,60 @@ export function sampleArray<T>(array: Array<T>, n: number): Array<T> {
 	return shuffled.slice(0, n);
 }
 
-/**
- * Load an object from a JSON file accessing the object with the provided
- * path. The path is a sequence of keys/indexes to traverse the object.
- * If the file, or any key doesn't exist, return null.
- */
-export async function fromCache<T>(fp: string, ...path: any[]): Promise<T | null> {
-	try {
-		const data = await Deno.readTextFile(fp);
-		let obj: any = JSON.parse(data);
+// ============================================================================
+// Deduplication
+// ============================================================================
 
-		for (const key of path) {
-			if (obj == null || !(key in obj)) {
-				return null;
-			}
-			obj = obj[key];
+/**
+ * Deduplicates an array of records based on a single scalar field.
+ * Keeps the first occurrence of each unique value and removes subsequent duplicates.
+ */
+export function deduplicate<T extends Record<string, unknown>>(
+	records: Array<T>,
+	field: keyof T
+): Array<T> {
+	const seen = new Set<unknown>();
+	const result: Array<T> = [];
+
+	for (const record of records) {
+		const value = record[field];
+
+		// Skip records where the field is null or undefined
+		if (value == null) {
+			continue;
 		}
-		return obj as T;
-	} catch (error) {
-		if (error instanceof Deno.errors.NotFound) {
-			return null;
+
+		// Only add if we haven't seen this value before
+		if (!seen.has(value)) {
+			seen.add(value);
+			result.push(record);
 		}
-		throw error;
 	}
+
+	return result;
 }
 
 /**
- * Save an object in a JSON file under the provided path.
- * The path is a sequence of keys/indexes to traverse the object.
- * If the file, or any key doesn't exist, we create them.
+ * Deduplicates an array of records based on a single scalar field.
+ * Keeps the last occurrence of each unique value, removing earlier duplicates.
  */
-export async function toCache(
-	fp: string,
-	obj: any,
-	ifExists: 'throw' | 'overwrite' | 'skip' = 'overwrite',
-	...path: any[]
-): Promise<void> {
-	let cache: any = await fromCache<any>(fp);
-	if (cache == null) {
-		console.log(`Cache file ${fp} not found. Creating new cache.`);
-		cache = {};
-	}
+export function deduplicateLast<T extends Record<string, unknown>>(
+	records: Array<T>,
+	field: keyof T
+): Array<T> {
+	const map = new Map<unknown, T>();
 
-	if (path.length === 0) {
-		if (ifExists === 'throw' && Object.keys(cache).length > 0) {
-			throw new Error(`Cache file ${fp} already contains data.`);
+	for (const record of records) {
+		const value = record[field];
+
+		// Skip records where the field is null or undefined
+		if (value == null) {
+			continue;
 		}
-		await Deno.writeTextFile(fp, JSON.stringify(obj, null, 2));
-		return;
+
+		// Always update, so last occurrence wins
+		map.set(value, record);
 	}
 
-	let current = cache;
-	for (let i = 0; i < path.length - 1; i++) {
-		const key = path[i];
-		if (!(key in current) || typeof current[key] !== 'object' || current[key] === null) {
-			current[key] = {};
-		}
-		current = current[key];
-	}
-
-	const finalKey = path[path.length - 1];
-	const hasExistingValue = finalKey in current;
-	if (hasExistingValue) {
-		if (ifExists === 'throw') {
-			throw new Error(
-				`Cache entry at path [${path.join(' -> ')}] already exists in ${fp}`
-			);
-		}
-		else if (ifExists === 'skip') {
-			return;
-		}
-	}
-
-	if (!hasExistingValue || ifExists === 'overwrite') {
-		current[finalKey] = obj;
-	}
-
-	await Deno.writeTextFile(fp, JSON.stringify(cache, null, 2));
-}
-
-/**
- * Clears cache file at the given path.
- */
-export async function clearCache(fp: string): Promise<void> {
-	const cache: any = await fromCache<any>(fp);
-	if (cache == null) {
-		console.log(`Cache file ${fp} not found. Nothing to clear.`);
-		return;
-	}
-	await Deno.writeTextFile(fp, JSON.stringify({}, null, 2));
+	return Array.from(map.values());
 }

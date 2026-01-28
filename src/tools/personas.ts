@@ -1,9 +1,9 @@
-import { askOpenAISafe } from './openai.ts';
+import { askOpenAISafe } from '../openai.ts';
 
-import { buildBrandContext } from './brandContext.ts';
-import type { PersonasOptions, PersonasResponse } from './schemas/persona.schema.ts';
-import { PersonasResponseSchema } from './schemas/persona.schema.ts';
-import { dedent } from './utils.ts';
+import { buildBrandContext } from './brands.ts';
+import type { PersonasOptions, PersonasResponse } from '../schemas/persona.schema.ts';
+import { PersonasResponseSchema } from '../schemas/persona.schema.ts';
+import { dedent } from '../utils.ts';
 
 const PROMPT = dedent(`
 You're a marketing expert identifying typical profiles/personas of people searching

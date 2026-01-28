@@ -8,9 +8,7 @@
  * 3. Download: GET /v1/queries/{id}/results
  */
 
-import type { RetryConfig } from '../../retry.ts';
-import { withRetries } from '../../retry.ts';
-import { sleep } from '../../sleep.ts';
+import { withRetries, sleep, type RetryConfig } from '../../async.ts';
 
 import type { ModelResult } from '../../schemas/models.schema.ts';
 import {

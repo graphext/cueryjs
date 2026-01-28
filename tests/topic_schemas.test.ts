@@ -1,7 +1,7 @@
 import { assertEquals, assertThrows } from '@std/assert';
 
-import { Topic, Taxonomy, createLabelSchema } from '../src/topics.ts';
-import type { TaxonomyType } from '../src/topics.ts';
+import { Topic, Taxonomy, createLabelSchema } from '../src/tools/topics.ts';
+import type { TaxonomyType } from '../src/tools/topics.ts';
 
 Deno.test('Topic - valid topic with distinct subtopics', () => {
 	const validTopic = {

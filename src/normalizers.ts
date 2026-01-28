@@ -33,24 +33,7 @@ export interface AliasRule {
 	startsWith?: Array<string>;
 }
 
-export const DEFAULT_ALIAS_RULES: Array<AliasRule> = [
-	{
-		canonical: 'Kids&Us',
-		patterns: [
-			/^kidsandus$/,
-			/^kidsandusenglishforchildren$/
-		],
-		startsWith: ['kidsandus', 'kidsus']
-	},
-	{
-		canonical: 'Helen Doron',
-		patterns: [
-			/^helendoron$/,
-			/^helendoronenglishforchildren$/
-		],
-		startsWith: ['helendoron']
-	}
-];
+export const DEFAULT_ALIAS_RULES: Array<AliasRule> = [];
 
 export function normalizeSources<T extends SourceLike>(sources: Array<T> | undefined | null): Array<T> {
 	if (!Array.isArray(sources)) {

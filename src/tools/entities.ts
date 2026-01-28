@@ -1,8 +1,8 @@
-import mapParallel from './mapParallel.ts';
-import { askOpenAISafe, type AIParams } from './openai.ts';
+import { mapParallel } from '../async.ts';
+import { askOpenAISafe, type AIParams } from '../openai.ts';
 
-import { EntitiesSchema, type Entity } from './schemas/entity.schema.ts';
-import { dedent } from './utils.ts';
+import { EntitiesSchema, type Entity } from '../schemas/entity.schema.ts';
+import { dedent } from '../utils.ts';
 
 export const PROMPT = dedent(`
 # Instructions
@@ -114,5 +114,5 @@ export async function extractEntitiesBatch(
 	);
 }
 
-export type { Entity, Entities } from './schemas/entity.schema.ts';
-export { EntitySchema, EntitiesSchema } from './schemas/entity.schema.ts';
+export type { Entity, Entities } from '../schemas/entity.schema.ts';
+export { EntitySchema, EntitiesSchema } from '../schemas/entity.schema.ts';

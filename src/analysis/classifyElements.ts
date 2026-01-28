@@ -1,6 +1,6 @@
 import { z } from '@zod/zod';
 
-import mapParallel from '../mapParallel.ts';
+import { mapParallel } from '../async.ts';
 import { askOpenAISafe } from '../openai.ts';
 
 import type { List, Table, Form } from './parseHtml.ts';

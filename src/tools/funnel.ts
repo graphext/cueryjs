@@ -1,9 +1,9 @@
-import mapParallel from './mapParallel.ts';
-import { askOpenAISafe } from './openai.ts';
+import { mapParallel } from '../async.ts';
+import { askOpenAISafe } from '../openai.ts';
 
-import type { FunnelOptions } from './schemas/funnel.schema.ts';
-import { FunnelWithExplanationSchema, SeedsSchema, type Funnel, type FunnelStage, type FunnelCategory, type FunnelWithExplanation } from './schemas/funnel.schema.ts';
-import { dedent } from './utils.ts';
+import type { FunnelOptions } from '../schemas/funnel.schema.ts';
+import { FunnelWithExplanationSchema, SeedsSchema, type Funnel, type FunnelStage, type FunnelCategory, type FunnelWithExplanation } from '../schemas/funnel.schema.ts';
+import { dedent } from '../utils.ts';
 
 export { FunnelWithExplanationSchema };
 

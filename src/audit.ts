@@ -13,17 +13,17 @@ import {
 	scorePurchaseProbability,
 	queryModel
 } from './api.ts';
-import { concatBrands, generateBrandInfo, generateCompetitorsInfo, rankBrandsInTexts } from './brands.ts';
-import { generateFunnel, iterateFunnelCategories } from './funnel.ts';
-import { expandKeywords } from './keywords.ts';
+import { concatBrands, generateBrandInfo, generateCompetitorsInfo, rankBrandsInTexts } from './tools/brands.ts';
+import { generateFunnel, iterateFunnelCategories } from './tools/funnel.ts';
+import { expandKeywords } from './tools/keywords.ts';
 import { ModelId } from './models.ts';
-import { generatePersonas } from './personas.ts';
+import { generatePersonas } from './tools/personas.ts';
 import { type Brand, type FlaggedBrand, BrandSchema } from './schemas/brand.schema.ts';
 import { type Funnel, FunnelSchema } from './schemas/funnel.schema.ts';
 import { type Persona, PersonaSchema } from './schemas/persona.schema.ts';
-import { extractABSForBrandBatch } from './sentiment.ts';
-import { categorizeSources, enrichSources, rankedBrandsInSources, type EnrichedSource } from './sources.ts';
-import { translateBatch } from './translate.ts';
+import { extractABSForBrandBatch } from './tools/sentiment.ts';
+import { categorizeSources, enrichSources, rankedBrandsInSources, type EnrichedSource } from './tools/sources.ts';
+import { translateBatch } from './tools/translate.ts';
 import { sampleArray } from './utils.ts';
 
 

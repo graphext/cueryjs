@@ -1,5 +1,4 @@
-import type { RetryConfig } from '../../retry.ts';
-import { withRetries } from '../../retry.ts';
+import { withRetries, type RetryConfig } from '../../async.ts';
 
 import type { Source } from '../../schemas/sources.schema.ts';
 import { extractDomain } from '../../urls.ts';

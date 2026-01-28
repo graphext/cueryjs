@@ -3,17 +3,13 @@
  *
  * Pure functions for collecting and grouping seed keywords.
  * No external dependencies - safe to import in both frontend and backend.
- *
- * Usage:
- *   Frontend: import { collectSeedKeywords } from '@supabase/lib/seedKeywords'
- *   Backend:  import { collectSeedKeywords } from 'shared/cuery/lib/seedKeywords/index.ts'
  */
 
 // Re-export types from schema (canonical source)
-export type { SeedKeyword, SeedKeywordSource } from '../../src/schemas/seedKeyword.schema.ts';
+export type { SeedKeyword, SeedKeywordSource } from '../schemas/seedKeyword.schema.ts';
 
 // Import only what's used in function signatures
-import type { SeedKeyword } from '../../src/schemas/seedKeyword.schema.ts';
+import type { SeedKeyword } from '../schemas/seedKeyword.schema.ts';
 
 // ============================================================================
 // Minimal Interfaces for Function Parameters

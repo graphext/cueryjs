@@ -15,7 +15,7 @@
  * - Position-based matching (for links_attached with position info)
  */
 
-import type { Source, SearchSource } from './schemas/sources.schema.ts';
+import type { Source, SearchSource } from '../schemas/sources.schema.ts';
 
 // --- Types ---
 
@@ -74,7 +74,7 @@ function normalizeText(text: string): string {
 
 /**
  * Extracts potential company/brand names from a domain
- * e.g., "www.kidsandus.es" -> ["kidsandus", "kids and us"]
+ * e.g., "www.acmecorp.com" -> ["acmecorp", "acme corp"]
  */
 function extractBrandFromDomain(domain: string): Array<string> {
 	// Remove common prefixes/suffixes

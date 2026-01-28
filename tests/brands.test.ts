@@ -1,35 +1,35 @@
 import { assertEquals } from '@std/assert';
 
-import { rankBrandsInText } from '../src/brands.ts';
-import type { Entity } from '../src/entities.ts';
+import { rankBrandsInText } from '../src/tools/brands.ts';
+import type { Entity } from '../src/tools/entities.ts';
 import type { FlaggedBrand } from '../src/schemas/brand.schema.ts';
 
 Deno.test('rankBrandsInText - should not duplicate brand when entity matches FlaggedBrand with different casing', () => {
-	const text = `Quizás te refieres a Kids&Us. Aquí tienes lo que es:
+	const text = `Maybe you're looking for Acme&Co. Here's what it is:
 
 
 
-Kids&Us es una red de academias de inglés orientadas a bebés, niños y adolescentes — desde 1 hasta 18 años. [1]
+Acme&Co is a network of technology solutions for businesses — from startups to enterprises. [1]
 
-Su método se basa en la llamada "Natural English": se enseña inglés imitando el proceso natural de adquisición de la lengua materna (escuchar → entender → hablar → leer → escribir). [2]
+Their method focuses on agile development: building software iteratively with continuous feedback loops. [2]
 
-Ofrecen distintos cursos según la edad: "Babies" (1–2 años), "Kids" (3–8), "Tweens" (9–12) y "Teens" (13–18). [3]
+They offer different services by company size: "Startup" (1-10 employees), "Growth" (11-50), "Scale" (51-200) and "Enterprise" (200+). [3]
 
-Las clases pueden ser presenciales en sus centros, y además cuentan con una plataforma digital (por ejemplo "Kids zONe") para aprendizaje online cuando sea necesario. [4]
+Services can be on-site at their offices, and they also have a digital platform for remote collaboration when needed. [4]
 
-Están presentes en varios países (no solo España) y manejan un modelo de franquicias que incluye centros propios y franquiciados. [5]
+They operate in multiple countries and use a franchise model that includes owned and franchised offices. [5]
 
 
-Si quieres —puedo revisar si hay un centro Kids&Us en Valencia y darte direcciones. ¿Te lo busco?`;
+If you want — I can check if there's an Acme&Co office near you. Should I look?`;
 
 	const brands: Array<FlaggedBrand> = [
 		{
-			name: 'Kids&Us English, S.L.',
-			shortName: 'Kids&Us',
-			description: 'Red de academias de inglés para niños',
-			domain: 'kidsandus.es',
-			sectors: ['education'],
-			markets: ['Spain'],
+			name: 'Acme&Co Solutions, S.L.',
+			shortName: 'Acme&Co',
+			description: 'Technology solutions provider',
+			domain: 'acmeco.com',
+			sectors: ['technology'],
+			markets: ['Global'],
 			portfolio: [],
 			marketPosition: 'leader',
 			favicon: null,
@@ -39,28 +39,28 @@ Si quieres —puedo revisar si hay un centro Kids&Us en Valencia y darte direcci
 
 	const entities: Array<Entity> = [
 		{
-			name: 'kids&us',
+			name: 'acme&co',
 			type: 'brand'
 		}
 	];
 
 	const result = rankBrandsInText(text, brands, entities);
 
-	assertEquals(result, ['Kids&Us']);
+	assertEquals(result, ['Acme&Co']);
 	assertEquals(result.length, 1);
 });
 
 Deno.test('rankBrandsInText - should use entity text position when entity matches FlaggedBrand', () => {
-	const text = 'First we have kids&us mentioned, then later some other brand.';
+	const text = 'First we have acme&co mentioned, then later some other brand.';
 
 	const brands: Array<FlaggedBrand> = [
 		{
-			name: 'Kids&Us English, S.L.',
-			shortName: 'Kids&Us',
-			description: 'Red de academias de inglés para niños',
-			domain: 'kidsandus.es',
-			sectors: ['education'],
-			markets: ['Spain'],
+			name: 'Acme&Co Solutions, S.L.',
+			shortName: 'Acme&Co',
+			description: 'Technology solutions provider',
+			domain: 'acmeco.com',
+			sectors: ['technology'],
+			markets: ['Global'],
 			portfolio: [],
 			marketPosition: 'leader',
 			favicon: null,
@@ -70,28 +70,28 @@ Deno.test('rankBrandsInText - should use entity text position when entity matche
 
 	const entities: Array<Entity> = [
 		{
-			name: 'kids&us',
+			name: 'acme&co',
 			type: 'brand'
 		}
 	];
 
 	const result = rankBrandsInText(text, brands, entities);
 
-	assertEquals(result.includes('Kids&Us'), true);
+	assertEquals(result.includes('Acme&Co'), true);
 	assertEquals(result.length, 1);
 });
 
 Deno.test('rankBrandsInText - should include entity brands that do not match any FlaggedBrand', () => {
-	const text = 'This text mentions kids&us and also mentions another brand called Duolingo.';
+	const text = 'This text mentions acme&co and also mentions another brand called Duolingo.';
 
 	const brands: Array<FlaggedBrand> = [
 		{
-			name: 'Kids&Us English, S.L.',
-			shortName: 'Kids&Us',
-			description: 'Red de academias de inglés para niños',
-			domain: 'kidsandus.es',
-			sectors: ['education'],
-			markets: ['Spain'],
+			name: 'Acme&Co Solutions, S.L.',
+			shortName: 'Acme&Co',
+			description: 'Technology solutions provider',
+			domain: 'acmeco.com',
+			sectors: ['technology'],
+			markets: ['Global'],
 			portfolio: [],
 			marketPosition: 'leader',
 			favicon: null,
@@ -101,7 +101,7 @@ Deno.test('rankBrandsInText - should include entity brands that do not match any
 
 	const entities: Array<Entity> = [
 		{
-			name: 'kids&us',
+			name: 'acme&co',
 			type: 'brand'
 		},
 		{
@@ -112,22 +112,22 @@ Deno.test('rankBrandsInText - should include entity brands that do not match any
 
 	const result = rankBrandsInText(text, brands, entities);
 
-	assertEquals(result.includes('Kids&Us'), true);
+	assertEquals(result.includes('Acme&Co'), true);
 	assertEquals(result.includes('duolingo'), true);
 	assertEquals(result.length, 2);
 });
 
 Deno.test('rankBrandsInText - should order brands by first mention position', () => {
-	const text = 'Duolingo is great, but kids&us is better for children.';
+	const text = 'Duolingo is great, but acme&co is better for businesses.';
 
 	const brands: Array<FlaggedBrand> = [
 		{
-			name: 'Kids&Us English, S.L.',
-			shortName: 'Kids&Us',
-			description: 'Red de academias de inglés para niños',
-			domain: 'kidsandus.es',
-			sectors: ['education'],
-			markets: ['Spain'],
+			name: 'Acme&Co Solutions, S.L.',
+			shortName: 'Acme&Co',
+			description: 'Technology solutions provider',
+			domain: 'acmeco.com',
+			sectors: ['technology'],
+			markets: ['Global'],
 			portfolio: [],
 			marketPosition: 'leader',
 			favicon: null,
@@ -137,7 +137,7 @@ Deno.test('rankBrandsInText - should order brands by first mention position', ()
 
 	const entities: Array<Entity> = [
 		{
-			name: 'kids&us',
+			name: 'acme&co',
 			type: 'brand'
 		},
 		{
@@ -149,20 +149,20 @@ Deno.test('rankBrandsInText - should order brands by first mention position', ()
 	const result = rankBrandsInText(text, brands, entities);
 
 	assertEquals(result[0], 'duolingo');
-	assertEquals(result[1], 'Kids&Us');
+	assertEquals(result[1], 'Acme&Co');
 });
 
 Deno.test('rankBrandsInText - should handle entity with "and" instead of "&" matching FlaggedBrand', () => {
-	const text = 'Check out kidsandus for English lessons.';
+	const text = 'Check out acmeandco for tech solutions.';
 
 	const brands: Array<FlaggedBrand> = [
 		{
-			name: 'Kids&Us English, S.L.',
-			shortName: 'Kids&Us',
-			description: 'Red de academias de inglés para niños',
-			domain: 'kidsandus.es',
-			sectors: ['education'],
-			markets: ['Spain'],
+			name: 'Acme&Co Solutions, S.L.',
+			shortName: 'Acme&Co',
+			description: 'Technology solutions provider',
+			domain: 'acmeco.com',
+			sectors: ['technology'],
+			markets: ['Global'],
 			portfolio: [],
 			marketPosition: 'leader',
 			favicon: null,
@@ -172,28 +172,28 @@ Deno.test('rankBrandsInText - should handle entity with "and" instead of "&" mat
 
 	const entities: Array<Entity> = [
 		{
-			name: 'kidsandus',
+			name: 'acmeandco',
 			type: 'brand'
 		}
 	];
 
 	const result = rankBrandsInText(text, brands, entities);
 
-	assertEquals(result.includes('Kids&Us'), true);
+	assertEquals(result.includes('Acme&Co'), true);
 	assertEquals(result.length, 1);
 });
 
 Deno.test('rankBrandsInText - should find brand via domain when text contains domain', () => {
-	const text = 'Visit kidsandus.es for more information.';
+	const text = 'Visit acmeco.com for more information.';
 
 	const brands: Array<FlaggedBrand> = [
 		{
-			name: 'Kids&Us English, S.L.',
-			shortName: 'Kids&Us',
-			description: 'Red de academias de inglés para niños',
-			domain: 'kidsandus.es',
-			sectors: ['education'],
-			markets: ['Spain'],
+			name: 'Acme&Co Solutions, S.L.',
+			shortName: 'Acme&Co',
+			description: 'Technology solutions provider',
+			domain: 'acmeco.com',
+			sectors: ['technology'],
+			markets: ['Global'],
 			portfolio: [],
 			marketPosition: 'leader',
 			favicon: null,
@@ -203,20 +203,20 @@ Deno.test('rankBrandsInText - should find brand via domain when text contains do
 
 	const result = rankBrandsInText(text, brands, []);
 
-	assertEquals(result.includes('Kids&Us'), true);
+	assertEquals(result.includes('Acme&Co'), true);
 });
 
 Deno.test('rankBrandsInText - should work when entities is undefined', () => {
-	const text = 'Kids&Us is a great school.';
+	const text = 'Acme&Co is a great company.';
 
 	const brands: Array<FlaggedBrand> = [
 		{
-			name: 'Kids&Us English, S.L.',
-			shortName: 'Kids&Us',
-			description: 'Red de academias de inglés para niños',
-			domain: 'kidsandus.es',
-			sectors: ['education'],
-			markets: ['Spain'],
+			name: 'Acme&Co Solutions, S.L.',
+			shortName: 'Acme&Co',
+			description: 'Technology solutions provider',
+			domain: 'acmeco.com',
+			sectors: ['technology'],
+			markets: ['Global'],
 			portfolio: [],
 			marketPosition: 'leader',
 			favicon: null,
@@ -226,20 +226,20 @@ Deno.test('rankBrandsInText - should work when entities is undefined', () => {
 
 	const result = rankBrandsInText(text, brands, undefined);
 
-	assertEquals(result.includes('Kids&Us'), true);
+	assertEquals(result.includes('Acme&Co'), true);
 });
 
 Deno.test('rankBrandsInText - should ignore non-brand entities', () => {
-	const text = 'Kids&Us is located in Madrid.';
+	const text = 'Acme&Co is located in Madrid.';
 
 	const brands: Array<FlaggedBrand> = [
 		{
-			name: 'Kids&Us English, S.L.',
-			shortName: 'Kids&Us',
-			description: 'Red de academias de inglés para niños',
-			domain: 'kidsandus.es',
-			sectors: ['education'],
-			markets: ['Spain'],
+			name: 'Acme&Co Solutions, S.L.',
+			shortName: 'Acme&Co',
+			description: 'Technology solutions provider',
+			domain: 'acmeco.com',
+			sectors: ['technology'],
+			markets: ['Global'],
 			portfolio: [],
 			marketPosition: 'leader',
 			favicon: null,
@@ -249,7 +249,7 @@ Deno.test('rankBrandsInText - should ignore non-brand entities', () => {
 
 	const entities: Array<Entity> = [
 		{
-			name: 'kids&us',
+			name: 'acme&co',
 			type: 'brand'
 		},
 		{
@@ -260,36 +260,36 @@ Deno.test('rankBrandsInText - should ignore non-brand entities', () => {
 
 	const result = rankBrandsInText(text, brands, entities);
 
-	assertEquals(result, ['Kids&Us']);
+	assertEquals(result, ['Acme&Co']);
 	assertEquals(result.includes('madrid'), false);
 });
 
-const kidsUsTextVariations = [
-	'Kids&Us',
-	'kids&us',
-	'Kids & Us',
-	'kids & us',
-	'KidsAndUs',
-	'Kids and us'
+const acmeCoTextVariations = [
+	'Acme&Co',
+	'acme&co',
+	'Acme & Co',
+	'acme & co',
+	'AcmeAndCo',
+	'Acme and co'
 ];
 
-const kidsUsBrandShortNameVariations = [
-	'Kids&Us',
-	'kids&us',
-	'Kids & Us',
-	'kids & us',
-	'KidsAndUs',
-	'Kids and us'
+const acmeCoBrandShortNameVariations = [
+	'Acme&Co',
+	'acme&co',
+	'Acme & Co',
+	'acme & co',
+	'AcmeAndCo',
+	'Acme and co'
 ];
 
-function createKidsUsBrand(shortName: string): FlaggedBrand {
+function createAcmeCoBrand(shortName: string): FlaggedBrand {
 	return {
-		name: 'Kids&Us English, S.L.',
+		name: 'Acme&Co Solutions, S.L.',
 		shortName,
-		description: 'Red de academias de inglés para niños',
-		domain: 'kidsandus.es',
-		sectors: ['education'],
-		markets: ['Spain'],
+		description: 'Technology solutions provider',
+		domain: 'acmeco.com',
+		sectors: ['technology'],
+		markets: ['Global'],
 		portfolio: [],
 		marketPosition: 'leader',
 		favicon: null,
@@ -297,11 +297,11 @@ function createKidsUsBrand(shortName: string): FlaggedBrand {
 	};
 }
 
-for (const textVariant of kidsUsTextVariations) {
-	for (const brandVariant of kidsUsBrandShortNameVariations) {
-		Deno.test(`Kids&Us variations - should match text "${textVariant}" with brand shortName "${brandVariant}"`, () => {
-			const text = `Check out ${textVariant} for English lessons.`;
-			const brands = [createKidsUsBrand(brandVariant)];
+for (const textVariant of acmeCoTextVariations) {
+	for (const brandVariant of acmeCoBrandShortNameVariations) {
+		Deno.test(`Acme&Co variations - should match text "${textVariant}" with brand shortName "${brandVariant}"`, () => {
+			const text = `Check out ${textVariant} for tech solutions.`;
+			const brands = [createAcmeCoBrand(brandVariant)];
 
 			const result = rankBrandsInText(text, brands, []);
 
@@ -311,11 +311,11 @@ for (const textVariant of kidsUsTextVariations) {
 	}
 }
 
-for (const textVariant of kidsUsTextVariations) {
-	for (const brandVariant of kidsUsBrandShortNameVariations) {
-		Deno.test(`Kids&Us variations - should match entity "${textVariant}" with brand shortName "${brandVariant}"`, () => {
-			const text = `Check out ${textVariant} for English lessons.`;
-			const brands = [createKidsUsBrand(brandVariant)];
+for (const textVariant of acmeCoTextVariations) {
+	for (const brandVariant of acmeCoBrandShortNameVariations) {
+		Deno.test(`Acme&Co variations - should match entity "${textVariant}" with brand shortName "${brandVariant}"`, () => {
+			const text = `Check out ${textVariant} for tech solutions.`;
+			const brands = [createAcmeCoBrand(brandVariant)];
 			const entities: Array<Entity> = [
 				{
 					name: textVariant.toLowerCase(),
@@ -331,26 +331,26 @@ for (const textVariant of kidsUsTextVariations) {
 	}
 }
 
-const casitaDelTextVariations = [
-	'LaCasitaDelIngles',
-	'la casita del ingles',
-	'La Casita Del Inglés'
+const casaDelSolTextVariations = [
+	'LaCasaDelSol',
+	'la casa del sol',
+	'La Casa Del Sol'
 ];
 
-const casitaDelBrandShortNameVariations = [
-	'LaCasitaDelIngles',
-	'la casita del ingles',
-	'La Casita Del Inglés'
+const casaDelSolBrandShortNameVariations = [
+	'LaCasaDelSol',
+	'la casa del sol',
+	'La Casa Del Sol'
 ];
 
-function createCasitaBrand(shortName: string): FlaggedBrand {
+function createCasaDelSolBrand(shortName: string): FlaggedBrand {
 	return {
-		name: 'La Casita Del Inglés S.L.',
+		name: 'La Casa Del Sol S.L.',
 		shortName,
-		description: 'Academia de inglés para niños',
-		domain: 'lacasitadelingles.es',
-		sectors: ['education'],
-		markets: ['Spain'],
+		description: 'Solar energy solutions',
+		domain: 'lacasadelsol.com',
+		sectors: ['energy'],
+		markets: ['Global'],
 		portfolio: [],
 		marketPosition: 'challenger',
 		favicon: null,
@@ -358,11 +358,11 @@ function createCasitaBrand(shortName: string): FlaggedBrand {
 	};
 }
 
-for (const textVariant of casitaDelTextVariations) {
-	for (const brandVariant of casitaDelBrandShortNameVariations) {
-		Deno.test(`La Casita Del Inglés variations - should match text "${textVariant}" with brand shortName "${brandVariant}"`, () => {
-			const text = `Check out ${textVariant} for English lessons.`;
-			const brands = [createCasitaBrand(brandVariant)];
+for (const textVariant of casaDelSolTextVariations) {
+	for (const brandVariant of casaDelSolBrandShortNameVariations) {
+		Deno.test(`La Casa Del Sol variations - should match text "${textVariant}" with brand shortName "${brandVariant}"`, () => {
+			const text = `Check out ${textVariant} for solar solutions.`;
+			const brands = [createCasaDelSolBrand(brandVariant)];
 
 			const result = rankBrandsInText(text, brands, []);
 
@@ -372,11 +372,11 @@ for (const textVariant of casitaDelTextVariations) {
 	}
 }
 
-for (const textVariant of casitaDelTextVariations) {
-	for (const brandVariant of casitaDelBrandShortNameVariations) {
-		Deno.test(`La Casita Del Inglés variations - should match entity "${textVariant}" with brand shortName "${brandVariant}"`, () => {
-			const text = `Check out ${textVariant} for English lessons.`;
-			const brands = [createCasitaBrand(brandVariant)];
+for (const textVariant of casaDelSolTextVariations) {
+	for (const brandVariant of casaDelSolBrandShortNameVariations) {
+		Deno.test(`La Casa Del Sol variations - should match entity "${textVariant}" with brand shortName "${brandVariant}"`, () => {
+			const text = `Check out ${textVariant} for solar solutions.`;
+			const brands = [createCasaDelSolBrand(brandVariant)];
 			const entities: Array<Entity> = [
 				{
 					name: textVariant.toLowerCase(),

@@ -1,8 +1,8 @@
 import { z } from '@zod/zod';
-import mapParallel from './mapParallel.ts';
-import { askOpenAISafe } from './openai.ts';
+import { mapParallel } from '../async.ts';
+import { askOpenAISafe } from '../openai.ts';
 
-import { dedent } from './utils.ts';
+import { dedent } from '../utils.ts';
 
 const PROMPT_TEMPLATE = dedent(`
 # Instructions

@@ -1,5 +1,5 @@
 /* eslint no-console: ["warn", { allow: ["log", "warn", "error"] }] */
-import mapParallel from '../../mapParallel.ts';
+import { mapParallel } from '../../async.ts';
 
 import type {
 	AIOParsed

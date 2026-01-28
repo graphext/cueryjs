@@ -1,15 +1,15 @@
 /* eslint no-console: ["warn", { allow: ["log", "warn", "error"] }] */
 import { z } from '@zod/zod';
-import mapParallel from './mapParallel.ts';
-import { askOpenAISafe, type AIConversation, type AIParams } from './openai.ts';
+import { mapParallel } from '../async.ts';
+import { askOpenAISafe, type AIConversation, type AIParams } from '../openai.ts';
 
 import {
 	TopicSchema,
 	type TopicType,
 	type TaxonomyType,
 	type TopicLabel
-} from './schemas/topics.schema.ts';
-import { dedent, formatRecordsAttrWise } from './utils.ts';
+} from '../schemas/topics.schema.ts';
+import { dedent, formatRecordsAttrWise } from '../utils.ts';
 
 // Re-export types from topics.schema.ts
 export type { TopicType, TaxonomyType, TopicLabel };

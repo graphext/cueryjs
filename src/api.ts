@@ -2,9 +2,9 @@
 import { fetchAIMBatch } from './apis/hasdata/aim.ts';
 import { fetchAIOBatch } from './apis/hasdata/aio.ts';
 import { downloadGPTSnapshots, scrapeGPTBatch, type JobId } from './apis/chatgptScraper/index.ts';
-import { classifyBatch, labelBatch } from './classifier.ts';
-import { extractEntitiesBatch } from './entities.ts';
-import { funnelToTopics } from './funnel.ts';
+import { classifyBatch, labelBatch } from './tools/classifier.ts';
+import { extractEntitiesBatch } from './tools/entities.ts';
+import { funnelToTopics } from './tools/funnel.ts';
 import { ModelId } from './models.ts';
 import { type Entity } from './schemas/entity.schema.ts';
 import { type Funnel } from './schemas/funnel.schema.ts';
@@ -13,8 +13,8 @@ import { type Persona } from './schemas/persona.schema.ts';
 import { type BrandContext } from './schemas/brand.schema.ts';
 import { type SearchResult } from './schemas/search.schema.ts';
 import { type Source, type EnrichedSource, type SearchSource } from './schemas/sources.schema.ts';
-import { scoreBatch } from './scorer.ts';
-import { extractTopics, assignTopics } from './topics.ts';
+import { scoreBatch } from './tools/scorer.ts';
+import { extractTopics, assignTopics } from './tools/topics.ts';
 import { dedent } from './utils.ts';
 
 export type ModelResponse = {
