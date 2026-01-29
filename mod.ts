@@ -17,6 +17,7 @@ export * from './src/tools/sentiment.ts';
 export * from './src/tools/sources.ts';
 export * from './src/tools/entities.ts';
 export * from './src/tools/seedKeywords.ts';
+export * from './src/tools/generic.ts';
 export * from './src/api.ts';
 export * from './src/apis/chatgptScraper/index.ts';
 export * from './src/apis/googleAds/keywordPlanner.ts';

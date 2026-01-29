@@ -1,13 +1,13 @@
 {
 	"name": "@graphext/cuery",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"license": "MIT",
 	"exports": {
 		".": "./mod.ts"
 	},
 	"imports": {
 		"@openai/openai": "npm:openai@^6.9.1",
-		"@zod/zod": "jsr:@zod/zod@^4.1.12",
+		"@zod/zod": "jsr:@zod/zod@^4.3",
 		"tldts": "npm:tldts@^6.1.71",
 		"cheerio": "npm:cheerio@^1.1.2",
 		"google-auth-library": "npm:google-auth-library@^10.4.0",
