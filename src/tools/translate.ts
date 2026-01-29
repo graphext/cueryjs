@@ -110,7 +110,7 @@ You are an expert in understanding search intent.
 Convert the following natural language prompt into an equivalent Google search keyword.
 The keyword should:
 
-- Be concise (typically 2-5 words)
+- Be concise
 - Capture the core search intent
 - Remove conversational filler and politeness
 - Use common search terms
@@ -122,6 +122,9 @@ For example:
 - "What's the weather like in New York?" → "weather new york"
 
 Make sure the keyword is in the language "{language}".
+
+It's mandatory that the keyword contains no more than 4 words, ideally 2-3 words.
+Otherwise, Google keyword planner will not accept it.
 
 # Prompt
 
