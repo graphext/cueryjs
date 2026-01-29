@@ -1,8 +1,8 @@
 import { z } from '@zod/zod';
 import { mapParallel } from '../async.ts';
-import { askOpenAISafe } from '../openai.ts';
+import { askOpenAISafe, type AIParams } from '../openai.ts';
 
-import { dedent } from '../utils.ts';
+import { dedent, formatRecordsAttrWise } from '../utils.ts';
 
 const PROMPT_TEMPLATE = dedent(`
 # Instructions
@@ -186,4 +186,111 @@ export function labelBatch(
 		maxConcurrency,
 		record => label(record, labels, instructions, model)
 	);
+}
+
+// =============================================================================
+// Label Extraction
+// =============================================================================
+
+const EXTRACT_LABELS_PROMPT = dedent(`
+# Instructions
+
+From the data records below, extract a flat list of classification labels.
+The output should be a JSON object with a "labels" array, where each item has a "name" and "description".
+The list should not contain more than {n_labels} labels.
+
+Make sure labels are generalizable and capture broad themes.
+Each label should have a clear, concise description explaining what it represents.
+Labels and descriptions must be written in {language}.
+
+The labels should follow the MECE framework (Mutually Exclusive, Collectively Exhaustive):
+- Mutually Exclusive: Labels should not overlap; each record should fit clearly into one category.
+- Collectively Exhaustive: Labels should cover all the data; every record should have a fitting category.
+- If needed, include an "Other" category for records that don't fit well into the main labels.
+
+If the records contain mainly textual content (e.g., articles, posts, comments, descriptions),
+the labels should represent the main topics or subject areas covered by the text,
+unless the user provides different instructions below.
+
+{instructions}
+
+# Data Records
+
+{records}
+`);
+
+/**
+ * Schema for extracted labels - an array of label objects.
+ * Uses array format instead of record because OpenAI doesn't support propertyNames in JSON schema.
+ */
+const ExtractedLabelsSchema = z.object({
+	labels: z.array(z.object({
+		name: z.string(),
+		description: z.string()
+	}))
+});
+
+export interface LabelExtractionOptions {
+	records: Array<Record<string, unknown>>;
+	nLabels?: number;
+	instructions?: string;
+	maxSamples?: number;
+	model?: string;
+	modelParams?: AIParams;
+	maxRetries?: number;
+	language?: string;
+}
+
+/**
+ * Extracts a set of classification labels from an array of records using an LLM.
+ * Returns a Record<string, string> mapping label names to descriptions,
+ * which can be used directly with classify() and classifyBatch().
+ */
+export async function extractLabels({
+	records,
+	nLabels = 10,
+	instructions = '',
+	maxSamples = 500,
+	model = 'gpt-4.1',
+	modelParams = {},
+	maxRetries = 8,
+	language = 'The same language as the records'
+}: LabelExtractionOptions): Promise<Record<string, string>> {
+	if (!records || records.length === 0) {
+		return {};
+	}
+
+	const sampledRecords = records.length > maxSamples
+		? records.slice(0, maxSamples)
+		: records;
+
+	const formattedRecords = formatRecordsAttrWise(sampledRecords);
+
+	const prompt = EXTRACT_LABELS_PROMPT
+		.replace('{n_labels}', String(nLabels))
+		.replace('{instructions}', instructions)
+		.replace('{records}', formattedRecords)
+		.replace('{language}', language);
+
+	const { parsed, output_text, error } = await askOpenAISafe(prompt, model, ExtractedLabelsSchema, modelParams, maxRetries, 'return');
+
+	if (error != null) {
+		if (output_text == null) {
+			throw new Error('Failed to get response from OpenAI');
+		}
+
+		try {
+			const extracted = JSON.parse(output_text);
+			const { labels } = ExtractedLabelsSchema.parse(extracted);
+			return Object.fromEntries(labels.map(l => [l.name, l.description]));
+		} catch (parseError) {
+			throw new Error(`Failed to parse response: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+		}
+	}
+
+	if (parsed == null) {
+		throw new Error('Failed to parse response from OpenAI');
+	}
+
+	return Object.fromEntries(parsed.labels.map(l => [l.name, l.description]));
 }

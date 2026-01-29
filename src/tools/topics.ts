@@ -153,11 +153,17 @@ const TOPICS_PROMPT = dedent(`
 From the data records below, extract a two-level nested list of topics.
 The output should be a JSON object with top-level topics as keys and lists of subtopics as values.
 The top-level should not contain more than {n_topics} topics, and each top-level
-should not contain more than {n_subtopics} subtopics.
+should not contain more than {n_subtopics} subtopics. Fewer topics are acceptable, and appropriate if
+the data does not support that many or if there are too few records.
 
 Make sure top-level topics are generalizable and capture broad themes.
 Subtopics should represent more specific categories within each theme.
 Both topics and subtopics must be written in {language}.
+
+The taxonomy should follow the MECE framework (Mutually Exclusive, Collectively Exhaustive):
+- Mutually Exclusive: Topics and subtopics should not overlap; each record should fit clearly into one category.
+- Collectively Exhaustive: The taxonomy should cover all the data; every record should have a fitting topic and subtopic.
+- If needed, include an "Other" topic or subtopic for records that don't fit well into the main categories.
 
 {instructions}
 
