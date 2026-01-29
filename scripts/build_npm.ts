@@ -9,7 +9,13 @@ console.log(`Building ${name}@${version} for npm...`);
 await emptyDir("./npm");
 
 await build({
-	entryPoints: ["./mod.ts"],
+	entryPoints: [
+		"./mod.ts",
+		{
+			name: "./browser",
+			path: "./browser.ts"
+		}
+	],
 	outDir: "./npm",
 	shims: {
 		deno: true,
