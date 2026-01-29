@@ -1,0 +1,46 @@
+{
+    "permissions": {
+        "allow": [
+            "Bash(npm run *)",
+            "Bash(npm run)",
+            "Bash(deno task check*)",
+            "Bash(deno task test*)",
+            "Bash(deno task fmt*)",
+            "Bash(deno task lint*)",
+            "Bash(deno check*)",
+            "Bash(deno test*)",
+            "Bash(deno fmt*)",
+            "Bash(deno lint*)",
+            "Bash(git status*)",
+            "Bash(git diff*)",
+            "Bash(git log*)",
+            "Bash(git branch*)"
+        ],
+        "ask": [
+            "Bash(git commit*)",
+            "Bash(git push*)",
+            "Bash(git checkout*)",
+            "Bash(git merge*)",
+            "Bash(git rebase*)",
+            "Bash(deno task build*)",
+            "Bash(deno task publish*)",
+            "Bash(deno publish*)",
+            "Bash(rm *)",
+            "Bash(deno add*)",
+            "Bash(deno install*)"
+        ],
+        "deny": [
+            "Bash(git push --force*)",
+            "Bash(git push * --force*)",
+            "Bash(git reset --hard*)",
+            "Bash(git clean -f*)",
+            "Bash(rm -rf /*)",
+            "Bash(rm -rf ~*)",
+            "Bash(curl * | sh*)",
+            "Bash(curl * | bash*)",
+            "Read(./.env)",
+            "Read(./.env.*)",
+            "Read(./secrets/**)"
+        ]
+    }
+}
