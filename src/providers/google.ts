@@ -1,5 +1,5 @@
 /**
- * Google Gemini provider implementation.
+ * Google provider implementation (for Gemini models).
  */
 
 import { GoogleGenAI } from '@google/genai';
@@ -44,20 +44,20 @@ function convertMessages(messages: Message[]): string | Array<{ role: string; pa
 }
 
 /**
- * Google Gemini LLM provider.
+ * Google LLM provider (for Gemini models).
  */
-export class GeminiProvider implements LLMProvider {
-	readonly name = 'gemini';
+export class GoogleProvider implements LLMProvider {
+	readonly name = 'google';
 	private client: GoogleGenAI;
 
-	constructor() {
-		const apiKey = Deno.env.get('GOOGLE_API_KEY') ?? Deno.env.get('GEMINI_API_KEY');
+	constructor(apiKey?: string) {
+		const resolvedKey = apiKey ?? Deno.env.get('GOOGLE_API_KEY') ?? Deno.env.get('GEMINI_API_KEY');
 
-		if (!apiKey) {
+		if (!resolvedKey) {
 			throw new Error('GOOGLE_API_KEY or GEMINI_API_KEY environment variable is required');
 		}
 
-		this.client = new GoogleGenAI({ apiKey });
+		this.client = new GoogleGenAI({ apiKey: resolvedKey });
 	}
 
 	async complete<T>(

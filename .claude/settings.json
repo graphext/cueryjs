@@ -14,7 +14,9 @@
             "Bash(git status*)",
             "Bash(git diff*)",
             "Bash(git log*)",
-            "Bash(git branch*)"
+            "Bash(git branch*)",
+            "Bash(find*)",
+            "Bash(ls*)"
         ],
         "ask": [
             "Bash(git commit*)",

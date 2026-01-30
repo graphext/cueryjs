@@ -1,6 +1,6 @@
 import { assertEquals } from '@std/assert';
 
-import { extractDomain } from '../src/urls.ts';
+import { extractDomain } from '../src/helpers/urls.ts';
 
 Deno.test('extractDomain returns domain without subdomain by default', () => {
 	assertEquals(extractDomain('https://www.example.com'), 'example.com');

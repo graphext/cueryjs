@@ -29,13 +29,13 @@ Deno.test({
 		const labelSchema = createLabelSchema(taxonomy);
 		const text = 'Machine learning models are revolutionizing how we process data and make predictions';
 
-		const result = await assignTopic(text, taxonomy, labelSchema);
+		const response = await assignTopic({ text, taxonomy, labelSchema });
 
-		assertExists(result);
-		assertEquals(typeof result!.topic, 'string');
-		assertEquals(typeof result!.subtopic, 'string');
-		assertEquals(result!.topic, 'Technology');
-		assertEquals(result!.subtopic, 'Artificial Intelligence');
+		assertExists(response.parsed);
+		assertEquals(typeof response.parsed!.topic, 'string');
+		assertEquals(typeof response.parsed!.subtopic, 'string');
+		assertEquals(response.parsed!.topic, 'Technology');
+		assertEquals(response.parsed!.subtopic, 'Artificial Intelligence');
 	}
 });
 
@@ -57,13 +57,13 @@ Deno.test({
 		const labelSchema = createLabelSchema({ topics: taxonomy });
 		const text = 'Our SEO strategy focuses on keyword optimization and link building to improve rankings';
 
-		const result = await assignTopic(text, taxonomy, labelSchema);
+		const response = await assignTopic({ text, taxonomy, labelSchema });
 
-		assertExists(result);
-		assertEquals(typeof result!.topic, 'string');
-		assertEquals(typeof result!.subtopic, 'string');
-		assertEquals(result!.topic, 'Marketing');
-		assertEquals(result!.subtopic, 'SEO');
+		assertExists(response.parsed);
+		assertEquals(typeof response.parsed!.topic, 'string');
+		assertEquals(typeof response.parsed!.subtopic, 'string');
+		assertEquals(response.parsed!.topic, 'Marketing');
+		assertEquals(response.parsed!.subtopic, 'SEO');
 	}
 });
 
@@ -79,9 +79,9 @@ Deno.test('assignTopic - returns null for null text', async () => {
 	};
 
 	const labelSchema = createLabelSchema(taxonomy);
-	const result = await assignTopic(null, taxonomy, labelSchema);
+	const response = await assignTopic({ text: null, taxonomy, labelSchema });
 
-	assertEquals(result, null);
+	assertEquals(response.parsed, null);
 });
 
 Deno.test('assignTopic - returns null for empty text', async () => {
@@ -95,9 +95,9 @@ Deno.test('assignTopic - returns null for empty text', async () => {
 	};
 
 	const labelSchema = createLabelSchema(taxonomy);
-	const result = await assignTopic('', taxonomy, labelSchema);
+	const response = await assignTopic({ text: '', taxonomy, labelSchema });
 
-	assertEquals(result, null);
+	assertEquals(response.parsed, null);
 });
 
 Deno.test('assignTopic - returns null for whitespace-only text', async () => {
@@ -111,9 +111,9 @@ Deno.test('assignTopic - returns null for whitespace-only text', async () => {
 	};
 
 	const labelSchema = createLabelSchema(taxonomy);
-	const result = await assignTopic('   \n\t  ', taxonomy, labelSchema);
+	const response = await assignTopic({ text: '   \n\t  ', taxonomy, labelSchema });
 
-	assertEquals(result, null);
+	assertEquals(response.parsed, null);
 });
 
 Deno.test({
@@ -140,11 +140,11 @@ Deno.test({
 		const labelSchema = createLabelSchema(taxonomy);
 		const text = 'We need to develop a comprehensive business strategy that aligns with our long-term goals and market positioning';
 
-		const result = await assignTopic(text, taxonomy, labelSchema);
+		const response = await assignTopic({ text, taxonomy, labelSchema });
 
-		assertExists(result);
-		assertEquals(result!.topic, 'Business');
-		assertEquals(result!.subtopic, 'Strategy');
+		assertExists(response.parsed);
+		assertEquals(response.parsed!.topic, 'Business');
+		assertEquals(response.parsed!.subtopic, 'Strategy');
 	}
 });
 
@@ -172,11 +172,11 @@ Deno.test({
 		const labelSchema = createLabelSchema(taxonomy);
 		const text = 'We are launching a new social media campaign on Instagram and TikTok to reach younger audiences';
 
-		const result = await assignTopic(text, taxonomy, labelSchema);
+		const response = await assignTopic({ text, taxonomy, labelSchema });
 
-		assertExists(result);
-		assertEquals(result!.topic, 'Marketing');
-		assertEquals(result!.subtopic, 'Social Media');
+		assertExists(response.parsed);
+		assertEquals(response.parsed!.topic, 'Marketing');
+		assertEquals(response.parsed!.subtopic, 'Social Media');
 	}
 });
 

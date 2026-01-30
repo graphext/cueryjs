@@ -105,12 +105,12 @@ export async function classifyIntent(
 	console.log('Classifying prompt intents...');
 
 	const textRecords = texts.map(text => ({ text }));
-	const intents = await classifyBatch(
-		textRecords,
-		intentLabels,
-		'Classify the search query into one of the following intents: informational, navigational, transactional.',
-		'gpt-4.1-mini'
-	);
+	const intents = await classifyBatch({
+		records: textRecords,
+		labels: intentLabels,
+		instructions: 'Classify the search query into one of the following intents: informational, navigational, transactional.',
+		model: 'gpt-4.1-mini'
+	});
 
 	return intents.toArray();
 }
@@ -127,7 +127,7 @@ export async function extractAndAssignTopics(
 	});
 
 	console.log('Assigning topics...');
-	const topicLabels = await assignTopics(texts, taxonomy);
+	const topicLabels = await assignTopics({ texts, taxonomy });
 
 	return topicLabels.toArray().map(label => ({
 		topic: label?.topic ?? null,
@@ -141,7 +141,7 @@ export async function assignFunnelStages(
 ): Promise<Array<{ funnelStage: string | null; funnelCategory: string | null }>> {
 	console.log('Assigning funnel stages...');
 	const funnelTopics = funnelToTopics(funnel);
-	const funnelLabels = await assignTopics(texts, funnelTopics);
+	const funnelLabels = await assignTopics({ texts, taxonomy: funnelTopics });
 
 	return funnelLabels.toArray().map(label => ({
 		funnelStage: label?.topic ?? null,
@@ -160,12 +160,12 @@ export async function classifyIntoPersonas(
 	});
 
 	const textRecords = texts.map(text => ({ text }));
-	const personaAssignments = await labelBatch(
-		textRecords,
-		personaLabels,
-		'Classify the search query into one or more customer personas based on the language, intent, and context.',
-		'gpt-4.1-mini'
-	);
+	const personaAssignments = await labelBatch({
+		records: textRecords,
+		labels: personaLabels,
+		instructions: 'Classify the search query into one or more customer personas based on the language, intent, and context.',
+		model: 'gpt-4.1-mini'
+	});
 
 	return personaAssignments.toArray();
 }
@@ -180,12 +180,12 @@ export async function classifyBrandedNonBranded(
 	};
 
 	const textRecords = texts.map(text => ({ text }));
-	const brandedClassifications = await classifyBatch(
-		textRecords,
-		brandedLabels,
-		'Classify whether the search query mentions specific brands or is generic/category-based.',
-		'gpt-4.1-mini'
-	);
+	const brandedClassifications = await classifyBatch({
+		records: textRecords,
+		labels: brandedLabels,
+		instructions: 'Classify whether the search query mentions specific brands or is generic/category-based.',
+		model: 'gpt-4.1-mini'
+	});
 
 	return brandedClassifications.toArray();
 }
@@ -200,7 +200,13 @@ export async function extractEntities(
 		- issues: Problems or issues mentioned
 	`;
 
-	return extractEntitiesBatch(texts, entityDefinitions, '', 'gpt-4.1-mini');
+	const result = await extractEntitiesBatch({
+		texts,
+		entityDefinitions,
+		model: 'gpt-4.1-mini'
+	});
+
+	return result.toArray().map(entities => entities ?? []);
 }
 
 export async function scorePurchaseProbability(
@@ -215,17 +221,17 @@ export async function scorePurchaseProbability(
 		that a user may perform using a traditional search engine or LLM chat.
 	`);
 
-	const scores = await scoreBatch(
+	const scores = await scoreBatch({
 		records,
-		'Purchase Probability',
+		name: 'Purchase Probability',
 		description,
-		'integer',
-		0,
-		100,
-		'gpt-4.1-mini'
-	);
+		type: 'integer',
+		min: 0,
+		max: 100,
+		model: 'gpt-4.1-mini'
+	});
 
-	return scores;
+	return scores.toArray().map(score => score ?? 0);
 }
 
 export async function scoreRelevance(
@@ -270,15 +276,15 @@ export async function scoreRelevance(
 		"best CRM software for small business" for a brand selling CRM software.
 	`);
 
-	const scores = await scoreBatch(
+	const scores = await scoreBatch({
 		records,
-		'Prompt Relevance',
+		name: 'Prompt Relevance',
 		description,
-		'number',
-		0.0,
-		1.0,
-		'gpt-4.1-mini'
-	);
+		type: 'number',
+		min: 0.0,
+		max: 1.0,
+		model: 'gpt-4.1-mini'
+	});
 
-	return scores;
+	return scores.toArray().map(score => score ?? 0);
 }

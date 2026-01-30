@@ -23,10 +23,10 @@ Deno.test({
 			description: 'OpenAI announces GPT-5 with improved reasoning capabilities'
 		};
 
-		const result = await classify(record, labels);
+		const response = await classify({ record, labels });
 
-		assertExists(result);
-		assertEquals(result, 'Technology');
+		assertExists(response.parsed);
+		assertEquals(response.parsed, 'Technology');
 	}
 });
 
@@ -46,12 +46,13 @@ Deno.test({
 			{ text: 'This pasta recipe uses fresh tomatoes and basil' }
 		];
 
-		const results = await classifyBatch(records, labels);
+		const results = await classifyBatch({ records, labels });
+		const resultsArray = results.toArray();
 
-		assertEquals(results.length, 3);
-		assertEquals(results[0], 'Technology');
-		assertEquals(results[1], 'Sports');
-		assertEquals(results[2], 'Food');
+		assertEquals(resultsArray.length, 3);
+		assertEquals(resultsArray[0], 'Technology');
+		assertEquals(resultsArray[1], 'Sports');
+		assertEquals(resultsArray[2], 'Food');
 	}
 });
 
@@ -121,7 +122,8 @@ Deno.test({
 		assertEquals(labelNames.length > 0, true);
 
 		// Step 2: Classify using extracted labels
-		const classifications = await classifyBatch(records, labels);
+		const classificationsResponse = await classifyBatch({ records, labels });
+		const classifications = classificationsResponse.toArray();
 
 		console.log('Classifications:', classifications);
 
@@ -144,9 +146,9 @@ Deno.test('classify - returns null for null record', async () => {
 		'Sports': 'Sports content'
 	};
 
-	const result = await classify(null, labels);
+	const response = await classify({ record: null, labels });
 
-	assertEquals(result, null);
+	assertEquals(response.parsed, null);
 });
 
 Deno.test('classify - returns null for empty record', async () => {
@@ -155,9 +157,9 @@ Deno.test('classify - returns null for empty record', async () => {
 		'Sports': 'Sports content'
 	};
 
-	const result = await classify({}, labels);
+	const response = await classify({ record: {}, labels });
 
-	assertEquals(result, null);
+	assertEquals(response.parsed, null);
 });
 
 Deno.test('classifyBatch - handles null records in batch', async () => {
@@ -168,12 +170,13 @@ Deno.test('classifyBatch - handles null records in batch', async () => {
 
 	const records = [null, {}, null];
 
-	const results = await classifyBatch(records, labels);
+	const results = await classifyBatch({ records, labels });
+	const resultsArray = results.toArray();
 
-	assertEquals(results.length, 3);
-	assertEquals(results[0], null);
-	assertEquals(results[1], null);
-	assertEquals(results[2], null);
+	assertEquals(resultsArray.length, 3);
+	assertEquals(resultsArray[0], null);
+	assertEquals(resultsArray[1], null);
+	assertEquals(resultsArray[2], null);
 });
 
 Deno.test('extractLabels - returns empty object for empty records', async () => {

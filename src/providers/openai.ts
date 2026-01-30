@@ -16,6 +16,49 @@ const zodTextFormatCache = new Map<z.ZodTypeAny, AutoParseableTextFormat<unknown
 
 class ZodValidationError extends Error {}
 
+/**
+ * Sanitizes a JSON schema for OpenAI compatibility.
+ * OpenAI's structured output has strict requirements:
+ * - additionalProperties must be false (not empty object or missing)
+ * - propertyNames is not permitted
+ */
+function sanitizeSchemaForOpenAI(schema: Record<string, unknown>): Record<string, unknown> {
+	const result: Record<string, unknown> = {};
+
+	for (const [key, value] of Object.entries(schema)) {
+		// Remove unsupported keys
+		if (key === 'propertyNames') {
+			continue;
+		}
+
+		// Handle additionalProperties - set to false for strict mode
+		if (key === 'additionalProperties') {
+			result[key] = false;
+			continue;
+		}
+
+		// Recursively sanitize nested objects
+		if (value && typeof value === 'object' && !Array.isArray(value)) {
+			result[key] = sanitizeSchemaForOpenAI(value as Record<string, unknown>);
+		} else if (Array.isArray(value)) {
+			result[key] = value.map(item =>
+				item && typeof item === 'object' && !Array.isArray(item)
+					? sanitizeSchemaForOpenAI(item as Record<string, unknown>)
+					: item
+			);
+		} else {
+			result[key] = value;
+		}
+	}
+
+	// For object types without additionalProperties, add it as false
+	if (result['type'] === 'object' && !('additionalProperties' in result)) {
+		result['additionalProperties'] = false;
+	}
+
+	return result;
+}
+
 function getCachedZodTextFormat<T>(zodObject: z.ZodType<T>, name: string): AutoParseableTextFormat<T> {
 	const cached = zodTextFormatCache.get(zodObject) as AutoParseableTextFormat<T> | undefined;
 
@@ -30,11 +73,14 @@ function getCachedZodTextFormat<T>(zodObject: z.ZodType<T>, name: string): AutoP
 }
 
 function zodTextFormat(zodObject: z.ZodType, name: string): AutoParseableTextFormat<z.infer<typeof zodObject>> {
+	const rawSchema = z.toJSONSchema(zodObject, { target: 'draft-7' });
+	const sanitizedSchema = sanitizeSchemaForOpenAI(rawSchema as Record<string, unknown>);
+
 	return {
 		type: 'json_schema',
 		name,
 		strict: true,
-		schema: z.toJSONSchema(zodObject, { target: 'draft-7' }),
+		schema: sanitizedSchema,
 		$brand: 'auto-parseable-response-format',
 		$parseRaw: (content) => {
 			try {
@@ -54,7 +100,7 @@ export class OpenAIProvider implements LLMProvider {
 	readonly name = 'openai';
 	private client: OpenAI;
 
-	constructor() {
+	constructor(apiKey?: string) {
 		const fetchOptions: Record<string, unknown> = {};
 		const abortSignal = (globalThis as Record<string, unknown>).abortSignal;
 		if (abortSignal) {
@@ -62,7 +108,7 @@ export class OpenAIProvider implements LLMProvider {
 		}
 
 		this.client = new OpenAI({
-			apiKey: Deno.env.get('OPENAI_API_KEY'),
+			apiKey: apiKey ?? Deno.env.get('OPENAI_API_KEY'),
 			fetchOptions,
 		});
 	}
