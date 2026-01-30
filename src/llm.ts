@@ -1,0 +1,152 @@
+/**
+ * Unified LLM interface - provider-agnostic API for making LLM calls.
+ */
+
+import type { z } from '@zod/zod';
+import { getProviderForModel } from './providers/index.ts';
+import type { TokenUsage } from './response.ts';
+
+// Re-export usage types and cost calculator from response/providers for convenience
+export type { TokenUsage, UsageCost, AggregatedUsage } from './response.ts';
+export { calculateCost } from './providers/index.ts';
+
+/**
+ * A message in an LLM conversation.
+ */
+export interface Message {
+	role: 'system' | 'user' | 'assistant';
+	content: string;
+}
+
+/**
+ * Response from an LLM provider.
+ */
+export interface LLMResponse<T> {
+	parsed: T | null;
+	text: string | null;
+	usage: TokenUsage | null;
+	error: Error | null;
+}
+
+/**
+ * Provider-specific parameters passed through to the underlying API.
+ */
+export type ProviderParams = Record<string, unknown>;
+
+/**
+ * Interface for LLM providers.
+ */
+export interface LLMProvider {
+	/** Provider name (e.g., 'openai', 'gemini') */
+	readonly name: string;
+
+	/**
+	 * Make a completion request to the LLM.
+	 *
+	 * @param messages - The conversation messages
+	 * @param model - The model identifier
+	 * @param schema - Optional Zod schema for structured output
+	 * @param params - Provider-specific parameters
+	 */
+	complete<T>(
+		messages: Message[],
+		model: string,
+		schema: z.ZodType<T> | null,
+		params?: ProviderParams
+	): Promise<LLMResponse<T>>;
+}
+
+/**
+ * Conversation type (array of messages).
+ */
+export type LLMConversation = Message[];
+
+/**
+ * Parameters for askLLMSafe.
+ */
+export interface AskLLMParams<T = string> {
+	/** The prompt (string or message array) */
+	prompt: string | Message[];
+	/** The model to use (e.g., 'gpt-4.1-mini', 'gemini-2.0-flash') */
+	model: string;
+	/** Optional Zod schema for structured output */
+	schema?: z.ZodType<T> | null;
+	/** Provider-specific parameters */
+	params?: ProviderParams;
+	/** Maximum retry attempts (default: 3) */
+	maxRetries?: number;
+	/** Error handling mode: 'throw' or 'return' (default: 'throw') */
+	onError?: 'throw' | 'return';
+}
+
+/**
+ * Normalize a prompt to a message array.
+ */
+function normalizePrompt(prompt: string | Message[]): Message[] {
+	if (Array.isArray(prompt)) {
+		return prompt;
+	}
+	return [{ role: 'user', content: prompt }];
+}
+
+/**
+ * Make a single LLM call with retry logic.
+ * Returns LLMResponse with raw TokenUsage (no cost calculation).
+ */
+export async function askLLMSafe<T = string>({
+	prompt,
+	model,
+	schema,
+	params,
+	maxRetries = 3,
+	onError = 'throw',
+}: AskLLMParams<T>): Promise<LLMResponse<T>> {
+	const provider = getProviderForModel(model);
+	let messages = normalizePrompt(prompt);
+	let lastResponse: LLMResponse<T> | null = null;
+
+	for (let attempt = 0; attempt <= maxRetries; attempt++) {
+		const response = await provider.complete(messages, model, schema ?? null, params);
+
+		if (response.error === null && response.parsed !== null) {
+			return response;
+		}
+
+		lastResponse = {
+			parsed: null,
+			text: response.text,
+			usage: response.usage,
+			error: response.error ?? new Error('Unknown error'),
+		};
+
+		if (attempt < maxRetries && response.error) {
+			// Add error context to messages for retry
+			const errorMessage = `Previous attempt failed with error: ${response.error.message}`;
+			if (response.text) {
+				messages = [
+					...messages,
+					{
+						role: 'system',
+						content: `${errorMessage}\nYour raw response was:\n${response.text}`,
+					},
+				];
+			}
+			console.log(`askLLMSafe retrying! Attempt ${attempt + 1} failed: ${response.error.message}`);
+		}
+	}
+
+	if (onError === 'return') {
+		return lastResponse!;
+	}
+
+	throw lastResponse!.error;
+}
+
+/**
+ * Make a single LLM call without retry logic.
+ */
+export async function askLLM<T = string>(
+	params: Omit<AskLLMParams<T>, 'maxRetries' | 'onError'>
+): Promise<LLMResponse<T>> {
+	return askLLMSafe({ ...params, maxRetries: 0, onError: 'throw' });
+}

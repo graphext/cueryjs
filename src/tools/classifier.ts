@@ -1,8 +1,8 @@
 import { z } from '@zod/zod';
-import { mapParallel } from '../async.ts';
-import { askOpenAISafe, type AIParams } from '../openai.ts';
-
-import { dedent, formatRecordsAttrWise } from '../utils.ts';
+import { mapParallel } from '../helpers/async.ts';
+import { askLLMSafe, calculateCost, type ProviderParams, type LLMResponse } from '../llm.ts';
+import { BatchResponse } from '../response.ts';
+import { dedent, formatRecordsAttrWise } from '../helpers/utils.ts';
 
 const PROMPT_TEMPLATE = dedent(`
 # Instructions
@@ -101,16 +101,31 @@ function createMultiLabelSchema(labels: Record<string, string>) {
 }
 
 /**
- * Classifies a single data record into one of the provided categories using an LLM call.
+ * Parameters for classify.
  */
-export async function classify(
-	record: Record<string, unknown> | null,
-	labels: Record<string, string>,
-	instructions: string = '',
-	model: string = 'gpt-4.1-mini'
-): Promise<string | null> {
+export interface ClassifyParams {
+	/** The data record to classify */
+	record: Record<string, unknown> | null;
+	/** Map of label names to descriptions */
+	labels: Record<string, string>;
+	/** Additional instructions for the classifier */
+	instructions?: string;
+	/** Model to use (default: 'gpt-4.1-mini') */
+	model?: string;
+}
+
+/**
+ * Classifies a single data record into one of the provided categories using an LLM call.
+ * Returns both the result and usage information.
+ */
+export async function classify({
+	record,
+	labels,
+	instructions = '',
+	model = 'gpt-4.1-mini',
+}: ClassifyParams): Promise<LLMResponse<string | null>> {
 	if (record == null || Object.keys(record).length === 0) {
-		return null;
+		return { parsed: null, text: null, usage: null, error: null };
 	}
 
 	const categorySchema = createLabelSchema(labels);
@@ -119,42 +134,73 @@ export async function classify(
 		.replace('{instructions}', instructions)
 		.replace('{record}', formatRecord(record));
 
-	const { parsed } = await askOpenAISafe(prompt, model, categorySchema);
-	if (!parsed) {
-		throw new Error('Failed to parse response from OpenAI');
+	const response = await askLLMSafe({ prompt, model, schema: categorySchema });
+	if (!response.parsed) {
+		throw new Error('Failed to parse response from LLM');
 	}
 
-	return parsed.label;
+	return { parsed: response.parsed.label, text: response.text, usage: response.usage, error: null };
+}
+
+/**
+ * Parameters for classifyBatch.
+ */
+export interface ClassifyBatchParams {
+	/** Array of data records to classify */
+	records: Array<Record<string, unknown> | null>;
+	/** Map of label names to descriptions */
+	labels: Record<string, string>;
+	/** Additional instructions for the classifier */
+	instructions?: string;
+	/** Model to use (default: 'gpt-4.1-mini') */
+	model?: string;
+	/** Max concurrent requests (default: 100) */
+	maxConcurrency?: number;
+	/** Enable cost tracking (default: false) */
+	trackCost?: boolean;
 }
 
 /**
  * Classifies multiple data records concurrently while preserving order.
+ * Returns a BatchResponse with optional usage tracking.
  */
-export function classifyBatch(
-	records: Array<Record<string, unknown> | null>,
-	labels: Record<string, string>,
-	instructions: string = '',
-	model: string = 'gpt-4.1-mini',
-	maxConcurrency: number = 100
-): Promise<Array<string | null>> {
-	return mapParallel(
-		records,
-		maxConcurrency,
-		record => classify(record, labels, instructions, model)
+export async function classifyBatch({
+	records,
+	labels,
+	instructions = '',
+	model = 'gpt-4.1-mini',
+	maxConcurrency = 100,
+	trackCost = false,
+}: ClassifyBatchParams): Promise<BatchResponse<string | null>> {
+	const responses = await mapParallel(records, maxConcurrency, (record) =>
+		classify({ record, labels, instructions, model })
+	);
+
+	return new BatchResponse(
+		responses.map(r => r.parsed),
+		trackCost ? responses.map(r => r.usage) : undefined,
+		trackCost ? model : undefined,
+		trackCost ? calculateCost : undefined
 	);
 }
 
 /**
- * Assigns one or more labels to a single data record using an LLM call.
+ * Parameters for label (same as ClassifyParams).
  */
-export async function label(
-	record: Record<string, unknown> | null,
-	labels: Record<string, string>,
-	instructions: string = '',
-	model: string = 'gpt-4.1-mini'
-): Promise<Array<string> | null> {
+export type LabelParams = ClassifyParams;
+
+/**
+ * Assigns one or more labels to a single data record using an LLM call.
+ * Returns both the result and usage information.
+ */
+export async function label({
+	record,
+	labels,
+	instructions = '',
+	model = 'gpt-4.1-mini',
+}: LabelParams): Promise<LLMResponse<Array<string> | null>> {
 	if (record == null || Object.keys(record).length === 0) {
-		return null;
+		return { parsed: null, text: null, usage: null, error: null };
 	}
 
 	const multiLabelSchema = createMultiLabelSchema(labels);
@@ -163,28 +209,40 @@ export async function label(
 		.replace('{instructions}', instructions)
 		.replace('{record}', formatRecord(record));
 
-	const { parsed } = await askOpenAISafe(prompt, model, multiLabelSchema);
-	if (!parsed) {
-		throw new Error('Failed to parse response from OpenAI');
+	const response = await askLLMSafe({ prompt, model, schema: multiLabelSchema });
+	if (!response.parsed) {
+		throw new Error('Failed to parse response from LLM');
 	}
 
-	return parsed.labels;
+	return { parsed: response.parsed.labels, text: response.text, usage: response.usage, error: null };
 }
 
 /**
- * Assigns labels to multiple data records concurrently while preserving order.
+ * Parameters for labelBatch (same as ClassifyBatchParams).
  */
-export function labelBatch(
-	records: Array<Record<string, unknown> | null>,
-	labels: Record<string, string>,
-	instructions: string = '',
-	model: string = 'gpt-4.1-mini',
-	maxConcurrency: number = 100
-): Promise<Array<Array<string> | null>> {
-	return mapParallel(
-		records,
-		maxConcurrency,
-		record => label(record, labels, instructions, model)
+export type LabelBatchParams = ClassifyBatchParams;
+
+/**
+ * Assigns labels to multiple data records concurrently while preserving order.
+ * Returns a BatchResponse with optional usage tracking.
+ */
+export async function labelBatch({
+	records,
+	labels,
+	instructions = '',
+	model = 'gpt-4.1-mini',
+	maxConcurrency = 100,
+	trackCost = false,
+}: LabelBatchParams): Promise<BatchResponse<Array<string> | null>> {
+	const responses = await mapParallel(records, maxConcurrency, (record) =>
+		label({ record, labels, instructions, model })
+	);
+
+	return new BatchResponse(
+		responses.map(r => r.parsed),
+		trackCost ? responses.map(r => r.usage) : undefined,
+		trackCost ? model : undefined,
+		trackCost ? calculateCost : undefined
 	);
 }
 
@@ -236,7 +294,7 @@ export interface LabelExtractionOptions {
 	instructions?: string;
 	maxSamples?: number;
 	model?: string;
-	modelParams?: AIParams;
+	modelParams?: ProviderParams;
 	maxRetries?: number;
 	language?: string;
 }
@@ -272,17 +330,24 @@ export async function extractLabels({
 		.replace('{records}', formattedRecords)
 		.replace('{language}', language);
 
-	const { parsed, output_text, error } = await askOpenAISafe(prompt, model, ExtractedLabelsSchema, modelParams, maxRetries, 'return');
+	const { parsed, text, error } = await askLLMSafe({
+		prompt,
+		model,
+		schema: ExtractedLabelsSchema,
+		params: modelParams,
+		maxRetries,
+		onError: 'return',
+	});
 
 	if (error != null) {
-		if (output_text == null) {
-			throw new Error('Failed to get response from OpenAI');
+		if (text == null) {
+			throw new Error('Failed to get response from LLM');
 		}
 
 		try {
-			const extracted = JSON.parse(output_text);
+			const extracted = JSON.parse(text);
 			const { labels } = ExtractedLabelsSchema.parse(extracted);
-			return Object.fromEntries(labels.map(l => [l.name, l.description]));
+			return Object.fromEntries(labels.map((l: { name: string; description: string }) => [l.name, l.description]));
 		} catch (parseError) {
 			throw new Error(`Failed to parse response: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
 		}

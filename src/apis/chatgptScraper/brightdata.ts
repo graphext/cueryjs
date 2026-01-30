@@ -8,7 +8,7 @@
  * 3. Download: GET /datasets/v3/snapshot/{snapshot_id}
  */
 
-import { withRetries, sleep, type RetryConfig } from '../../async.ts';
+import { withRetries, sleep, type RetryConfig } from '../../helpers/async.ts';
 
 import type { ModelResult } from '../../schemas/models.schema.ts';
 import {

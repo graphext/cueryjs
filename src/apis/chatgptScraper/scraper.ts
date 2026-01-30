@@ -5,11 +5,11 @@
  * Uses composition: providers supply functions, this module orchestrates them.
  */
 
-import { mapParallel } from '../../async.ts';
+import { mapParallel } from '../../helpers/async.ts';
 
 import type { ModelResult } from '../../schemas/models.schema.ts';
 import type { Source, SearchSource } from '../../schemas/sources.schema.ts';
-import { extractDomain } from '../../urls.ts';
+import { extractDomain } from '../../helpers/urls.ts';
 
 // ============================================================================
 // Types

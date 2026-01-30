@@ -5,17 +5,17 @@ import { downloadGPTSnapshots, scrapeGPTBatch, type JobId } from './apis/chatgpt
 import { classifyBatch, labelBatch } from './tools/classifier.ts';
 import { extractEntitiesBatch } from './tools/entities.ts';
 import { funnelToTopics } from './tools/funnel.ts';
-import { ModelId } from './models.ts';
 import { type Entity } from './schemas/entity.schema.ts';
 import { type Funnel } from './schemas/funnel.schema.ts';
 import type { ModelIdentifier } from './schemas/models.schema.ts';
+import { cleanColumnName } from './helpers/utils.ts';
 import { type Persona } from './schemas/persona.schema.ts';
 import { type BrandContext } from './schemas/brand.schema.ts';
 import { type SearchResult } from './schemas/search.schema.ts';
 import { type Source, type EnrichedSource, type SearchSource } from './schemas/sources.schema.ts';
 import { scoreBatch } from './tools/scorer.ts';
 import { extractTopics, assignTopics } from './tools/topics.ts';
-import { dedent } from './utils.ts';
+import { dedent } from './helpers/utils.ts';
 
 export type ModelResponse = {
 	prompt: string;
@@ -39,27 +39,26 @@ export type EnrichedModelResponse = {
 
 export async function queryModel(
 	prompts: Array<string | JobId>,
-	model: ModelIdentifier | ModelId,
+	model: ModelIdentifier,
 	searchCountry: string | null = null
 ): Promise<Array<ModelResponse>> {
-	const modelId = model instanceof ModelId ? model : new ModelId(model);
 	let searchResults: Array<SearchResult & { prompt?: string }>;
 
-	if (modelId.equals('google/ai-overview')) {
+	if (model === 'google/ai-overview') {
 		searchResults = await fetchAIOBatch(
 			prompts as Array<string>,
 			searchCountry,
 			null
 		);
 	}
-	else if (modelId.equals('google/ai-mode')) {
+	else if (model === 'google/ai-mode') {
 		searchResults = await fetchAIMBatch(
 			prompts as Array<string>,
 			searchCountry,
 			null
 		);
 	}
-	else if (modelId.provider == 'openai' || modelId.name.includes('gpt-') || modelId.name.includes('chatgpt')) {
+	else if (model.startsWith('openai/') || model.includes('chatgpt')) {
 		// JobIds are alphanumeric strings without spaces
 		// (e.g., "7420410504197219329" for Oxylabs, "s_xxxxx" for Brightdata)
 		// Prompts are natural language text with spaces
@@ -76,14 +75,17 @@ export async function queryModel(
 		}
 	}
 	else {
-		throw new Error(`Unsupported model: ${modelId}`);
+		throw new Error(`Unsupported model: ${model}`);
 	}
+
+	// Convert model identifier to column name (e.g., "google/ai-overview" -> "ai_overview")
+	const modelColumnName = cleanColumnName(model.split('/').pop() ?? model);
 
 	const responses: Array<ModelResponse> = searchResults.map((sr, i) => ({
 		answer: sr.answer,
 		sources: sr.sources,
 		prompt: sr.prompt ?? (typeof prompts[i] === 'string' ? prompts[i] : ''),
-		model: modelId.columnName(),
+		model: modelColumnName,
 		searchQueries: sr.searchQueries ?? [],
 		searchSources: sr.searchSources ?? []
 	}));
@@ -110,7 +112,7 @@ export async function classifyIntent(
 		'gpt-4.1-mini'
 	);
 
-	return intents;
+	return intents.toArray();
 }
 
 export async function extractAndAssignTopics(
@@ -127,7 +129,7 @@ export async function extractAndAssignTopics(
 	console.log('Assigning topics...');
 	const topicLabels = await assignTopics(texts, taxonomy);
 
-	return topicLabels.map(label => ({
+	return topicLabels.toArray().map(label => ({
 		topic: label?.topic ?? null,
 		subtopic: label?.subtopic ?? null
 	}));
@@ -141,7 +143,7 @@ export async function assignFunnelStages(
 	const funnelTopics = funnelToTopics(funnel);
 	const funnelLabels = await assignTopics(texts, funnelTopics);
 
-	return funnelLabels.map(label => ({
+	return funnelLabels.toArray().map(label => ({
 		funnelStage: label?.topic ?? null,
 		funnelCategory: label?.subtopic ?? null
 	}));
@@ -165,7 +167,7 @@ export async function classifyIntoPersonas(
 		'gpt-4.1-mini'
 	);
 
-	return personaAssignments;
+	return personaAssignments.toArray();
 }
 
 export async function classifyBrandedNonBranded(
@@ -185,7 +187,7 @@ export async function classifyBrandedNonBranded(
 		'gpt-4.1-mini'
 	);
 
-	return brandedClassifications;
+	return brandedClassifications.toArray();
 }
 
 export async function extractEntities(

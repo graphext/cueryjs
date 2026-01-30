@@ -1,8 +1,8 @@
-import { mapParallel } from '../async.ts';
-import { askOpenAISafe, type AIParams } from '../openai.ts';
-
+import { mapParallel } from '../helpers/async.ts';
+import { askLLMSafe, calculateCost, type LLMResponse, type ProviderParams } from '../llm.ts';
+import { BatchResponse } from '../response.ts';
 import { EntitiesSchema, type Entity } from '../schemas/entity.schema.ts';
-import { dedent } from '../utils.ts';
+import { dedent } from '../helpers/utils.ts';
 
 export const PROMPT = dedent(`
 # Instructions
@@ -32,85 +32,181 @@ definitions include a "brand" category and a "product" category, the expected ou
 `);
 
 /**
- *
- * Extracts free-form entities from the given text (without enforced entity types).
+ * Parameters for extractAnyEntities.
  */
-export async function extractAnyEntities(
-	body: string,
-	instructions: string = '',
-	model: string,
-	modelParams: AIParams = {}
-): Promise<Array<Entity>> {
-	const prompt = PROMPT
-		.replace('{definitions}', '')
+export interface ExtractAnyEntitiesParams {
+	/** Text to extract entities from */
+	body: string | null;
+	/** Additional instructions */
+	instructions?: string;
+	/** Model to use (default: 'gpt-4.1-mini') */
+	model?: string;
+	/** Provider-specific parameters */
+	modelParams?: ProviderParams;
+}
+
+/**
+ * Extracts free-form entities from the given text (without enforced entity types).
+ * Returns LLMResult with usage tracking.
+ */
+export async function extractAnyEntities({
+	body,
+	instructions = '',
+	model = 'gpt-4.1-mini',
+	modelParams = {},
+}: ExtractAnyEntitiesParams): Promise<LLMResponse<Array<Entity> | null>> {
+	if (body == null || body.trim() === '') {
+		return { parsed: null, text: null, usage: null, error: null };
+	}
+
+	const prompt = PROMPT.replace('{definitions}', '')
 		.replace('{text}', body)
 		.replace('{instructions}', instructions);
 
-	const { parsed } = await askOpenAISafe(prompt, model, EntitiesSchema, modelParams);
-	if (!parsed) {
-		throw new Error('Failed to parse response from OpenAI');
+	const response = await askLLMSafe({
+		prompt,
+		model,
+		schema: EntitiesSchema,
+		params: modelParams,
+		maxRetries: 3,
+		onError: 'return',
+	});
+
+	if (response.error != null || response.parsed == null) {
+		return {
+			parsed: null,
+			text: response.text,
+			usage: response.usage,
+			error: response.error,
+		};
 	}
 
-	return parsed.entities;
+	return {
+		parsed: response.parsed.entities,
+		text: response.text,
+		usage: response.usage,
+		error: null,
+	};
+}
+
+/**
+ * Parameters for extractEntitiesFromText.
+ */
+export interface ExtractEntitiesParams {
+	/** Text to extract entities from */
+	text: string | null;
+	/** Entity type definitions (string or map of type to description) */
+	entityDefinitions: string | Record<string, string>;
+	/** Additional instructions */
+	instructions?: string;
+	/** Model to use (default: 'gpt-4.1-mini') */
+	model?: string;
+	/** Provider-specific parameters */
+	modelParams?: ProviderParams;
 }
 
 /**
  * Extracts entities in pre-specified categories from a single text.
+ * Returns LLMResult with usage tracking.
  */
-export async function extractEntitiesFromText(
-	text: string | null,
-	entityDefinitions: string | Record<string, string>,
-	instructions: string = '',
-	model: string = 'gpt-4.1-mini',
-	modelParams: AIParams = {}
-): Promise<Array<Entity>> {
-	if (text === null) {
-		return [];
+export async function extractEntitiesFromText({
+	text,
+	entityDefinitions,
+	instructions = '',
+	model = 'gpt-4.1-mini',
+	modelParams = {},
+}: ExtractEntitiesParams): Promise<LLMResponse<Array<Entity> | null>> {
+	if (text == null || text.trim() === '') {
+		return { parsed: null, text: null, usage: null, error: null };
 	}
 
-	const definitionsText = typeof entityDefinitions === 'string'
-		? entityDefinitions
-		: Object.entries(entityDefinitions)
-			.map(([type, description]) => `- ${type}: ${description}`)
-			.join('\n');
+	const definitionsText =
+		typeof entityDefinitions === 'string'
+			? entityDefinitions
+			: Object.entries(entityDefinitions)
+					.map(([type, description]) => `- ${type}: ${description}`)
+					.join('\n');
 
-	const prompt = PROMPT
-		.replace('{definitions}', definitionsText)
+	const prompt = PROMPT.replace('{definitions}', definitionsText)
 		.replace('{text}', text)
 		.replace('{instructions}', instructions);
 
-	const { parsed } = await askOpenAISafe(prompt, model, EntitiesSchema, modelParams);
-	if (!parsed) {
-		throw new Error('Failed to parse response from OpenAI');
+	const response = await askLLMSafe({
+		prompt,
+		model,
+		schema: EntitiesSchema,
+		params: modelParams,
+		maxRetries: 3,
+		onError: 'return',
+	});
+
+	if (response.error != null || response.parsed == null) {
+		return {
+			parsed: null,
+			text: response.text,
+			usage: response.usage,
+			error: response.error,
+		};
 	}
 
-	return parsed.entities;
+	return {
+		parsed: response.parsed.entities,
+		text: response.text,
+		usage: response.usage,
+		error: null,
+	};
 }
 
+/**
+ * Parameters for extractEntitiesBatch.
+ */
+export interface ExtractEntitiesBatchParams {
+	/** Array of texts to extract entities from */
+	texts: Array<string | null>;
+	/** Entity type definitions (string or map of type to description) */
+	entityDefinitions: Record<string, string> | string;
+	/** Additional instructions */
+	instructions?: string;
+	/** Model to use (default: 'gpt-4.1-mini') */
+	model?: string;
+	/** Max concurrent requests (default: 100) */
+	maxConcurrency?: number;
+	/** Provider-specific parameters */
+	modelParams?: ProviderParams;
+	/** Enable cost tracking (default: false) */
+	trackCost?: boolean;
+}
 
 /**
- * Extracts entities from a batch of texts.
+ * Extracts entities from a batch of texts with usage tracking.
+ * Returns BatchResponse where individual items are null on failure.
  */
-export async function extractEntitiesBatch(
-	texts: Array<string | null>,
-	entityDefinitions: Record<string, string> | string,
-	instructions: string = '',
-	model: string = 'gpt-4.1-mini',
-	maxConcurrency: number = 100,
-	modelParams: AIParams = {}
-): Promise<Array<Array<Entity>>> {
+export async function extractEntitiesBatch({
+	texts,
+	entityDefinitions,
+	instructions = '',
+	model = 'gpt-4.1-mini',
+	maxConcurrency = 100,
+	modelParams = {},
+	trackCost = false,
+}: ExtractEntitiesBatchParams): Promise<BatchResponse<Array<Entity> | null>> {
+	// Format definitions once outside the loop
+	const definitions =
+		typeof entityDefinitions === 'string'
+			? entityDefinitions
+			: Object.entries(entityDefinitions)
+					.map(([type, description]) => `- ${type}: ${description}`)
+					.join('\n');
 
-	// Do this once outside the loop
-	const definitions = typeof entityDefinitions === 'string'
-		? entityDefinitions
-		: Object.entries(entityDefinitions)
-			.map(([type, description]) => `- ${type}: ${description}`)
-			.join('\n');
+	const responses = await mapParallel(texts, maxConcurrency, (text) =>
+		extractEntitiesFromText({ text, entityDefinitions: definitions, instructions, model, modelParams })
+	);
 
-	return mapParallel(
-		texts,
-		maxConcurrency,
-		(text: string | null) => extractEntitiesFromText(text, definitions, instructions, model, modelParams)
+	return new BatchResponse(
+		responses.map((r) => r.parsed),
+		trackCost ? responses.map((r) => r.usage) : undefined,
+		trackCost ? model : undefined,
+		trackCost ? calculateCost : undefined
 	);
 }
 

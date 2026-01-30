@@ -1,7 +1,8 @@
 /* eslint no-console: ["warn", { allow: ["log", "warn", "error"] }] */
 import { z } from '@zod/zod';
-import { mapParallel } from '../async.ts';
-import { askOpenAISafe, type AIConversation, type AIParams } from '../openai.ts';
+import { mapParallel } from '../helpers/async.ts';
+import { askLLMSafe, calculateCost, type Message, type ProviderParams, type LLMResponse } from '../llm.ts';
+import { BatchResponse } from '../response.ts';
 
 import {
 	TopicSchema,
@@ -9,7 +10,7 @@ import {
 	type TaxonomyType,
 	type TopicLabel
 } from '../schemas/topics.schema.ts';
-import { dedent, formatRecordsAttrWise } from '../utils.ts';
+import { dedent, formatRecordsAttrWise } from '../helpers/utils.ts';
 
 // Re-export types from topics.schema.ts
 export type { TopicType, TaxonomyType, TopicLabel };
@@ -193,18 +194,35 @@ Assign the correct topic and subtopic to the following text.
 
 
 /**
- * Assigns a topic and subtopic to a single text using an LLM call.
+ * Parameters for assignTopic.
  */
-export async function assignTopic(
-	text: string | null,
-	taxonomy: TaxonomyType | Array<TopicType> | string,
-	labelSchema: z.ZodType<TopicLabel>,
-	model: string = 'gpt-5.1',
-	modelParams: AIParams = { reasoning: { effort: 'none' } }
-): Promise<TopicLabel | null> {
+export interface AssignTopicParams {
+	/** Text to assign topic to */
+	text: string | null;
+	/** Taxonomy to use for classification */
+	taxonomy: TaxonomyType | Array<TopicType> | string;
+	/** Pre-built label schema */
+	labelSchema: z.ZodType<TopicLabel>;
+	/** Model to use (default: 'gpt-5.1') */
+	model?: string;
+	/** Provider-specific parameters */
+	modelParams?: ProviderParams;
+}
+
+/**
+ * Assigns a topic and subtopic to a single text using an LLM call.
+ * Returns both the result and usage information.
+ */
+export async function assignTopic({
+	text,
+	taxonomy,
+	labelSchema,
+	model = 'gpt-5.1',
+	modelParams = { reasoning: { effort: 'none' } },
+}: AssignTopicParams): Promise<LLMResponse<TopicLabel | null>> {
 
 	if (text == null || text.trim() === '') {
-		return null;
+		return { parsed: null, text: null, usage: null, error: null };
 	}
 
 	const systemPrompt = LABEL_PROMPT_SYSTEM.replace(
@@ -213,47 +231,70 @@ export async function assignTopic(
 	);
 	const userPrompt = LABEL_PROMPT_USER.replace('{text}', text);
 
-	const prompts: AIConversation = [
+	const prompts: Message[] = [
 		{ role: 'system', content: systemPrompt },
 		{ role: 'user', content: userPrompt }
 	];
 
 	try {
-		const { parsed, error } = await askOpenAISafe(prompts, model, labelSchema, modelParams);
-		if (error != null || parsed == null) {
-			return null;
+		const response = await askLLMSafe({ prompt: prompts, model, schema: labelSchema, params: modelParams });
+		if (response.error != null || response.parsed == null) {
+			return { parsed: null, text: response.text, usage: response.usage, error: response.error };
 		}
-		return parsed;
-	} catch (error) {
-		console.warn(`Failed to assign topic for text "${text.substring(0, 50)}...":`, error);
-		return null;
+		return response;
+	} catch (err) {
+		console.warn(`Failed to assign topic for text "${text.substring(0, 50)}...":`, err);
+		return { parsed: null, text: null, usage: null, error: err instanceof Error ? err : new Error(String(err)) };
 	}
 }
 
 /**
- * Assigns topics to multiple texts concurrently while preserving order.
+ * Parameters for assignTopics.
  */
-export function assignTopics(
-	texts: Array<string | null>,
-	taxonomy: TaxonomyType | Array<TopicType>,
-	model: string = 'gpt-5.1',
-	modelParams: AIParams = { reasoning: { effort: 'none' } },
-	maxConcurrency: number = 100
-): Promise<Array<TopicLabel | null>> {
+export interface AssignTopicsParams {
+	/** Array of texts to assign topics to */
+	texts: Array<string | null>;
+	/** Taxonomy to use for classification */
+	taxonomy: TaxonomyType | Array<TopicType>;
+	/** Model to use (default: 'gpt-5.1') */
+	model?: string;
+	/** Provider-specific parameters */
+	modelParams?: ProviderParams;
+	/** Max concurrent requests (default: 100) */
+	maxConcurrency?: number;
+	/** Enable cost tracking (default: false) */
+	trackCost?: boolean;
+}
 
+/**
+ * Assigns topics to multiple texts concurrently while preserving order.
+ * Returns a BatchResponse with usage tracking.
+ */
+export async function assignTopics({
+	texts,
+	taxonomy,
+	model = 'gpt-5.1',
+	modelParams = { reasoning: { effort: 'none' } },
+	maxConcurrency = 100,
+	trackCost = false,
+}: AssignTopicsParams): Promise<BatchResponse<TopicLabel | null>> {
 	// Precompute normalized taxonomy and label schema once for whole batch
 	const normalizedTaxonomy: TaxonomyType = Array.isArray(taxonomy)
 		? { topics: taxonomy }
 		: taxonomy;
 
 	const labelSchema = createLabelSchema(normalizedTaxonomy);
-
 	const serializedTaxonomy = JSON.stringify(normalizedTaxonomy, null, 2);
 
-	return mapParallel(
-		texts,
-		maxConcurrency,
-		text => assignTopic(text, serializedTaxonomy, labelSchema, model, modelParams)
+	const responses = await mapParallel(texts, maxConcurrency, (text) =>
+		assignTopic({ text, taxonomy: serializedTaxonomy, labelSchema, model, modelParams })
+	);
+
+	return new BatchResponse(
+		responses.map(r => r.parsed),
+		trackCost ? responses.map(r => r.usage) : undefined,
+		trackCost ? model : undefined,
+		trackCost ? calculateCost : undefined
 	);
 }
 
@@ -264,7 +305,7 @@ export interface TopicExtractionOptions {
 	instructions?: string;
 	maxSamples?: number;
 	model?: string;
-	modelParams?: AIParams;
+	modelParams?: ProviderParams;
 	maxRetries?: number;
 	language?: string;
 }
@@ -300,15 +341,22 @@ export async function extractTopics({
 		.replace('{records}', formattedRecords)
 		.replace('{language}', language);
 
-	const { parsed, output_text, error } = await askOpenAISafe(prompt, model, Taxonomy, modelParams, maxRetries, 'return');
+	const { parsed, text, error } = await askLLMSafe({
+		prompt,
+		model,
+		schema: Taxonomy,
+		params: modelParams,
+		maxRetries,
+		onError: 'return',
+	});
 
 	if (error != null) {
-		if (output_text == null) {
-			throw new Error('Failed to get response from OpenAI');
+		if (text == null) {
+			throw new Error('Failed to get response from LLM');
 		}
 
 		try {
-			const taxonomy = JSON.parse(output_text);
+			const taxonomy = JSON.parse(text);
 			return TaxonomyBase.parse(taxonomy);
 		} catch (parseError) {
 			throw new Error(`Failed to parse response even without validation: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
@@ -316,7 +364,7 @@ export async function extractTopics({
 	}
 
 	if (parsed == null) {
-		throw new Error('Failed to parse response from OpenAI');
+		throw new Error('Failed to parse response from LLM');
 	}
 
 	return parsed;

@@ -1,8 +1,7 @@
-import { mapParallel } from '../async.ts';
-import { askOpenAISafe } from '../openai.ts';
-
-
-import { dedent } from '../utils.ts';
+import { mapParallel } from '../helpers/async.ts';
+import { askLLMSafe, calculateCost, type LLMResponse } from '../llm.ts';
+import { BatchResponse } from '../response.ts';
+import { dedent } from '../helpers/utils.ts';
 import type { BrandContext } from '../schemas/brand.schema.ts';
 
 const TRANSLATE_PROMPT = dedent(`
@@ -60,28 +59,48 @@ export interface translateParams {
 
 /**
  * Translates a single Google search keyword into an equivalent LLM prompt.
+ * Returns LLMResult with usage tracking.
  */
-export async function translate(
-	{ keyword, language = 'en', model = 'gpt-5-mini', brandContext, instructions = '' }: translateParams
-): Promise<string> {
-	const prompt = TRANSLATE_PROMPT
-		.replace('{keyword}', keyword)
+export async function translate({
+	keyword,
+	language = 'en',
+	model = 'gpt-5-mini',
+	brandContext,
+	instructions = '',
+}: translateParams): Promise<LLMResponse<string | null>> {
+	if (keyword == null || keyword.trim() === '') {
+		return { parsed: null, text: null, usage: null, error: null };
+	}
+
+	const prompt = TRANSLATE_PROMPT.replace('{keyword}', keyword)
 		.replace('{language}', language)
 		.replace('{sector}', brandContext.sector)
 		.replace('{country}', brandContext.country)
 		.replace('{additional_instructions}', instructions);
-	const { parsed } = await askOpenAISafe(prompt, model);
 
-	if (!parsed) {
-		throw new Error('Failed to parse translation from OpenAI response');
+	const response = await askLLMSafe({
+		prompt,
+		model,
+		maxRetries: 3,
+		onError: 'return',
+	});
+
+	if (response.error != null || response.parsed == null) {
+		return {
+			parsed: null,
+			text: response.text,
+			usage: response.usage,
+			error: response.error,
+		};
 	}
 
-	return parsed;
+	return {
+		parsed: response.parsed,
+		text: response.text,
+		usage: response.usage,
+		error: null,
+	};
 }
-
-/**
- * Translates multiple Google search keywords to LLM prompts concurrently while preserving order.
- */
 
 export interface translateBatchParams {
 	keywords: Array<string>;
@@ -90,17 +109,31 @@ export interface translateBatchParams {
 	maxConcurrency?: number;
 	instructions?: string;
 	brandContext: BrandContext;
+	trackCost?: boolean;
 }
 
-export async function translateBatch(
-	params: translateBatchParams
-): Promise<Array<string>> {
-	const { keywords, language = 'en', model = 'gpt-4.1-mini', maxConcurrency = 100, brandContext, instructions = '' } = params;
+/**
+ * Translates multiple Google search keywords to LLM prompts with usage tracking.
+ * Returns BatchResponse where individual items are null on failure.
+ */
+export async function translateBatch({
+	keywords,
+	language = 'en',
+	model = 'gpt-4.1-mini',
+	maxConcurrency = 100,
+	brandContext,
+	instructions = '',
+	trackCost = false,
+}: translateBatchParams): Promise<BatchResponse<string | null>> {
+	const responses = await mapParallel(keywords, maxConcurrency, (kwd) =>
+		translate({ keyword: kwd, language, model, brandContext, instructions })
+	);
 
-	return mapParallel(
-		keywords,
-		maxConcurrency,
-		kwd => translate({ keyword: kwd, language, model, brandContext, instructions })
+	return new BatchResponse(
+		responses.map((r) => r.parsed),
+		trackCost ? responses.map((r) => r.usage) : undefined,
+		trackCost ? model : undefined,
+		trackCost ? calculateCost : undefined
 	);
 }
 
@@ -141,20 +174,44 @@ export interface reverseTranslateParams {
 
 /**
  * Converts a natural language prompt into an equivalent Google search keyword.
+ * Returns LLMResult with usage tracking.
  */
-export async function reverseTranslate(
-	{ prompt, language = 'en', model = 'gpt-4.1-mini' }: reverseTranslateParams
-): Promise<string> {
-	const requestPrompt = REVERSE_TRANSLATE_PROMPT
-		.replace('{prompt}', prompt)
-		.replace('{language}', language);
-	const { parsed } = await askOpenAISafe(requestPrompt, model);
-
-	if (!parsed) {
-		throw new Error('Failed to parse reverse translation from OpenAI response');
+export async function reverseTranslate({
+	prompt,
+	language = 'en',
+	model = 'gpt-4.1-mini',
+}: reverseTranslateParams): Promise<LLMResponse<string | null>> {
+	if (prompt == null || prompt.trim() === '') {
+		return { parsed: null, text: null, usage: null, error: null };
 	}
 
-	return parsed;
+	const requestPrompt = REVERSE_TRANSLATE_PROMPT.replace('{prompt}', prompt).replace(
+		'{language}',
+		language
+	);
+
+	const response = await askLLMSafe({
+		prompt: requestPrompt,
+		model,
+		maxRetries: 3,
+		onError: 'return',
+	});
+
+	if (response.error != null || response.parsed == null) {
+		return {
+			parsed: null,
+			text: response.text,
+			usage: response.usage,
+			error: response.error,
+		};
+	}
+
+	return {
+		parsed: response.parsed,
+		text: response.text,
+		usage: response.usage,
+		error: null,
+	};
 }
 
 export interface reverseTranslateBatchParams {
@@ -162,19 +219,28 @@ export interface reverseTranslateBatchParams {
 	language?: string;
 	model?: string;
 	maxConcurrency?: number;
+	trackCost?: boolean;
 }
 
 /**
- * Converts multiple natural language prompts to Google search keywords concurrently while preserving order.
+ * Converts multiple natural language prompts to Google search keywords with usage tracking.
+ * Returns BatchResponse where individual items are null on failure.
  */
-export async function reverseTranslateBatch(
-	params: reverseTranslateBatchParams
-): Promise<Array<string>> {
-	const { prompts, language = 'en', model = 'gpt-5-mini', maxConcurrency = 100 } = params;
+export async function reverseTranslateBatch({
+	prompts,
+	language = 'en',
+	model = 'gpt-5-mini',
+	maxConcurrency = 100,
+	trackCost = false,
+}: reverseTranslateBatchParams): Promise<BatchResponse<string | null>> {
+	const responses = await mapParallel(prompts, maxConcurrency, (p) =>
+		reverseTranslate({ prompt: p, language, model })
+	);
 
-	return mapParallel(
-		prompts,
-		maxConcurrency,
-		p => reverseTranslate({ prompt: p, language, model })
+	return new BatchResponse(
+		responses.map((r) => r.parsed),
+		trackCost ? responses.map((r) => r.usage) : undefined,
+		trackCost ? model : undefined,
+		trackCost ? calculateCost : undefined
 	);
 }

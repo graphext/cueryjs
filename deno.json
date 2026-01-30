@@ -7,6 +7,7 @@
 	},
 	"imports": {
 		"@openai/openai": "npm:openai@^6.9.1",
+		"@google/genai": "npm:@google/genai@^1.37.0",
 		"@zod/zod": "jsr:@zod/zod@^4.3",
 		"tldts": "npm:tldts@^6.1.71",
 		"cheerio": "npm:cheerio@^1.1.2",
@@ -35,6 +36,7 @@
 		"run": "deno run --allow-env --allow-net --env-file --allow-read --allow-write",
 		"publish": "deno publish --allow-slow-types",
 		"build:npm": "deno run -A scripts/build_npm.ts",
-		"publish:npm": "deno task build:npm && cd npm && npm publish --access public --registry https://registry.npmjs.org/"
+		"publish:npm": "deno task build:npm && cd npm && npm publish --access public --registry https://registry.npmjs.org/",
+		"update-models": "deno run --allow-net --allow-write scripts/update-models.ts"
 	}
 }

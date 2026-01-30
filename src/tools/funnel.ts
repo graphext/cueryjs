@@ -1,9 +1,9 @@
-import { mapParallel } from '../async.ts';
-import { askOpenAISafe } from '../openai.ts';
+import { mapParallel } from '../helpers/async.ts';
+import { askLLMSafe } from '../llm.ts';
 
 import type { FunnelOptions } from '../schemas/funnel.schema.ts';
 import { FunnelWithExplanationSchema, SeedsSchema, type Funnel, type FunnelStage, type FunnelCategory, type FunnelWithExplanation } from '../schemas/funnel.schema.ts';
-import { dedent } from '../utils.ts';
+import { dedent } from '../helpers/utils.ts';
 
 export { FunnelWithExplanationSchema };
 
@@ -319,9 +319,9 @@ export async function customizeFunnel(
 		.replace('{userLanguage}', userLanguage ?? language)
 		.replace('{funnel}', JSON.stringify(funnelData, null, 2));
 
-	const { parsed } = await askOpenAISafe(prompt, model, FunnelWithExplanationSchema);
+	const { parsed } = await askLLMSafe({ prompt, model, schema: FunnelWithExplanationSchema });
 	if (!parsed) {
-		throw new Error('Failed to parse response from OpenAI');
+		throw new Error('Failed to parse response from LLM');
 	}
 
 	return parsed;
@@ -374,9 +374,9 @@ export async function generateSeedKeywords(
 		.replace('{market}', country)
 		.replace('{language}', language);
 
-	const { parsed } = await askOpenAISafe(prompt, model, SeedsSchema);
+	const { parsed } = await askLLMSafe({ prompt, model, schema: SeedsSchema });
 	if (!parsed) {
-		throw new Error('Failed to parse seed keywords from OpenAI');
+		throw new Error('Failed to parse seed keywords from LLM');
 	}
 
 	return parsed.seeds;

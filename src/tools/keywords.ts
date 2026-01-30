@@ -1,10 +1,10 @@
-import { mapParallel } from '../async.ts';
-import { askOpenAISafe } from '../openai.ts';
+import { mapParallel } from '../helpers/async.ts';
+import { askLLMSafe } from '../llm.ts';
 
 import { buildBrandContext } from './brands.ts';
 import type { KeywordsOptions } from '../schemas/keyword.schema.ts';
 import { KeywordsResponseSchema, type KeywordsResponse } from '../schemas/keyword.schema.ts';
-import { dedent } from '../utils.ts';
+import { dedent } from '../helpers/utils.ts';
 import { keywords as getGoogleAdsKeywords, type KeywordRecord } from '../apis/googleAds/keywordPlanner.ts';
 
 export interface ExpandKeywordsParams {
@@ -236,9 +236,9 @@ export async function generateKeywords({
 		.replaceAll('{personasInfo}', personasInfo || '')
 		.replaceAll('{funnelInfo}', funnelInfo || '');
 
-	const { parsed } = await askOpenAISafe(content, model, KeywordsResponseSchema);
+	const { parsed } = await askLLMSafe({ prompt: content, model, schema: KeywordsResponseSchema });
 	if (!parsed) {
-		throw new Error('Failed to parse response from OpenAI');
+		throw new Error('Failed to parse response from LLM');
 	}
 	return parsed;
 }

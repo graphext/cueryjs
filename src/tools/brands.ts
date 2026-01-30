@@ -1,12 +1,12 @@
 import { z } from '@zod/zod';
-import { mapParallel } from '../async.ts';
-import { askOpenAISafe } from '../openai.ts';
+import { mapParallel } from '../helpers/async.ts';
+import { askLLMSafe } from '../llm.ts';
 
 import type { CompetitorSearchOptions, BrandSearchOptions, BrandListResponse } from '../schemas/brand.schema.ts';
 import { BrandSchema, BrandListSchema, type Brand, type FlaggedBrand, type Product } from '../schemas/brand.schema.ts';
 import { searchWithFormat } from './search.ts';
-import { dedent } from '../utils.ts';
-import { extractDomain } from '../urls.ts';
+import { dedent } from '../helpers/utils.ts';
+import { extractDomain } from '../helpers/urls.ts';
 import type { Entity } from './entities.ts';
 
 interface BrandContextOptions {
@@ -182,9 +182,9 @@ export async function generatePortfolioKeywords(
 		.replaceAll('{market}', market)
 		.replaceAll('{language}', language);
 
-	const { parsed } = await askOpenAISafe(prompt, model, PortfolioKeywordsSchema);
+	const { parsed } = await askLLMSafe({ prompt, model, schema: PortfolioKeywordsSchema });
 	if (!parsed) {
-		throw new Error('Failed to parse portfolio keywords from OpenAI response');
+		throw new Error('Failed to parse portfolio keywords from LLM response');
 	}
 	return parsed.keywords;
 }

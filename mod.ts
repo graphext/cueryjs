@@ -4,13 +4,29 @@
  * @module
  */
 
+// Core LLM interface and types
+export * from './src/llm.ts';
+export { BatchResponse } from './src/response.ts';
+export {
+	getProvider,
+	getProviderForModel,
+	model,
+	type Model,
+	getModelPricing,
+	getModelInfo,
+	calculateCost,
+	type ModelPricing,
+	type ModelInfo,
+} from './src/providers/index.ts';
+
+// Tools
 export * from './src/tools/keywords.ts';
 export * from './src/tools/classifier.ts';
 export * from './src/tools/funnel.ts';
 export * from './src/tools/personas.ts';
 export * from './src/tools/search.ts';
 export * from './src/tools/topics.ts';
-export * from './src/utils.ts';
+export * from './src/helpers/utils.ts';
 export * from './src/tools/brands.ts';
 export * from './src/tools/translate.ts';
 export * from './src/tools/sentiment.ts';

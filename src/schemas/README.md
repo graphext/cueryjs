@@ -34,7 +34,7 @@ Import schemas for runtime validation of LLM responses:
 import { PersonaSchema, BrandSchema, FunnelSchema } from './schemas/persona.schema.ts';
 
 // Use for validation
-const { parsed } = await askOpenAISafe(prompt, model, PersonaSchema);
+const { parsed } = await askLLMSafe(prompt, model, PersonaSchema);
 ```
 
 ### Type-Only Imports

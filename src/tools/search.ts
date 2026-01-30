@@ -1,10 +1,32 @@
-import { mapParallel } from '../async.ts';
-import { askOpenAISafe, type AIParams, type AIOutput } from '../openai.ts';
+import OpenAI from '@openai/openai';
+import { mapParallel } from '../helpers/async.ts';
+import { askLLMSafe } from '../llm.ts';
 
 import type { BatchSearchOptions, FormattedSearchOptions, SearchOptions, SearchResult } from '../schemas/search.schema.ts';
 import type { Source } from '../schemas/sources.schema.ts';
-import { extractDomain } from '../urls.ts';
-import { dedent } from '../utils.ts';
+import { extractDomain } from '../helpers/urls.ts';
+import { dedent } from '../helpers/utils.ts';
+
+// OpenAI-specific types for web search with raw output
+type OpenAIParams = Omit<OpenAI.Responses.ResponseCreateParams, 'model' | 'input' | 'text'>;
+type OpenAIOutput = Array<OpenAI.Responses.ResponseOutputItem>;
+
+// Lazy-initialized OpenAI client for web search functionality
+let openaiClient: OpenAI | null = null;
+function getOpenAIClient(): OpenAI {
+	if (!openaiClient) {
+		const fetchOptions: Record<string, unknown> = {};
+		const abortSignal = (globalThis as Record<string, unknown>).abortSignal;
+		if (abortSignal) {
+			fetchOptions.signal = abortSignal;
+		}
+		openaiClient = new OpenAI({
+			apiKey: Deno.env.get('OPENAI_API_KEY'),
+			fetchOptions,
+		});
+	}
+	return openaiClient;
+}
 
 export type { SearchResult } from '../schemas/search.schema.ts';
 
@@ -23,7 +45,7 @@ export async function searchOpenAI({
 	reasoningEffort = 'low',
 	searchTool = 'web_search'
 }: SearchOptions): Promise<SearchResult> {
-	const params: AIParams = {};
+	const params: OpenAIParams = {};
 
 	if (model.includes('-5')) {
 		params.reasoning = { effort: reasoningEffort };
@@ -38,17 +60,24 @@ export async function searchOpenAI({
 		params.tool_choice = 'required';
 	}
 
-	const { output } = await askOpenAISafe(prompt, model, undefined, params);
-	if (!output) {
+	const client = getOpenAIClient();
+	const response = await client.responses.create({
+		...params,
+		model,
+		input: [{ role: 'user', content: prompt }],
+		stream: false,
+	});
+
+	if (!response.output) {
 		throw new Error('No output from OpenAI');
 	}
-	return validateOpenAI(output);
+	return validateOpenAI(response.output);
 }
 
 /**
  * Convert a raw web search response into a SearchResult instance.
  */
-function validateOpenAI(response: AIOutput): SearchResult {
+function validateOpenAI(response: OpenAIOutput): SearchResult {
 	let answer = '';
 	let sources: Array<Source> = [];
 
@@ -149,9 +178,9 @@ export async function searchWithFormat<T>({
 		.replace('{answer}', searchResult.answer)
 		.replace('{sources}', sources);
 
-	const { parsed } = await askOpenAISafe(formattedPrompt, 'gpt-4.1-mini', responseSchema);
+	const { parsed } = await askLLMSafe({ prompt: formattedPrompt, model: 'gpt-4.1-mini', schema: responseSchema });
 	if (!parsed) {
-		throw new Error('Failed to parse structured response from OpenAI');
+		throw new Error('Failed to parse structured response from LLM');
 	}
 
 	return parsed;

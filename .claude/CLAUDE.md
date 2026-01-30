@@ -2,7 +2,7 @@
 
 ## Overview
 
-Cuery is a TypeScript/Deno library providing LLM-powered tools for generating structured marketing data. It leverages OpenAI's API with Zod schema validation for type-safe, predictable outputs.
+Cuery is a TypeScript/Deno library providing LLM-powered tools for generating structured marketing data. It supports multiple LLM providers (OpenAI, Gemini) with Zod schema validation for type-safe, predictable outputs.
 
 ## Commands
 
@@ -33,12 +33,17 @@ cueryjs/
 ├── deno.json                   # Deno configuration and tasks
 ├── src/
 │   ├── api.ts                  # Main orchestration API
-│   ├── audit.ts                # Audit report generation
 │   ├── async.ts                # Async utilities (mapParallel, withRetries, sleep)
-│   ├── cache.ts                # Caching utilities
-│   ├── models.ts               # LLM model definitions
-│   │   ├── normalizers.ts      # Text normalization (brand names, etc.)
-│   ├── openai.ts               # OpenAI API wrapper with Zod validation
+│   ├── llm.ts                  # Provider-agnostic LLM interface
+│   ├── batch-response.ts       # BatchResponse class with usage tracking
+│   ├── providers/              # LLM provider implementations
+│   │   ├── index.ts            # Provider registry and Model factory
+│   │   ├── openai.ts           # OpenAI provider
+│   │   ├── gemini.ts           # Google Gemini provider
+│   │   ├── model.ts            # Model interface and factory
+│   │   └── pricing.ts          # Model pricing lookup
+│   ├── assets/
+│   │   └── models.json         # Pricing data from models.dev
 │   ├── urls.ts                 # URL manipulation utilities
 │   ├── utils.ts                # General utilities
 │   ├── schemas/                # Zod schemas for all data types
@@ -74,11 +79,15 @@ cueryjs/
 
 ## Key Concepts
 
-### OpenAI Integration
+### LLM Integration
 
-All LLM calls go through `src/openai.ts` which provides:
-- `askOpenAI()` - Direct OpenAI call with Zod schema validation
-- `askOpenAISafe()` - Wrapped version with error handling (returns null on failure)
+All LLM calls go through `src/llm.ts` which provides:
+- `askLLM()` - Direct LLM call with Zod schema validation
+- `askLLMSafe()` - Wrapped version with retry logic and error handling
+
+Supports multiple providers (OpenAI, Gemini) via the `src/providers/` module:
+- `model('gpt-4.1').pricing()` - Get model pricing info
+- `model('gemini-2.0-flash').provider()` - Get provider instance
 
 ### Schemas
 
@@ -89,7 +98,7 @@ All data structures are defined as Zod schemas in `src/schemas/`. This ensures:
 
 ### Tools vs Utilities
 
-- **Tools** (`src/tools/`): LLM-powered functions that call OpenAI
+- **Tools** (`src/tools/`): LLM-powered functions that make LLM calls
 - **Utilities** (`src/`): Pure functions for data manipulation, no LLM calls
 
 ### Import Patterns
@@ -97,7 +106,7 @@ All data structures are defined as Zod schemas in `src/schemas/`. This ensures:
 From tools:
 ```typescript
 import { mapParallel } from '../async.ts';
-import { askOpenAISafe } from '../openai.ts';
+import { askLLMSafe } from '../llm.ts';
 import { searchWithFormat } from './search.ts';  // inter-tool import
 ```
 
@@ -126,13 +135,15 @@ Run with OpenAI tests: `RUN_OPENAI_TESTS=1 deno task test`
 
 ## Environment Variables
 
-- `OPENAI_API_KEY` - Required for all LLM operations
+- `OPENAI_API_KEY` - Required for OpenAI models
+- `GOOGLE_API_KEY` or `GEMINI_API_KEY` - Required for Gemini models
 - `RUN_OPENAI_TESTS` - Set to run integration tests
 
 ## Dependencies
 
 - `@openai/openai` - OpenAI API client
-- `zod` - Schema validation
+- `@google/genai` - Google Gemini API client
+- `@zod/zod` - Schema validation (Zod 4)
 - `@std/assert` - Deno standard library assertions
 
 ## API Reference

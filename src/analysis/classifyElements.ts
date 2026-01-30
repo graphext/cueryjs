@@ -1,7 +1,7 @@
 import { z } from '@zod/zod';
 
-import { mapParallel } from '../async.ts';
-import { askOpenAISafe } from '../openai.ts';
+import { mapParallel } from '../helpers/async.ts';
+import { askLLMSafe } from '../llm.ts';
 
 import type { List, Table, Form } from './parseHtml.ts';
 
@@ -90,7 +90,7 @@ async function classifySingleElement<T extends keyof ElementTypeMap>(
 		.replace('{elementType}', elementType)
 		.replace('{content}', JSON.stringify(element, null, 2));
 	const schema = schemaMap[elementType] as z.ZodType<ElementTypeMap[T]['classification']>;
-	const { parsed } = await askOpenAISafe(prompt, model, schema);
+	const { parsed } = await askLLMSafe({ prompt, model, schema });
 	if (!parsed) {
 		throw new Error(`Failed to classify ${elementType} element`);
 	}

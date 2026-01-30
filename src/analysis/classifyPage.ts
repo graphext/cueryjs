@@ -1,6 +1,6 @@
 import { z } from '@zod/zod';
 
-import { askOpenAISafe, type AIParams } from '../openai.ts';
+import { askLLMSafe, type ProviderParams } from '../llm.ts';
 
 import { type ScrapeResponse } from '../apis/hasdata/scrape.ts';
 import { type TopicLabel, createLabelSchema } from '../topics.ts';
@@ -338,7 +338,7 @@ using the following two-level taxonomy:
 export async function classifyPage(
 	pageContext: string,
 	model: string = 'gpt-5.1',
-	modelParams: AIParams = { reasoning: { effort: 'none' } }
+	modelParams: ProviderParams = { reasoning: { effort: 'none' } }
 ): Promise<TopicLabel | null> {
 
 	if (pageContext == null || pageContext.trim() === '') {
@@ -357,7 +357,7 @@ export async function classifyPage(
 	});
 
 	try {
-		const { parsed, error } = await askOpenAISafe(prompt, model, schema, modelParams);
+		const { parsed, error } = await askLLMSafe({ prompt, model, schema, params: modelParams });
 		if (error != null || parsed == null) {
 			return null;
 		}
@@ -394,6 +394,6 @@ export async function classifyPageFreestyle(
 	model: string = 'gpt-4.1'
 ): Promise<AIPageSummary | null> {
 	const prompt = PAGE_PROMPT.replace('{context}', context);
-	const answer = await askOpenAISafe(prompt, model, AISummarySchema);
+	const answer = await askLLMSafe({ prompt, model, schema: AISummarySchema });
 	return answer.parsed;
 }

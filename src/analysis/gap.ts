@@ -1,14 +1,14 @@
 import { z } from '@zod/zod';
 
-import { askOpenAISafe } from '../openai.ts';
+import { askLLMSafe } from '../llm.ts';
 
-import { dedent } from '../utils.ts';
+import { dedent } from '../helpers/utils.ts';
 import { type Brand, type FlaggedBrand } from '../schemas/brand.schema.ts';
 import { type Source } from '../schemas/sources.schema.ts';
 import { type SearchResult } from '../schemas/search.schema.ts';
 import { type SerpResponse } from '../apis/hasdata/serp.ts';
 import { type ScrapeResponse } from '../apis/hasdata/scrape.ts';
-import { extractDomain } from '../urls.ts';
+import { extractDomain } from '../helpers/urls.ts';
 import { html as parseHtml, links as extractLinks } from './parseHtml.ts';
 
 
@@ -63,12 +63,12 @@ export async function generateTopicQueries(
 		keywords: z.array(z.string()).describe(`List of ${n} keywords.`)
 	});
 
-	const { parsed } = await askOpenAISafe(
+	const { parsed } = await askLLMSafe({
 		prompt,
-		'gpt-5.1',
-		keywordsSchema,
-		{ reasoning: { effort: 'none' } }
-	);
+		model: 'gpt-5.1',
+		schema: keywordsSchema,
+		params: { reasoning: { effort: 'none' } },
+	});
 
 	if (!parsed) {
 		throw new Error('Failed to generate keywords for topic!');

@@ -6,9 +6,13 @@
  */
 
 import { z } from '@zod/zod';
-import { mapParallel } from '../async.ts';
-import { askOpenAISafe, type AIParams } from '../openai.ts';
-import { dedent } from '../utils.ts';
+import { mapParallel } from '../helpers/async.ts';
+import { askLLMSafe, calculateCost, type LLMResponse, type ProviderParams } from '../llm.ts';
+import { BatchResponse } from '../response.ts';
+import { dedent } from '../helpers/utils.ts';
+
+// Re-export for backwards compatibility
+export type AIParams = ProviderParams;
 
 // ============================================================================
 // Prompts
@@ -139,14 +143,14 @@ export async function generateSchema({
 		{ role: 'user' as const, content: SCHEMA_GENERATION_PROMPT.replace('{instructions}', instructions) }
 	];
 
-	const { parsed, error } = await askOpenAISafe(
+	const { parsed, error } = await askLLMSafe({
 		prompt,
 		model,
-		SchemaResponseSchema,
-		modelParams,
+		schema: SchemaResponseSchema,
+		params: modelParams,
 		maxRetries,
-		'return'
-	);
+		onError: 'return',
+	});
 
 	if (error || !parsed) {
 		throw new Error(`Failed to generate schema: ${error?.message ?? 'Unknown error'}`);
@@ -162,19 +166,19 @@ export async function generateSchema({
 async function convertToSchemaInstructions(
 	instructions: string,
 	model: string,
-	modelParams: AIParams,
+	modelParams: ProviderParams,
 	maxRetries: number
 ): Promise<string> {
 	const prompt = SCHEMA_CONVERSION_PROMPT.replace('{instructions}', instructions);
 
-	const { parsed, error } = await askOpenAISafe(
+	const { parsed, error } = await askLLMSafe({
 		prompt,
 		model,
-		SchemaInstructionsSchema,
-		modelParams,
+		schema: SchemaInstructionsSchema,
+		params: modelParams,
 		maxRetries,
-		'return'
-	);
+		onError: 'return',
+	});
 
 	if (error || !parsed) {
 		throw new Error(`Failed to convert instructions: ${error?.message ?? 'Unknown error'}`);
@@ -204,10 +208,12 @@ export interface GenericBatchOptions extends BaseLLMOptions {
 	records: Array<Record<string, unknown> | null>;
 	schema: Record<string, unknown>;
 	maxConcurrency?: number;
+	trackCost?: boolean;
 }
 
 /**
  * Processes a single record using an LLM with a provided JSON schema.
+ * Returns both the result and usage information.
  */
 export async function generic<T = Record<string, unknown>>({
 	record,
@@ -216,9 +222,9 @@ export async function generic<T = Record<string, unknown>>({
 	model = 'gpt-4.1-mini',
 	modelParams = {},
 	maxRetries = 3
-}: GenericOptions): Promise<T | null> {
+}: GenericOptions): Promise<LLMResponse<T | null>> {
 	if (record == null || Object.keys(record).length === 0) {
-		return null;
+		return { parsed: null, text: null, usage: null, error: null };
 	}
 
 	const zodSchema = z.fromJSONSchema(schema);
@@ -226,38 +232,45 @@ export async function generic<T = Record<string, unknown>>({
 		.replace('{instructions}', instructions)
 		.replace('{record}', formatRecord(record));
 
-	const { parsed, error } = await askOpenAISafe(
+	const response = await askLLMSafe({
 		prompt,
 		model,
-		zodSchema,
-		modelParams,
+		schema: zodSchema,
+		params: modelParams,
 		maxRetries,
-		'return'
-	);
+		onError: 'return',
+	});
 
-	if (error || parsed == null) {
-		throw new Error(`Failed to process record: ${error?.message ?? 'Unknown error'}`);
+	if (response.error || response.parsed == null) {
+		throw new Error(`Failed to process record: ${response.error?.message ?? 'Unknown error'}`);
 	}
 
-	return parsed as T;
+	return { parsed: response.parsed as T, text: response.text, usage: response.usage, error: null };
 }
 
 /**
  * Processes multiple records using an LLM with a provided JSON schema.
+ * Returns a BatchResponse with usage tracking.
  */
-export function genericBatch<T = Record<string, unknown>>({
+export async function genericBatch<T = Record<string, unknown>>({
 	records,
 	instructions,
 	schema,
 	model = 'gpt-4.1-mini',
 	modelParams = {},
 	maxRetries = 3,
-	maxConcurrency = 100
-}: GenericBatchOptions): Promise<Array<T | null>> {
-	return mapParallel(
-		records,
-		maxConcurrency,
-		(record) => generic<T>({ record, instructions, schema, model, modelParams, maxRetries })
+	maxConcurrency = 100,
+	trackCost = false,
+}: GenericBatchOptions): Promise<BatchResponse<T | null>> {
+	const responses = await mapParallel(records, maxConcurrency, (record) =>
+		generic<T>({ record, instructions, schema, model, modelParams, maxRetries })
+	);
+
+	return new BatchResponse(
+		responses.map(r => r.parsed),
+		trackCost ? responses.map(r => r.usage) : undefined,
+		trackCost ? model : undefined,
+		trackCost ? calculateCost : undefined
 	);
 }
 
@@ -280,7 +293,7 @@ async function resolveSchema(
 	schemaOrInstructions: string | Record<string, unknown> | null | undefined,
 	taskInstructions: string,
 	model: string,
-	modelParams: AIParams,
+	modelParams: ProviderParams,
 	maxRetries: number
 ): Promise<ResolvedSchema> {
 	// Schema already provided as object
@@ -357,7 +370,7 @@ export async function auto<T = Record<string, unknown>>({
 		maxRetries
 	);
 
-	const data = await generic<T>({
+	const response = await generic<T>({
 		record,
 		instructions,
 		schema,
@@ -366,7 +379,16 @@ export async function auto<T = Record<string, unknown>>({
 		maxRetries
 	});
 
-	return { data, schema, schemaReasoning };
+	return { data: response.parsed, schema, schemaReasoning };
+}
+
+/**
+ * Result from autoBatch includes schema info and BatchResponse.
+ */
+export interface AutoBatchResult<T> {
+	data: BatchResponse<T | null>;
+	schema: Record<string, unknown>;
+	schemaReasoning: string;
 }
 
 /**
@@ -383,7 +405,7 @@ export async function autoBatch<T = Record<string, unknown>>({
 	modelParams = {},
 	maxRetries = 3,
 	maxConcurrency = 100
-}: AutoBatchOptions): Promise<AutoResult<Array<T | null>>> {
+}: AutoBatchOptions): Promise<AutoBatchResult<T>> {
 	const { schema, schemaReasoning } = await resolveSchema(
 		schemaOrInstructions,
 		instructions,

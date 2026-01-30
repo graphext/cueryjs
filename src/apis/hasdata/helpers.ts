@@ -1,7 +1,7 @@
-import { withRetries, type RetryConfig } from '../../async.ts';
+import { withRetries, type RetryConfig } from '../../helpers/async.ts';
 
 import type { Source } from '../../schemas/sources.schema.ts';
-import { extractDomain } from '../../urls.ts';
+import { extractDomain } from '../../helpers/urls.ts';
 
 export const HASDATA_CONCURRENCY = 29;
 

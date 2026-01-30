@@ -13,7 +13,7 @@
  *    - http://suggestqueries.google.com/complete/search?output=toolbar&hl=en&q=best+electric+cars
  *
 */
-import { withRetries, type RetryConfig, RETRY_DEFAULTS, sleep } from './async.ts';
+import { withRetries, type RetryConfig, RETRY_DEFAULTS, sleep } from '../helpers/async.ts';
 
 interface AutocompleteOptions {
 	query: string;

@@ -1,9 +1,9 @@
-import { mapParallel } from '../async.ts';
+import { mapParallel } from '../helpers/async.ts';
 import { createBrandMatchKey } from './brands.ts';
-import { type FlaggedBrand } from '../schemas/brand.schema.ts';
+import type { FlaggedBrand } from '../schemas/brand.schema.ts';
 import type { CategorizedSource, EnrichedSource, Source } from '../schemas/sources.schema.ts';
 import { assignTopic, createLabelSchema, toTopics, type TopicLabel } from './topics.ts';
-import type { AIParams } from '../openai.ts';
+import type { ProviderParams } from '../llm.ts';
 import type { Entity } from './entities.ts';
 
 export type { Source, EnrichedSource, CategorizedSource } from '../schemas/sources.schema.ts';
@@ -275,18 +275,18 @@ const WEB_TAXONOMY_SERIALIZED = JSON.stringify(WEB_TAXONOMY, null, 2);
 export async function classifyURLs(
 	urls: Array<string>,
 	model: string = 'gpt-5.1',
-	modelParams: AIParams = { reasoning: { effort: 'none' } },
+	modelParams: ProviderParams = { reasoning: { effort: 'none' } },
 	maxConcurrency: number = 100
 ): Promise<Record<string, TopicLabel | null>> {
-	const labels = await mapParallel(
+	const results = await mapParallel(
 		urls,
 		maxConcurrency,
-		url => assignTopic(url, WEB_TAXONOMY_SERIALIZED, WEB_LABEL_SCHEMA, model, modelParams)
+		url => assignTopic({ text: url, taxonomy: WEB_TAXONOMY_SERIALIZED, labelSchema: WEB_LABEL_SCHEMA, model, modelParams })
 	);
 
 	const urlToCategory: Record<string, TopicLabel | null> = {};
 	urls.forEach((url, index) => {
-		urlToCategory[url] = labels[index];
+		urlToCategory[url] = results[index].parsed;
 	});
 
 	return urlToCategory;
@@ -299,7 +299,7 @@ export async function makeCategoryMapper(
 	sourceLists: Array<Array<Source>>,
 	domains: boolean = false,
 	model: string = 'gpt-5.1',
-	modelParams: AIParams = { reasoning: { effort: 'none' } },
+	modelParams: ProviderParams = { reasoning: { effort: 'none' } },
 	maxConcurrency: number = 100
 ): Promise<Record<string, TopicLabel | null>> {
 	const urls = collectURLs(sourceLists, domains);
@@ -314,7 +314,7 @@ export async function categorizeSources(
 	sourceLists: Array<Array<EnrichedSource>>,
 	domains: boolean = false,
 	model: string = 'gpt-5.1',
-	modelParams: AIParams = { reasoning: { effort: 'none' } },
+	modelParams: ProviderParams = { reasoning: { effort: 'none' } },
 	maxConcurrency: number = 100
 ): Promise<Array<Array<CategorizedSource>>> {
 	const categoryMapper = await makeCategoryMapper(sourceLists, domains, model, modelParams, maxConcurrency);

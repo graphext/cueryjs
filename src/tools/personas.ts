@@ -1,9 +1,9 @@
-import { askOpenAISafe } from '../openai.ts';
+import { askLLMSafe } from '../llm.ts';
 
 import { buildBrandContext } from './brands.ts';
 import type { PersonasOptions, PersonasResponse } from '../schemas/persona.schema.ts';
 import { PersonasResponseSchema } from '../schemas/persona.schema.ts';
-import { dedent } from '../utils.ts';
+import { dedent } from '../helpers/utils.ts';
 
 const PROMPT = dedent(`
 You're a marketing expert identifying typical profiles/personas of people searching
@@ -102,9 +102,9 @@ export async function generatePersonas({
 		.replaceAll('{instructions}', instructions || '')
 		.replaceAll('{currentPersonasInfo}', currentData || '');
 
-	const { parsed } = await askOpenAISafe(content, model, PersonasResponseSchema);
+	const { parsed } = await askLLMSafe({ prompt: content, model, schema: PersonasResponseSchema });
 	if (!parsed) {
-		throw new Error('Failed to parse response from OpenAI');
+		throw new Error('Failed to parse response from LLM');
 	}
 	return parsed;
 }

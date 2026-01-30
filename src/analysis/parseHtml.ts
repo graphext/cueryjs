@@ -1,4 +1,4 @@
-import { extractDomain } from '../urls.ts';
+import { extractDomain } from '../helpers/urls.ts';
 
 import type { CheerioAPI, Cheerio } from 'cheerio';
 import { load } from 'cheerio';

@@ -13,10 +13,10 @@ src/
 ## File Placement
 
 ### Root `/src/` (Utilities)
-- Pure functions, no OpenAI calls
+- Pure functions, no LLM calls
 - Shared across tools
-- Examples: `async.ts`, `cache.ts`, `urls.ts`, `utils.ts`
-- Orchestrators: `api.ts`, `audit.ts`
+- Examples: `async.ts`, `urls.ts`, `utils.ts`
+- Orchestrators: `api.ts`
 
 ### `/src/tools/` (LLM Tools)
 - Functions that call OpenAI
@@ -49,11 +49,13 @@ import { tool } from './tools/tool.ts';
 import { utility } from './utility.ts';
 ```
 
-## OpenAI Integration
+## LLM Integration
 
-- All LLM calls go through `src/openai.ts`
+- All LLM calls go through `src/llm.ts` (provider-agnostic)
+- Providers (OpenAI, Gemini) are in `src/providers/`
 - Use Zod schemas for response validation
-- Use `askOpenAISafe` for graceful error handling
+- Use `askLLMSafe` for graceful error handling
+- `src/openai.ts` is a backwards-compatibility layer
 
 ## Schema Design
 
