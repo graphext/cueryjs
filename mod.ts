@@ -10,8 +10,6 @@ export { BatchResponse } from './src/response.ts';
 export {
 	getProvider,
 	getProviderForModel,
-	model,
-	type Model,
 	getModelPricing,
 	getModelInfo,
 	calculateCost,

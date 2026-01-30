@@ -1,5 +1,5 @@
 import { mapParallel } from '../helpers/async.ts';
-import { askLLMSafe, calculateCost, type LLMResponse, type ProviderParams } from '../llm.ts';
+import { askLLMSafe, type LLMResponse, type ProviderParams } from '../llm.ts';
 import { BatchResponse } from '../response.ts';
 import { EntitiesSchema, type Entity } from '../schemas/entity.schema.ts';
 import { dedent } from '../helpers/utils.ts';
@@ -205,8 +205,7 @@ export async function extractEntitiesBatch({
 	return new BatchResponse(
 		responses.map((r) => r.parsed),
 		trackCost ? responses.map((r) => r.usage) : undefined,
-		trackCost ? model : undefined,
-		trackCost ? calculateCost : undefined
+		trackCost ? model : undefined
 	);
 }
 

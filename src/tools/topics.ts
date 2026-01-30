@@ -1,7 +1,7 @@
 /* eslint no-console: ["warn", { allow: ["log", "warn", "error"] }] */
 import { z } from '@zod/zod';
 import { mapParallel } from '../helpers/async.ts';
-import { askLLMSafe, calculateCost, type Message, type ProviderParams, type LLMResponse } from '../llm.ts';
+import { askLLMSafe, type Message, type ProviderParams, type LLMResponse } from '../llm.ts';
 import { BatchResponse } from '../response.ts';
 
 import {
@@ -293,8 +293,7 @@ export async function assignTopics({
 	return new BatchResponse(
 		responses.map(r => r.parsed),
 		trackCost ? responses.map(r => r.usage) : undefined,
-		trackCost ? model : undefined,
-		trackCost ? calculateCost : undefined
+		trackCost ? model : undefined
 	);
 }
 

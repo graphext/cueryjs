@@ -1,5 +1,5 @@
 import { mapParallel } from '../helpers/async.ts';
-import { askLLMSafe, calculateCost, type LLMResponse, type Message } from '../llm.ts';
+import { askLLMSafe, type LLMResponse, type Message } from '../llm.ts';
 import { BatchResponse } from '../response.ts';
 import type { BrandContext } from '../schemas/brand.schema.ts';
 import { ABSentimentsSchema, type ABSentiment } from '../schemas/sentiment.schema.ts';
@@ -141,7 +141,6 @@ export async function extractABSForBrandBatch({
 	return new BatchResponse(
 		responses.map((r) => r.parsed),
 		trackCost ? responses.map((r) => r.usage) : undefined,
-		trackCost ? model : undefined,
-		trackCost ? calculateCost : undefined
+		trackCost ? model : undefined
 	);
 }

@@ -5,8 +5,8 @@
  * with automatic usage tracking and error handling.
  */
 
-import { z } from '@zod/zod';
-import { askLLMSafe, calculateCost, type LLMResponse, type Message, type ProviderParams } from './llm.ts';
+import type { z } from '@zod/zod';
+import { askLLMSafe, type LLMResponse, type Message, type ProviderParams } from './llm.ts';
 import { mapParallel } from './helpers/async.ts';
 import { BatchResponse } from './response.ts';
 
@@ -155,8 +155,7 @@ export function createTool<TInput, TOutput, TResult = TOutput>(
 		return new BatchResponse(
 			responses.map((r) => r.parsed),
 			trackCost ? responses.map((r) => r.usage) : undefined,
-			trackCost ? model : undefined,
-			trackCost ? calculateCost : undefined
+			trackCost ? model : undefined
 		);
 	}
 

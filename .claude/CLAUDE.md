@@ -86,8 +86,9 @@ All LLM calls go through `src/llm.ts` which provides:
 - `askLLMSafe()` - Wrapped version with retry logic and error handling
 
 Supports multiple providers (OpenAI, Gemini) via the `src/providers/` module:
-- `model('gpt-4.1').pricing()` - Get model pricing info
-- `model('gemini-2.0-flash').provider()` - Get provider instance
+- `getProviderForModel('gpt-4.1')` - Get provider instance for a model
+- `getModelPricing('gpt-4.1')` - Get model pricing info
+- `calculateCost('gpt-4.1', usage)` - Calculate cost from token usage
 
 ### Schemas
 

@@ -4,7 +4,8 @@
 
 import { GoogleGenAI } from '@google/genai';
 import { z } from '@zod/zod';
-import type { LLMProvider, LLMResponse, Message, ProviderParams, TokenUsage } from '../llm.ts';
+import type { TokenUsage } from '../response.ts';
+import type { LLMProvider, LLMResponse, Message, ProviderParams } from './types.ts';
 
 /**
  * Convert messages to Gemini content format.

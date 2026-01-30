@@ -5,6 +5,8 @@
  * adding usage aggregation capabilities.
  */
 
+import { calculateCost } from './providers/pricing.ts';
+
 /**
  * Token usage from a single LLM call.
  */
@@ -35,11 +37,6 @@ export interface AggregatedUsage {
 }
 
 /**
- * Cost calculator function type.
- */
-export type CostCalculator = (model: string, usage: TokenUsage) => UsageCost | null;
-
-/**
  * A batch of LLM results with usage tracking.
  *
  * Implements Iterable<T> and provides array-like methods for backwards
@@ -49,19 +46,16 @@ export class BatchResponse<T> implements Iterable<T> {
 	readonly results: ReadonlyArray<T>;
 	private readonly _tokenUsages: Array<TokenUsage | undefined> | null;
 	private readonly _model: string | null;
-	private readonly _costCalculator: CostCalculator | null;
 
 	constructor(
 		results: T[],
 		tokenUsages?: Array<TokenUsage | null | undefined>,
-		model?: string,
-		costCalculator?: CostCalculator
+		model?: string
 	) {
 		this.results = results;
 		// Normalize null to undefined for internal storage, or null if not provided
 		this._tokenUsages = tokenUsages ? tokenUsages.map(u => u ?? undefined) : null;
 		this._model = model ?? null;
-		this._costCalculator = costCalculator ?? null;
 	}
 
 	// Array-like interface
@@ -80,7 +74,7 @@ export class BatchResponse<T> implements Iterable<T> {
 
 	map<U>(fn: (value: T, index: number) => U): BatchResponse<U> {
 		const mapped = this.results.map((item, i) => fn(item, i));
-		return new BatchResponse(mapped, this._tokenUsages ?? undefined, this._model ?? undefined, this._costCalculator ?? undefined);
+		return new BatchResponse(mapped, this._tokenUsages ?? undefined, this._model ?? undefined);
 	}
 
 	filter(fn: (value: T, index: number) => boolean): BatchResponse<T> {
@@ -94,7 +88,7 @@ export class BatchResponse<T> implements Iterable<T> {
 			}
 		});
 
-		return new BatchResponse(filtered, usages, this._model ?? undefined, this._costCalculator ?? undefined);
+		return new BatchResponse(filtered, usages, this._model ?? undefined);
 	}
 
 	forEach(fn: (value: T, index: number) => void): void {
@@ -148,11 +142,8 @@ export class BatchResponse<T> implements Iterable<T> {
 			totalTokens: valid.reduce((sum, u) => sum + u.totalTokens, 0),
 		};
 
-		// Calculate cost lazily only if we have model and calculator
-		let cost: UsageCost | null = null;
-		if (this._model && this._costCalculator) {
-			cost = this._costCalculator(this._model, aggregatedTokens);
-		}
+		// Calculate cost if we have a model
+		const cost = this._model ? calculateCost(this._model, aggregatedTokens) : null;
 
 		return {
 			tokens: aggregatedTokens,

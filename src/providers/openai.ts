@@ -4,7 +4,8 @@
 
 import OpenAI from '@openai/openai';
 import { z } from '@zod/zod';
-import type { LLMProvider, LLMResponse, Message, ProviderParams, TokenUsage } from '../llm.ts';
+import type { TokenUsage } from '../response.ts';
+import type { LLMProvider, LLMResponse, Message, ProviderParams } from './types.ts';
 
 type AutoParseableTextFormat<ParsedT> = OpenAI.Responses.ResponseFormatTextJSONSchemaConfig & {
 	__output: ParsedT;

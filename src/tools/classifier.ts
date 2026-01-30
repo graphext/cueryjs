@@ -1,6 +1,6 @@
 import { z } from '@zod/zod';
 import { mapParallel } from '../helpers/async.ts';
-import { askLLMSafe, calculateCost, type ProviderParams, type LLMResponse } from '../llm.ts';
+import { askLLMSafe, type ProviderParams, type LLMResponse } from '../llm.ts';
 import { BatchResponse } from '../response.ts';
 import { dedent, formatRecordsAttrWise } from '../helpers/utils.ts';
 
@@ -179,8 +179,7 @@ export async function classifyBatch({
 	return new BatchResponse(
 		responses.map(r => r.parsed),
 		trackCost ? responses.map(r => r.usage) : undefined,
-		trackCost ? model : undefined,
-		trackCost ? calculateCost : undefined
+		trackCost ? model : undefined
 	);
 }
 
@@ -241,8 +240,7 @@ export async function labelBatch({
 	return new BatchResponse(
 		responses.map(r => r.parsed),
 		trackCost ? responses.map(r => r.usage) : undefined,
-		trackCost ? model : undefined,
-		trackCost ? calculateCost : undefined
+		trackCost ? model : undefined
 	);
 }
 
