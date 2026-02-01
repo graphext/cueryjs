@@ -1,6 +1,6 @@
 import { assertEquals, assertExists } from '@std/assert';
 
-import { classify, classifyBatch, extractLabels } from '../src/tools/classifier.ts';
+import { Classifier, LabelExtractor } from '../src/tools/classifier.ts';
 
 const SKIP_OPENAI = !Deno.env.get('RUN_OPENAI_TESTS');
 
@@ -9,7 +9,7 @@ const SKIP_OPENAI = !Deno.env.get('RUN_OPENAI_TESTS');
 // =============================================================================
 
 Deno.test({
-	name: 'classify - classifies tech content correctly',
+	name: 'Classifier.invoke - classifies tech content correctly',
 	ignore: SKIP_OPENAI,
 	async fn() {
 		const labels = {
@@ -23,7 +23,8 @@ Deno.test({
 			description: 'OpenAI announces GPT-5 with improved reasoning capabilities'
 		};
 
-		const response = await classify({ record, labels });
+		const classifier = new Classifier({ labels }, { model: 'gpt-4.1-mini' });
+		const response = await classifier.invoke(record);
 
 		assertExists(response.parsed);
 		assertEquals(response.parsed, 'Technology');
@@ -31,7 +32,7 @@ Deno.test({
 });
 
 Deno.test({
-	name: 'classifyBatch - classifies multiple records correctly',
+	name: 'Classifier.batch - classifies multiple records correctly',
 	ignore: SKIP_OPENAI,
 	async fn() {
 		const labels = {
@@ -46,7 +47,8 @@ Deno.test({
 			{ text: 'This pasta recipe uses fresh tomatoes and basil' }
 		];
 
-		const results = await classifyBatch({ records, labels });
+		const classifier = new Classifier({ labels }, { model: 'gpt-4.1-mini' });
+		const results = await classifier.batch(records);
 		const resultsArray = results.toArray();
 
 		assertEquals(resultsArray.length, 3);
@@ -57,7 +59,7 @@ Deno.test({
 });
 
 Deno.test({
-	name: 'extractLabels - extracts labels from product records',
+	name: 'LabelExtractor.invoke - extracts labels from product records',
 	ignore: SKIP_OPENAI,
 	async fn() {
 		const records = [
@@ -71,22 +73,22 @@ Deno.test({
 			{ name: 'Wireless Earbuds', description: 'Bluetooth audio device with noise cancellation' }
 		];
 
-		const result = await extractLabels({
-			records,
-			nLabels: 4,
-			maxSamples: 50
-		});
+		const extractor = new LabelExtractor(
+			{ nLabels: 4, maxSamples: 50 },
+			{ model: 'gpt-4.1' }
+		);
+		const response = await extractor.invoke(records);
 
-		console.log('Extracted labels:', result);
+		console.log('Extracted labels:', response.parsed);
 
-		assertExists(result);
-		assertEquals(typeof result, 'object');
+		assertExists(response.parsed);
+		assertEquals(typeof response.parsed, 'object');
 
-		const labelNames = Object.keys(result);
+		const labelNames = Object.keys(response.parsed);
 		assertEquals(labelNames.length > 0, true);
 		assertEquals(labelNames.length <= 4, true);
 
-		for (const [name, description] of Object.entries(result)) {
+		for (const [name, description] of Object.entries(response.parsed)) {
 			assertEquals(typeof name, 'string');
 			assertEquals(name.length > 0, true);
 			assertEquals(typeof description, 'string');
@@ -96,7 +98,7 @@ Deno.test({
 });
 
 Deno.test({
-	name: 'extractLabels + classifyBatch - end-to-end workflow',
+	name: 'LabelExtractor + Classifier.batch - end-to-end workflow',
 	ignore: SKIP_OPENAI,
 	async fn() {
 		const records = [
@@ -109,11 +111,12 @@ Deno.test({
 		];
 
 		// Step 1: Extract labels
-		const labels = await extractLabels({
-			records,
-			nLabels: 2,
-			instructions: 'Focus on the main content categories'
-		});
+		const extractor = new LabelExtractor(
+			{ nLabels: 2, instructions: 'Focus on the main content categories' },
+			{ model: 'gpt-4.1' }
+		);
+		const extractResponse = await extractor.invoke(records);
+		const labels = extractResponse.parsed;
 
 		console.log('Extracted labels:', labels);
 
@@ -122,7 +125,8 @@ Deno.test({
 		assertEquals(labelNames.length > 0, true);
 
 		// Step 2: Classify using extracted labels
-		const classificationsResponse = await classifyBatch({ records, labels });
+		const classifier = new Classifier({ labels }, { model: 'gpt-4.1-mini' });
+		const classificationsResponse = await classifier.batch(records);
 		const classifications = classificationsResponse.toArray();
 
 		console.log('Classifications:', classifications);
@@ -140,29 +144,31 @@ Deno.test({
 // Tests that don't require OpenAI (null/empty handling)
 // =============================================================================
 
-Deno.test('classify - returns null for null record', async () => {
+Deno.test('Classifier.invoke - returns null for null record', async () => {
 	const labels = {
 		'Technology': 'Tech content',
 		'Sports': 'Sports content'
 	};
 
-	const response = await classify({ record: null, labels });
+	const classifier = new Classifier({ labels }, { model: 'gpt-4.1-mini' });
+	const response = await classifier.invoke(null);
 
 	assertEquals(response.parsed, null);
 });
 
-Deno.test('classify - returns null for empty record', async () => {
+Deno.test('Classifier.invoke - returns null for empty record', async () => {
 	const labels = {
 		'Technology': 'Tech content',
 		'Sports': 'Sports content'
 	};
 
-	const response = await classify({ record: {}, labels });
+	const classifier = new Classifier({ labels }, { model: 'gpt-4.1-mini' });
+	const response = await classifier.invoke({});
 
 	assertEquals(response.parsed, null);
 });
 
-Deno.test('classifyBatch - handles null records in batch', async () => {
+Deno.test('Classifier.batch - handles null records in batch', async () => {
 	const labels = {
 		'Technology': 'Tech content',
 		'Sports': 'Sports content'
@@ -170,7 +176,8 @@ Deno.test('classifyBatch - handles null records in batch', async () => {
 
 	const records = [null, {}, null];
 
-	const results = await classifyBatch({ records, labels });
+	const classifier = new Classifier({ labels }, { model: 'gpt-4.1-mini' });
+	const results = await classifier.batch(records);
 	const resultsArray = results.toArray();
 
 	assertEquals(resultsArray.length, 3);
@@ -179,15 +186,17 @@ Deno.test('classifyBatch - handles null records in batch', async () => {
 	assertEquals(resultsArray[2], null);
 });
 
-Deno.test('extractLabels - returns empty object for empty records', async () => {
-	const result = await extractLabels({ records: [] });
+Deno.test('LabelExtractor.invoke - returns null for empty records', async () => {
+	const extractor = new LabelExtractor({}, { model: 'gpt-4.1' });
+	const response = await extractor.invoke([]);
 
-	assertEquals(result, {});
+	assertEquals(response.parsed, null);
 });
 
-Deno.test('extractLabels - returns empty object for null-ish records', async () => {
+Deno.test('LabelExtractor.invoke - returns null for null-ish records', async () => {
+	const extractor = new LabelExtractor({}, { model: 'gpt-4.1' });
 	// @ts-expect-error Testing null handling
-	const result = await extractLabels({ records: null });
+	const response = await extractor.invoke(null);
 
-	assertEquals(result, {});
+	assertEquals(response.parsed, null);
 });

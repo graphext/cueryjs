@@ -1,12 +1,12 @@
-import { assertEquals, assertExists } from '@std/assert';
+import { assertEquals, assertExists, assertThrows } from '@std/assert';
 
-import { assignTopic, extractTopics, createLabelSchema } from '../src/tools/topics.ts';
+import { TopicAssigner, TopicExtractor } from '../src/tools/topics.ts';
 import type { TaxonomyType } from '../src/tools/topics.ts';
 
 const SKIP_OPENAI = !Deno.env.get('RUN_OPENAI_TESTS');
 
 Deno.test({
-	name: 'assignTopic - successful classification with Taxonomy format',
+	name: 'TopicAssigner.invoke - successful classification with Taxonomy format',
 	ignore: SKIP_OPENAI,
 	async fn() {
 		const taxonomy: TaxonomyType = {
@@ -26,10 +26,10 @@ Deno.test({
 			]
 		};
 
-		const labelSchema = createLabelSchema(taxonomy);
+		const assigner = new TopicAssigner({ taxonomy }, { model: 'gpt-4.1-mini' });
 		const text = 'Machine learning models are revolutionizing how we process data and make predictions';
 
-		const response = await assignTopic({ text, taxonomy, labelSchema });
+		const response = await assigner.invoke(text);
 
 		assertExists(response.parsed);
 		assertEquals(typeof response.parsed!.topic, 'string');
@@ -40,7 +40,7 @@ Deno.test({
 });
 
 Deno.test({
-	name: 'assignTopic - successful classification with SEO content and array',
+	name: 'TopicAssigner.invoke - successful classification with SEO content and array',
 	ignore: SKIP_OPENAI,
 	async fn() {
 		const taxonomy = [
@@ -54,10 +54,10 @@ Deno.test({
 			}
 		];
 
-		const labelSchema = createLabelSchema({ topics: taxonomy });
+		const assigner = new TopicAssigner({ taxonomy }, { model: 'gpt-4.1-mini' });
 		const text = 'Our SEO strategy focuses on keyword optimization and link building to improve rankings';
 
-		const response = await assignTopic({ text, taxonomy, labelSchema });
+		const response = await assigner.invoke(text);
 
 		assertExists(response.parsed);
 		assertEquals(typeof response.parsed!.topic, 'string');
@@ -68,7 +68,7 @@ Deno.test({
 });
 
 // These tests don't require OpenAI - they test null/empty handling
-Deno.test('assignTopic - returns null for null text', async () => {
+Deno.test('TopicAssigner.invoke - returns null for null text', async () => {
 	const taxonomy: TaxonomyType = {
 		topics: [
 			{
@@ -78,13 +78,13 @@ Deno.test('assignTopic - returns null for null text', async () => {
 		]
 	};
 
-	const labelSchema = createLabelSchema(taxonomy);
-	const response = await assignTopic({ text: null, taxonomy, labelSchema });
+	const assigner = new TopicAssigner({ taxonomy }, { model: 'gpt-4.1-mini' });
+	const response = await assigner.invoke(null);
 
 	assertEquals(response.parsed, null);
 });
 
-Deno.test('assignTopic - returns null for empty text', async () => {
+Deno.test('TopicAssigner.invoke - returns null for empty text', async () => {
 	const taxonomy: TaxonomyType = {
 		topics: [
 			{
@@ -94,13 +94,13 @@ Deno.test('assignTopic - returns null for empty text', async () => {
 		]
 	};
 
-	const labelSchema = createLabelSchema(taxonomy);
-	const response = await assignTopic({ text: '', taxonomy, labelSchema });
+	const assigner = new TopicAssigner({ taxonomy }, { model: 'gpt-4.1-mini' });
+	const response = await assigner.invoke('');
 
 	assertEquals(response.parsed, null);
 });
 
-Deno.test('assignTopic - returns null for whitespace-only text', async () => {
+Deno.test('TopicAssigner.invoke - returns null for whitespace-only text', async () => {
 	const taxonomy: TaxonomyType = {
 		topics: [
 			{
@@ -110,14 +110,14 @@ Deno.test('assignTopic - returns null for whitespace-only text', async () => {
 		]
 	};
 
-	const labelSchema = createLabelSchema(taxonomy);
-	const response = await assignTopic({ text: '   \n\t  ', taxonomy, labelSchema });
+	const assigner = new TopicAssigner({ taxonomy }, { model: 'gpt-4.1-mini' });
+	const response = await assigner.invoke('   \n\t  ');
 
 	assertEquals(response.parsed, null);
 });
 
 Deno.test({
-	name: 'assignTopic - classifies business strategy text',
+	name: 'TopicAssigner.invoke - classifies business strategy text',
 	ignore: SKIP_OPENAI,
 	async fn() {
 		const taxonomy: TaxonomyType = {
@@ -137,10 +137,10 @@ Deno.test({
 			]
 		};
 
-		const labelSchema = createLabelSchema(taxonomy);
+		const assigner = new TopicAssigner({ taxonomy }, { model: 'gpt-4.1-mini' });
 		const text = 'We need to develop a comprehensive business strategy that aligns with our long-term goals and market positioning';
 
-		const response = await assignTopic({ text, taxonomy, labelSchema });
+		const response = await assigner.invoke(text);
 
 		assertExists(response.parsed);
 		assertEquals(response.parsed!.topic, 'Business');
@@ -149,7 +149,7 @@ Deno.test({
 });
 
 Deno.test({
-	name: 'assignTopic - classifies marketing content',
+	name: 'TopicAssigner.invoke - classifies marketing content',
 	ignore: SKIP_OPENAI,
 	async fn() {
 		const taxonomy: TaxonomyType = {
@@ -169,10 +169,10 @@ Deno.test({
 			]
 		};
 
-		const labelSchema = createLabelSchema(taxonomy);
+		const assigner = new TopicAssigner({ taxonomy }, { model: 'gpt-4.1-mini' });
 		const text = 'We are launching a new social media campaign on Instagram and TikTok to reach younger audiences';
 
-		const response = await assignTopic({ text, taxonomy, labelSchema });
+		const response = await assigner.invoke(text);
 
 		assertExists(response.parsed);
 		assertEquals(response.parsed!.topic, 'Marketing');
@@ -181,7 +181,7 @@ Deno.test({
 });
 
 Deno.test({
-	name: 'extractTopics - extracts topics from product records',
+	name: 'TopicExtractor.invoke - extracts topics from product records',
 	ignore: SKIP_OPENAI,
 	async fn() {
 		const records = [
@@ -211,22 +211,21 @@ Deno.test({
 			{ name: 'CRM Platform', description: 'Customer relationship management and sales tracking system' }
 		];
 
-		const result = await extractTopics({
-			records,
-			nTopics: 3,
-			nSubtopics: 3,
-			maxSamples: 100
-		});
+		const extractor = new TopicExtractor(
+			{ nTopics: 3, nSubtopics: 3, maxSamples: 100 },
+			{ model: 'gpt-4.1' }
+		);
+		const result = await extractor.invoke(records);
 
-		console.log(result);
+		console.log(result.parsed);
 
-		assertExists(result);
-		assertExists(result.topics);
-		assertEquals(Array.isArray(result.topics), true);
-		assertEquals(result.topics.length > 0, true);
-		assertEquals(result.topics.length <= 3, true);
+		assertExists(result.parsed);
+		assertExists(result.parsed!.topics);
+		assertEquals(Array.isArray(result.parsed!.topics), true);
+		assertEquals(result.parsed!.topics.length > 0, true);
+		assertEquals(result.parsed!.topics.length <= 3, true);
 
-		for (const topic of result.topics) {
+		for (const topic of result.parsed!.topics) {
 			assertExists(topic.topic);
 			assertEquals(typeof topic.topic, 'string');
 			assertEquals(topic.topic.length > 0, true);
@@ -241,4 +240,17 @@ Deno.test({
 			}
 		}
 	}
+});
+
+Deno.test('TopicExtractor.batch - throws error (not supported)', () => {
+	const extractor = new TopicExtractor(
+		{ nTopics: 3, nSubtopics: 3 },
+		{ model: 'gpt-4.1' }
+	);
+
+	assertThrows(
+		() => extractor.batch(),
+		Error,
+		'TopicExtractor.batch() is not supported'
+	);
 });

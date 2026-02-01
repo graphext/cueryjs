@@ -2,8 +2,8 @@
 import { fetchAIMBatch } from './apis/hasdata/aim.ts';
 import { fetchAIOBatch } from './apis/hasdata/aio.ts';
 import { downloadGPTSnapshots, scrapeGPTBatch, type JobId } from './apis/chatgptScraper/index.ts';
-import { classifyBatch, labelBatch } from './tools/classifier.ts';
-import { extractEntitiesBatch } from './tools/entities.ts';
+import { Classifier, Labeler } from './tools/classifier.ts';
+import { EntityExtractor } from './tools/entities.ts';
 import { funnelToTopics } from './tools/funnel.ts';
 import { type Entity } from './schemas/entity.schema.ts';
 import { type Funnel } from './schemas/funnel.schema.ts';
@@ -13,8 +13,8 @@ import { type Persona } from './schemas/persona.schema.ts';
 import { type BrandContext } from './schemas/brand.schema.ts';
 import { type SearchResult } from './schemas/search.schema.ts';
 import { type Source, type EnrichedSource, type SearchSource } from './schemas/sources.schema.ts';
-import { scoreBatch } from './tools/scorer.ts';
-import { extractTopics, assignTopics } from './tools/topics.ts';
+import { Scorer } from './tools/scorer.ts';
+import { TopicExtractor, TopicAssigner } from './tools/topics.ts';
 import { dedent } from './helpers/utils.ts';
 
 export type ModelResponse = {
@@ -104,13 +104,15 @@ export async function classifyIntent(
 ): Promise<Array<string | null>> {
 	console.log('Classifying prompt intents...');
 
+	const classifier = new Classifier(
+		{
+			labels: intentLabels,
+			instructions: 'Classify the search query into one of the following intents: informational, navigational, transactional.'
+		},
+		{ model: 'gpt-4.1-mini' }
+	);
 	const textRecords = texts.map(text => ({ text }));
-	const intents = await classifyBatch({
-		records: textRecords,
-		labels: intentLabels,
-		instructions: 'Classify the search query into one of the following intents: informational, navigational, transactional.',
-		model: 'gpt-4.1-mini'
-	});
+	const intents = await classifier.batch(textRecords);
 
 	return intents.toArray();
 }
@@ -121,13 +123,23 @@ export async function extractAndAssignTopics(
 	console.log('Identifying topics...');
 	const textRecords = texts.map(text => ({ text }));
 
-	const taxonomy = await extractTopics({
-		records: textRecords,
-		maxSamples: 500
-	});
+	const extractor = new TopicExtractor(
+		{ maxSamples: 500 },
+		{ model: 'gpt-4.1' }
+	);
+	const taxonomyResult = await extractor.invoke(textRecords);
+	const taxonomy = taxonomyResult.parsed;
+
+	if (taxonomy == null) {
+		return texts.map(() => ({ topic: null, subtopic: null }));
+	}
 
 	console.log('Assigning topics...');
-	const topicLabels = await assignTopics({ texts, taxonomy });
+	const assigner = new TopicAssigner(
+		{ taxonomy },
+		{ model: 'gpt-4.1-mini' }
+	);
+	const topicLabels = await assigner.batch(texts);
 
 	return topicLabels.toArray().map(label => ({
 		topic: label?.topic ?? null,
@@ -141,7 +153,11 @@ export async function assignFunnelStages(
 ): Promise<Array<{ funnelStage: string | null; funnelCategory: string | null }>> {
 	console.log('Assigning funnel stages...');
 	const funnelTopics = funnelToTopics(funnel);
-	const funnelLabels = await assignTopics({ texts, taxonomy: funnelTopics });
+	const assigner = new TopicAssigner(
+		{ taxonomy: funnelTopics },
+		{ model: 'gpt-4.1-mini' }
+	);
+	const funnelLabels = await assigner.batch(texts);
 
 	return funnelLabels.toArray().map(label => ({
 		funnelStage: label?.topic ?? null,
@@ -159,13 +175,15 @@ export async function classifyIntoPersonas(
 		personaLabels[persona.name] = persona.description;
 	});
 
+	const labeler = new Labeler(
+		{
+			labels: personaLabels,
+			instructions: 'Classify the search query into one or more customer personas based on the language, intent, and context.'
+		},
+		{ model: 'gpt-4.1-mini' }
+	);
 	const textRecords = texts.map(text => ({ text }));
-	const personaAssignments = await labelBatch({
-		records: textRecords,
-		labels: personaLabels,
-		instructions: 'Classify the search query into one or more customer personas based on the language, intent, and context.',
-		model: 'gpt-4.1-mini'
-	});
+	const personaAssignments = await labeler.batch(textRecords);
 
 	return personaAssignments.toArray();
 }
@@ -179,13 +197,15 @@ export async function classifyBrandedNonBranded(
 		'non-branded': 'The query is generic and does not mention any specific brand names. It focuses on product categories, features, problems, or general information without brand specificity.'
 	};
 
+	const classifier = new Classifier(
+		{
+			labels: brandedLabels,
+			instructions: 'Classify whether the search query mentions specific brands or is generic/category-based.'
+		},
+		{ model: 'gpt-4.1-mini' }
+	);
 	const textRecords = texts.map(text => ({ text }));
-	const brandedClassifications = await classifyBatch({
-		records: textRecords,
-		labels: brandedLabels,
-		instructions: 'Classify whether the search query mentions specific brands or is generic/category-based.',
-		model: 'gpt-4.1-mini'
-	});
+	const brandedClassifications = await classifier.batch(textRecords);
 
 	return brandedClassifications.toArray();
 }
@@ -193,19 +213,19 @@ export async function classifyBrandedNonBranded(
 export async function extractEntities(
 	texts: Array<string>
 ): Promise<Array<Array<Entity>>> {
-	const entityDefinitions = `
-		- brands: Any brand or companies mentioned
-		- products: Any products or services mentioned
-		- features: Specific features or attributes of products/services
-		- issues: Problems or issues mentioned
-	`;
+	const extractor = new EntityExtractor(
+		{
+			entityDefinitions: {
+				brands: 'Any brand or companies mentioned',
+				products: 'Any products or services mentioned',
+				features: 'Specific features or attributes of products/services',
+				issues: 'Problems or issues mentioned'
+			}
+		},
+		{ model: 'gpt-4.1-mini' }
+	);
 
-	const result = await extractEntitiesBatch({
-		texts,
-		entityDefinitions,
-		model: 'gpt-4.1-mini'
-	});
-
+	const result = await extractor.batch(texts);
 	return result.toArray().map(entities => entities ?? []);
 }
 
@@ -221,16 +241,11 @@ export async function scorePurchaseProbability(
 		that a user may perform using a traditional search engine or LLM chat.
 	`);
 
-	const scores = await scoreBatch({
-		records,
-		name: 'Purchase Probability',
-		description,
-		type: 'integer',
-		min: 0,
-		max: 100,
-		model: 'gpt-4.1-mini'
-	});
-
+	const scorer = new Scorer(
+		{ name: 'Purchase Probability', description: description, type: 'integer', min: 0, max: 100 },
+		{ model: 'gpt-4.1-mini' }
+	);
+	const scores = await scorer.batch(records);
 	return scores.toArray().map(score => score ?? 0);
 }
 
@@ -276,15 +291,10 @@ export async function scoreRelevance(
 		"best CRM software for small business" for a brand selling CRM software.
 	`);
 
-	const scores = await scoreBatch({
-		records,
-		name: 'Prompt Relevance',
-		description,
-		type: 'number',
-		min: 0.0,
-		max: 1.0,
-		model: 'gpt-4.1-mini'
-	});
-
+	const scorer = new Scorer(
+		{ name: 'Prompt Relevance', description: description, type: 'number', min: 0.0, max: 1.0 },
+		{ model: 'gpt-4.1-mini' }
+	);
+	const scores = await scorer.batch(records);
 	return scores.toArray().map(score => score ?? 0);
 }

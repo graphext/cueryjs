@@ -1,8 +1,8 @@
 /**
  * Tool abstraction for LLM-powered operations.
  *
- * Provides a consistent interface for single-item and batch processing
- * with automatic usage tracking and error handling.
+ * Provides a base class for building tools with consistent
+ * single-item and batch processing, usage tracking, and error handling.
  */
 
 import type { z } from '@zod/zod';
@@ -11,145 +11,113 @@ import { mapParallel } from './helpers/async.ts';
 import { BatchResponse } from './response.ts';
 
 /**
- * Configuration for creating an LLM tool.
+ * Configuration for LLM calls. Can be overridden per-invocation.
  */
-export interface ToolConfig<TInput, TOutput, TResult = TOutput> {
-	/** Zod schema for validating LLM responses. Can be static or dynamic (function of input). */
-	schema: z.ZodType<TOutput> | ((input: TInput) => z.ZodType<TOutput>);
-
-	/** Generate the prompt from input. */
-	buildPrompt: (input: TInput) => string | Message[];
-
-	/** Extract the final result from the parsed response. Defaults to identity. */
-	extractResult?: (parsed: TOutput) => TResult;
-
-	/** Default model to use. Defaults to 'gpt-4.1-mini'. */
-	defaultModel?: string;
-
-	/** Default model parameters. */
-	defaultParams?: ProviderParams;
-
-	/** Default max retries. Defaults to 3. */
-	defaultMaxRetries?: number;
-
-	/** Whether to track usage. Defaults to true. */
-	trackUsage?: boolean;
-}
-
-/**
- * Options for a single tool invocation.
- */
-export interface ToolInvokeOptions {
-	model?: string;
+export interface ModelConfig {
+	/** The model to use */
+	model: string;
+	/** Provider-specific parameters */
 	modelParams?: ProviderParams;
+	/** Maximum retry attempts (default: 3) */
 	maxRetries?: number;
-	trackUsage?: boolean;
-}
-
-/**
- * Options for batch tool invocation.
- */
-export interface ToolBatchOptions extends ToolInvokeOptions {
+	/** Max concurrent requests for batch (default: 100) */
 	maxConcurrency?: number;
+	/** Enable cost tracking for batch (default: false) */
 	trackCost?: boolean;
 }
 
-/**
- * An LLM-powered tool that processes inputs.
- */
-export interface Tool<TInput, TOutput, TResult = TOutput> {
-	/** Process a single input. */
-	invoke(input: TInput, options?: ToolInvokeOptions): Promise<LLMResponse<TResult | null>>;
-
-	/** Process multiple inputs with usage tracking. */
-	batch(inputs: Array<TInput>, options?: ToolBatchOptions): Promise<BatchResponse<TResult | null>>;
-}
+const DEFAULTS = {
+	maxRetries: 3,
+	maxConcurrency: 100,
+	trackCost: false,
+} as const;
 
 /**
- * Check if an input is considered empty/null and should return null without LLM call.
+ * Abstract base class for LLM-powered tools.
  */
-function isEmptyInput(input: unknown): boolean {
-	if (input == null) return true;
-	if (typeof input === 'string' && input.trim() === '') return true;
-	if (typeof input === 'object' && Object.keys(input).length === 0) return true;
-	return false;
-}
+export abstract class Tool<TInput, TOutput, TResult = TOutput> {
+	protected readonly modelConfig: ModelConfig;
 
-/**
- * Create an LLM tool from a configuration object.
- */
-export function createTool<TInput, TOutput, TResult = TOutput>(
-	config: ToolConfig<TInput, TOutput, TResult>
-): Tool<TInput, TOutput, TResult> {
-	const {
-		schema,
-		buildPrompt,
-		extractResult,
-		defaultModel = 'gpt-4.1-mini',
-		defaultParams = {},
-		defaultMaxRetries = 3,
-		trackUsage: configTrackUsage = true,
-	} = config;
+	constructor(modelConfig: ModelConfig) {
+		this.modelConfig = modelConfig;
+	}
 
-	async function invoke(
-		input: TInput,
-		options: ToolInvokeOptions = {}
-	): Promise<LLMResponse<TResult | null>> {
-		const {
-			model = defaultModel,
-			modelParams = defaultParams,
-			maxRetries = defaultMaxRetries,
-			trackUsage = configTrackUsage,
-		} = options;
+	/**
+	 * Define the Zod schema for LLM response validation.
+	 * Override this to provide structured output validation.
+	 *
+	 * Returns null by default for raw text mode.
+	 * When returning null, TOutput must be `string`.
+	 *
+	 * Make this as cheap as possible, as it's called on every invocation (row).
+	 * E.g. by preparing it in the constructor if it doesn't depend on input.
+	 */
+	protected schema(): z.ZodType<TOutput> | null {
+		return null;
+	}
 
-		// Handle null/empty input
-		if (isEmptyInput(input)) {
+	/** Build the prompt from a single input
+	 * Make this as cheap as possible, as it's called on every invocation (row).
+	 * E.g. by preparing it in the constructor if it doesn't depend on input.
+	*/
+	protected abstract prompt(input: TInput): string | Message[];
+
+	/** Extract final result from parsed output. Override to transform. */
+	protected extractResult(parsed: TOutput): TResult {
+		return parsed as unknown as TResult;
+	}
+
+	/** Check if input should be skipped (returns null without LLM call) */
+	protected isEmpty(input: TInput): boolean {
+		if (input == null) return true;
+		if (typeof input === 'string' && input.trim() === '') return true;
+		if (typeof input === 'object' && Object.keys(input).length === 0) return true;
+		return false;
+	}
+
+	/** Process a single input */
+	async invoke(input: TInput, options: Partial<ModelConfig> = {}): Promise<LLMResponse<TResult | null>> {
+		if (this.isEmpty(input)) {
 			return { parsed: null, text: null, usage: null, error: null };
 		}
 
-		const prompt = buildPrompt(input);
-		const resolvedSchema = typeof schema === 'function' ? schema(input) : schema;
+		const { model, modelParams, maxRetries } = { ...DEFAULTS, ...this.modelConfig, ...options };
 
 		const response = await askLLMSafe({
-			prompt,
+			prompt: this.prompt(input),
 			model,
-			schema: resolvedSchema,
+			schema: this.schema(),
 			params: modelParams,
 			maxRetries,
 			onError: 'return',
 		});
 
-		// Handle errors or failed parsing
 		if (response.error != null || response.parsed == null) {
-			return {
-				parsed: null,
-				text: response.text,
-				usage: trackUsage ? response.usage : null,
-				error: response.error,
-			};
+			return { parsed: null, text: response.text, usage: response.usage, error: response.error };
 		}
 
-		// Extract and return result
-		const result = extractResult
-			? extractResult(response.parsed)
-			: (response.parsed as unknown as TResult);
+		// Type assertion: when schema() returns null, askLLMSafe returns string,
+		// which should match TOutput (caller's responsibility to set TOutput = string)
+		const parsed = response.parsed as TOutput;
 
 		return {
-			parsed: result,
+			parsed: this.extractResult(parsed),
 			text: response.text,
-			usage: trackUsage ? response.usage : null,
+			usage: response.usage,
 			error: null,
 		};
 	}
 
-	async function batch(
-		inputs: Array<TInput>,
-		options: ToolBatchOptions = {}
-	): Promise<BatchResponse<TResult | null>> {
-		const { maxConcurrency = 100, model = defaultModel, trackCost = false, ...invokeOptions } = options;
+	/** Process multiple inputs with usage tracking */
+	async batch(inputs: TInput[], options: Partial<ModelConfig> = {}): Promise<BatchResponse<TResult | null>> {
+		const { model, modelParams, maxRetries, maxConcurrency, trackCost } = {
+			...DEFAULTS,
+			...this.modelConfig,
+			...options,
+		};
 
 		const responses = await mapParallel(inputs, maxConcurrency, (input) =>
-			invoke(input, { model, ...invokeOptions })
+			this.invoke(input, { model, modelParams, maxRetries })
 		);
 
 		return new BatchResponse(
@@ -158,6 +126,4 @@ export function createTool<TInput, TOutput, TResult = TOutput>(
 			trackCost ? model : undefined
 		);
 	}
-
-	return { invoke, batch };
 }

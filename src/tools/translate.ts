@@ -1,6 +1,4 @@
-import { mapParallel } from '../helpers/async.ts';
-import { askLLMSafe, type LLMResponse } from '../llm.ts';
-import { BatchResponse } from '../response.ts';
+import { Tool, type ModelConfig } from '../tool.ts';
 import { dedent } from '../helpers/utils.ts';
 import type { BrandContext } from '../schemas/brand.schema.ts';
 
@@ -36,7 +34,7 @@ You will receive brand context (sector, country). Follow these rules strictly:
 - WRONG: "Tell me about geography" (ignores sector context)
 - CORRECT: "What is GEO in AI visibility and search optimization?" (uses sector to disambiguate the acronym)
 
-{additional_instructions}
+{instructions}
 
 # Keyword
 
@@ -49,92 +47,47 @@ You will receive brand context (sector, country). Follow these rules strictly:
 Return only the converted prompt, nothing else.
 `);
 
-export interface translateParams {
-	keyword: string;
-	language?: string;
-	model?: string;
-	instructions?: string;
+export interface KeywordTranslatorConfig {
+	/** Brand context for disambiguation */
 	brandContext: BrandContext;
+	/** Language for the output prompt (default: 'en') */
+	language?: string;
+	/** Additional instructions */
+	instructions?: string;
 }
 
 /**
- * Translates a single Google search keyword into an equivalent LLM prompt.
- * Returns LLMResult with usage tracking.
+ * A tool that converts Google search keywords into natural language LLM prompts.
+ * Uses raw text mode (no schema) since the output is plain text.
  */
-export async function translate({
-	keyword,
-	language = 'en',
-	model = 'gpt-5-mini',
-	brandContext,
-	instructions = '',
-}: translateParams): Promise<LLMResponse<string | null>> {
-	if (keyword == null || keyword.trim() === '') {
-		return { parsed: null, text: null, usage: null, error: null };
+export class KeywordTranslator extends Tool<string | null, string, string> {
+	private readonly promptTemplate: string;
+
+	constructor(config: KeywordTranslatorConfig, modelConfig: ModelConfig) {
+		super(modelConfig);
+		const { brandContext, language = 'en', instructions = '' } = config;
+
+		this.promptTemplate = TRANSLATE_PROMPT
+			.replace('{language}', language)
+			.replace('{sector}', brandContext.sector)
+			.replace('{country}', brandContext.country)
+			.replace('{instructions}', instructions);
 	}
 
-	const prompt = TRANSLATE_PROMPT.replace('{keyword}', keyword)
-		.replace('{language}', language)
-		.replace('{sector}', brandContext.sector)
-		.replace('{country}', brandContext.country)
-		.replace('{additional_instructions}', instructions);
+	// No schema() override - uses default null for raw text mode
 
-	const response = await askLLMSafe({
-		prompt,
-		model,
-		maxRetries: 3,
-		onError: 'return',
-	});
-
-	if (response.error != null || response.parsed == null) {
-		return {
-			parsed: null,
-			text: response.text,
-			usage: response.usage,
-			error: response.error,
-		};
+	protected prompt(keyword: string | null) {
+		return this.promptTemplate.replace('{keyword}', keyword ?? '');
 	}
 
-	return {
-		parsed: response.parsed,
-		text: response.text,
-		usage: response.usage,
-		error: null,
-	};
+	protected override isEmpty(keyword: string | null): boolean {
+		return keyword == null || keyword.trim() === '';
+	}
 }
 
-export interface translateBatchParams {
-	keywords: Array<string>;
-	language?: string;
-	model?: string;
-	maxConcurrency?: number;
-	instructions?: string;
-	brandContext: BrandContext;
-	trackCost?: boolean;
-}
-
-/**
- * Translates multiple Google search keywords to LLM prompts with usage tracking.
- * Returns BatchResponse where individual items are null on failure.
- */
-export async function translateBatch({
-	keywords,
-	language = 'en',
-	model = 'gpt-4.1-mini',
-	maxConcurrency = 100,
-	brandContext,
-	instructions = '',
-	trackCost = false,
-}: translateBatchParams): Promise<BatchResponse<string | null>> {
-	const responses = await mapParallel(keywords, maxConcurrency, (kwd) =>
-		translate({ keyword: kwd, language, model, brandContext, instructions })
-	);
-
-	return new BatchResponse(
-		responses.map((r) => r.parsed),
-		trackCost ? responses.map((r) => r.usage) : undefined,
-		trackCost ? model : undefined
-	);
-}
+// =============================================================================
+// PromptToKeyword (LLM prompt → keyword)
+// =============================================================================
 
 const REVERSE_TRANSLATE_PROMPT = dedent(`
 You are an expert in understanding search intent.
@@ -165,80 +118,32 @@ Otherwise, Google keyword planner will not accept it.
 Return only the keyword, nothing else.
 `);
 
-export interface reverseTranslateParams {
-	prompt: string;
+export interface PromptToKeywordConfig {
+	/** Language for the output keyword (default: 'en') */
 	language?: string;
-	model?: string;
 }
 
 /**
- * Converts a natural language prompt into an equivalent Google search keyword.
- * Returns LLMResult with usage tracking.
+ * A tool that converts natural language prompts into Google search keywords.
+ * Uses raw text mode (no schema) since the output is plain text.
  */
-export async function reverseTranslate({
-	prompt,
-	language = 'en',
-	model = 'gpt-4.1-mini',
-}: reverseTranslateParams): Promise<LLMResponse<string | null>> {
-	if (prompt == null || prompt.trim() === '') {
-		return { parsed: null, text: null, usage: null, error: null };
+export class PromptToKeyword extends Tool<string | null, string, string> {
+	private readonly promptTemplate: string;
+
+	constructor(config: PromptToKeywordConfig = {}, modelConfig: ModelConfig) {
+		super(modelConfig);
+		const { language = 'en' } = config;
+
+		this.promptTemplate = REVERSE_TRANSLATE_PROMPT.replace('{language}', language);
 	}
 
-	const requestPrompt = REVERSE_TRANSLATE_PROMPT.replace('{prompt}', prompt).replace(
-		'{language}',
-		language
-	);
+	// No schema() override - uses default null for raw text mode
 
-	const response = await askLLMSafe({
-		prompt: requestPrompt,
-		model,
-		maxRetries: 3,
-		onError: 'return',
-	});
-
-	if (response.error != null || response.parsed == null) {
-		return {
-			parsed: null,
-			text: response.text,
-			usage: response.usage,
-			error: response.error,
-		};
+	protected prompt(text: string | null) {
+		return this.promptTemplate.replace('{prompt}', text ?? '');
 	}
 
-	return {
-		parsed: response.parsed,
-		text: response.text,
-		usage: response.usage,
-		error: null,
-	};
-}
-
-export interface reverseTranslateBatchParams {
-	prompts: Array<string>;
-	language?: string;
-	model?: string;
-	maxConcurrency?: number;
-	trackCost?: boolean;
-}
-
-/**
- * Converts multiple natural language prompts to Google search keywords with usage tracking.
- * Returns BatchResponse where individual items are null on failure.
- */
-export async function reverseTranslateBatch({
-	prompts,
-	language = 'en',
-	model = 'gpt-5-mini',
-	maxConcurrency = 100,
-	trackCost = false,
-}: reverseTranslateBatchParams): Promise<BatchResponse<string | null>> {
-	const responses = await mapParallel(prompts, maxConcurrency, (p) =>
-		reverseTranslate({ prompt: p, language, model })
-	);
-
-	return new BatchResponse(
-		responses.map((r) => r.parsed),
-		trackCost ? responses.map((r) => r.usage) : undefined,
-		trackCost ? model : undefined
-	);
+	protected override isEmpty(text: string | null): boolean {
+		return text == null || text.trim() === '';
+	}
 }

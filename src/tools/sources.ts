@@ -1,8 +1,7 @@
-import { mapParallel } from '../helpers/async.ts';
 import { createBrandMatchKey } from './brands.ts';
 import type { FlaggedBrand } from '../schemas/brand.schema.ts';
 import type { CategorizedSource, EnrichedSource, Source } from '../schemas/sources.schema.ts';
-import { assignTopic, createLabelSchema, toTopics, type TopicLabel } from './topics.ts';
+import { TopicAssigner, toTopics, type TopicLabel } from './topics.ts';
 import type { ProviderParams } from '../llm.ts';
 import type { Entity } from './entities.ts';
 
@@ -265,9 +264,7 @@ const WEB_TAXONOMY = {
 	]
 };
 
-const WEB_LABEL_SCHEMA = createLabelSchema({ topics: toTopics(WEB_TAXONOMY) });
-
-const WEB_TAXONOMY_SERIALIZED = JSON.stringify(WEB_TAXONOMY, null, 2);
+const WEB_TAXONOMY_TOPICS = toTopics(WEB_TAXONOMY);
 
 /**
  * Classifies an array of URLs into categories based on WEB_TAXONOMY.
@@ -278,15 +275,16 @@ export async function classifyURLs(
 	modelParams: ProviderParams = { reasoning: { effort: 'none' } },
 	maxConcurrency: number = 100
 ): Promise<Record<string, TopicLabel | null>> {
-	const results = await mapParallel(
-		urls,
-		maxConcurrency,
-		url => assignTopic({ text: url, taxonomy: WEB_TAXONOMY_SERIALIZED, labelSchema: WEB_LABEL_SCHEMA, model, modelParams })
+	const assigner = new TopicAssigner(
+		{ taxonomy: WEB_TAXONOMY_TOPICS },
+		{ model, modelParams, maxConcurrency }
 	);
+
+	const results = await assigner.batch(urls);
 
 	const urlToCategory: Record<string, TopicLabel | null> = {};
 	urls.forEach((url, index) => {
-		urlToCategory[url] = results[index].parsed;
+		urlToCategory[url] = results.toArray()[index];
 	});
 
 	return urlToCategory;

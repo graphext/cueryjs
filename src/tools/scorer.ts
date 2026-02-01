@@ -1,7 +1,5 @@
 import { z } from '@zod/zod';
-import { mapParallel } from '../helpers/async.ts';
-import { askLLMSafe, type LLMResponse } from '../llm.ts';
-import { BatchResponse } from '../response.ts';
+import { Tool, type ModelConfig } from '../tool.ts';
 import { dedent } from '../helpers/utils.ts';
 
 const PROMPT = dedent(`
@@ -19,12 +17,12 @@ based on the content of the attributes.
 {record}
 `);
 
-export type ScoreSchema = z.ZodObject<{ value: z.ZodNumber }>;
+type ScoreSchema = z.ZodObject<{ value: z.ZodNumber }>;
 
 /**
  * Dynamically create a Zod schema for a score based on provided parameters.
  */
-export function makeScoreSchema(
+function makeScoreSchema(
 	type: 'integer' | 'number',
 	min: number,
 	max: number,
@@ -43,112 +41,44 @@ export function makeScoreSchema(
 }
 
 /**
- * Parameters for score (low-level, uses pre-built prompt/schema).
+ * Configuration for the Scorer tool.
  */
-export interface ScoreParams {
-	/** The data record to score */
-	record: Record<string, unknown> | null;
-	/** Pre-built prompt with {record} placeholder */
-	prompt: string;
-	/** Pre-built score schema */
-	schema: ScoreSchema;
-	/** Model to use (default: 'gpt-4.1-mini') */
-	model?: string;
-}
-
-/**
- * Score a single record. Returns LLMResult with usage tracking.
- * Returns null if input is empty or parsing fails.
- */
-export async function score({
-	record,
-	prompt,
-	schema,
-	model = 'gpt-4.1-mini',
-}: ScoreParams): Promise<LLMResponse<number | null>> {
-	if (record == null || Object.keys(record).length === 0) {
-		return { parsed: null, text: null, usage: null, error: null };
-	}
-
-	const renderedPrompt = prompt.replace('{record}', JSON.stringify(record, null, 2));
-	const response = await askLLMSafe({
-		prompt: renderedPrompt,
-		model,
-		schema,
-		maxRetries: 3,
-		onError: 'return',
-	});
-
-	if (response.error != null || response.parsed == null) {
-		return {
-			parsed: null,
-			text: response.text,
-			usage: response.usage,
-			error: response.error,
-		};
-	}
-
-	return {
-		parsed: response.parsed.value,
-		text: response.text,
-		usage: response.usage,
-		error: null,
-	};
-}
-
-/**
- * Parameters for scoreBatch.
- */
-export interface ScoreBatchParams {
-	/** Array of data records to score */
-	records: Array<Record<string, unknown> | null>;
-	/** Name of the score metric */
+export interface ScorerConfig {
 	name: string;
-	/** Description of what the score measures */
 	description: string;
-	/** Score type: 'integer' or 'number' */
 	type: 'integer' | 'number';
-	/** Minimum score value */
 	min: number;
-	/** Maximum score value */
 	max: number;
-	/** Model to use (default: 'gpt-4.1-mini') */
-	model?: string;
-	/** Max concurrent requests (default: 100) */
-	maxConcurrency?: number;
-	/** Enable cost tracking (default: false) */
-	trackCost?: boolean;
 }
 
 /**
- * Score multiple records concurrently with usage tracking.
- * Returns BatchResponse where individual items are null on failure.
+ * A tool that scores records based on configured criteria.
  */
-export async function scoreBatch({
-	records,
-	name,
-	description,
-	type,
-	min,
-	max,
-	model = 'gpt-4.1-mini',
-	maxConcurrency = 100,
-	trackCost = false,
-}: ScoreBatchParams): Promise<BatchResponse<number | null>> {
-	const schema = makeScoreSchema(type, min, max, description);
-	const prompt = PROMPT.replace('{name}', name)
-		.replace('{type}', type)
-		.replace('{min}', min.toString())
-		.replace('{max}', max.toString())
-		.replace('{description}', description);
+export class Scorer extends Tool<Record<string, unknown> | null, { value: number }, number> {
+	private readonly scoreSchema: ScoreSchema;
+	private readonly promptTemplate: string;
 
-	const responses = await mapParallel(records, maxConcurrency, (record) =>
-		score({ record, prompt, schema, model })
-	);
+	constructor(config: ScorerConfig, modelConfig: ModelConfig) {
+		super(modelConfig);
+		const { name, description, type, min, max } = config;
+		this.scoreSchema = makeScoreSchema(type, min, max, description);
+		this.promptTemplate = PROMPT
+			.replace('{name}', name)
+			.replace('{type}', type)
+			.replace('{min}', min.toString())
+			.replace('{max}', max.toString())
+			.replace('{description}', description);
+	}
 
-	return new BatchResponse(
-		responses.map((r) => r.parsed),
-		trackCost ? responses.map((r) => r.usage) : undefined,
-		trackCost ? model : undefined
-	);
+	protected override schema() {
+		return this.scoreSchema;
+	}
+
+	protected prompt(record: Record<string, unknown> | null) {
+		return this.promptTemplate.replace('{record}', JSON.stringify(record, null, 2));
+	}
+
+	protected override extractResult(parsed: { value: number }) {
+		return parsed.value;
+	}
 }

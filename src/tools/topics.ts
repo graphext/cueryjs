@@ -1,8 +1,7 @@
 /* eslint no-console: ["warn", { allow: ["log", "warn", "error"] }] */
 import { z } from '@zod/zod';
-import { mapParallel } from '../helpers/async.ts';
-import { askLLMSafe, type Message, type ProviderParams, type LLMResponse } from '../llm.ts';
-import { BatchResponse } from '../response.ts';
+import { Tool, type ModelConfig } from '../tool.ts';
+import type { Message } from '../llm.ts';
 
 import {
 	TopicSchema,
@@ -14,6 +13,10 @@ import { dedent, formatRecordsAttrWise } from '../helpers/utils.ts';
 
 // Re-export types from topics.schema.ts
 export type { TopicType, TaxonomyType, TopicLabel };
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
 
 /**
  * Levenshtein distance implementation for string similarity validation
@@ -84,6 +87,10 @@ function validateSubtopics(topic: string, subtopics: Array<string>): Array<strin
 	return errors;
 }
 
+// =============================================================================
+// Schemas
+// =============================================================================
+
 /**
  * Topic schema with subtopic validation
  * Validates that subtopics are sufficiently distinct from each other and from the parent topic.
@@ -123,6 +130,7 @@ export function toTopics(taxonomy: Record<string, Array<string>>): Array<{ topic
 		subtopics
 	}));
 }
+
 /**
  * Creates a dynamic TopicLabel schema based on a topic hierarchy
  * Validates that subtopic belongs to the correct topic
@@ -147,6 +155,10 @@ export function createLabelSchema(taxonomy: TaxonomyType) {
 		}
 	});
 }
+
+// =============================================================================
+// TopicExtractor
+// =============================================================================
 
 const TOPICS_PROMPT = dedent(`
 # Instructions
@@ -173,6 +185,81 @@ The taxonomy should follow the MECE framework (Mutually Exclusive, Collectively 
 {records}
 `);
 
+export interface TopicExtractorConfig {
+	/** Maximum number of top-level topics (default: 10) */
+	nTopics?: number;
+	/** Maximum number of subtopics per topic (default: 5) */
+	nSubtopics?: number;
+	/** Additional instructions */
+	instructions?: string;
+	/** Maximum number of records to sample (default: 500) */
+	maxSamples?: number;
+	/** Language for topics (default: same as records) */
+	language?: string;
+}
+
+/**
+ * A tool that extracts a topic taxonomy from a set of records.
+ */
+export class TopicExtractor extends Tool<
+	Array<Record<string, unknown>>,
+	TaxonomyType,
+	TaxonomyType
+> {
+	private readonly maxSamples: number;
+	private readonly promptTemplate: string;
+
+	constructor(config: TopicExtractorConfig = {}, modelConfig: ModelConfig) {
+		super(modelConfig);
+		const {
+			nTopics = 10,
+			nSubtopics = 5,
+			instructions = '',
+			maxSamples = 500,
+			language = 'The same language as the records'
+		} = config;
+
+		this.maxSamples = maxSamples;
+		this.promptTemplate = TOPICS_PROMPT
+			.replace('{n_topics}', String(nTopics))
+			.replace('{n_subtopics}', String(nSubtopics))
+			.replace('{instructions}', instructions)
+			.replace('{language}', language);
+	}
+
+	protected override schema() {
+		return Taxonomy;
+	}
+
+	protected prompt(records: Array<Record<string, unknown>>) {
+		const sampledRecords = records.length > this.maxSamples
+			? records.slice(0, this.maxSamples)
+			: records;
+		const formattedRecords = formatRecordsAttrWise(sampledRecords);
+		return this.promptTemplate.replace('{records}', formattedRecords);
+	}
+
+	protected override isEmpty(records: Array<Record<string, unknown>>): boolean {
+		return !records || records.length === 0;
+	}
+
+	/**
+	 * Not supported. TopicExtractor is an aggregation operation that extracts
+	 * a single taxonomy from many records. Use invoke() instead.
+	 */
+	override batch(): never {
+		throw new Error(
+			'TopicExtractor.batch() is not supported. ' +
+			'This tool extracts a single taxonomy from many records (aggregation). ' +
+			'Use invoke() with all records instead.'
+		);
+	}
+}
+
+// =============================================================================
+// TopicAssigner
+// =============================================================================
+
 const LABEL_PROMPT_SYSTEM = dedent(`
 You're task is to use the following hierarchy of topics and subtopics (in json format),
 to assign the correct topic and subtopic to each text in the input.
@@ -192,180 +279,50 @@ Assign the correct topic and subtopic to the following text.
 {text}
 `);
 
-
 /**
- * Parameters for assignTopic.
+ * Configuration for the TopicAssigner tool.
  */
-export interface AssignTopicParams {
-	/** Text to assign topic to */
-	text: string | null;
-	/** Taxonomy to use for classification */
-	taxonomy: TaxonomyType | Array<TopicType> | string;
-	/** Pre-built label schema */
-	labelSchema: z.ZodType<TopicLabel>;
-	/** Model to use (default: 'gpt-5.1') */
-	model?: string;
-	/** Provider-specific parameters */
-	modelParams?: ProviderParams;
-}
-
-/**
- * Assigns a topic and subtopic to a single text using an LLM call.
- * Returns both the result and usage information.
- */
-export async function assignTopic({
-	text,
-	taxonomy,
-	labelSchema,
-	model = 'gpt-5.1',
-	modelParams = { reasoning: { effort: 'none' } },
-}: AssignTopicParams): Promise<LLMResponse<TopicLabel | null>> {
-
-	if (text == null || text.trim() === '') {
-		return { parsed: null, text: null, usage: null, error: null };
-	}
-
-	const systemPrompt = LABEL_PROMPT_SYSTEM.replace(
-		'{taxonomy}',
-		typeof taxonomy === 'string' ? taxonomy : JSON.stringify(taxonomy, null, 2)
-	);
-	const userPrompt = LABEL_PROMPT_USER.replace('{text}', text);
-
-	const prompts: Message[] = [
-		{ role: 'system', content: systemPrompt },
-		{ role: 'user', content: userPrompt }
-	];
-
-	try {
-		const response = await askLLMSafe({ prompt: prompts, model, schema: labelSchema, params: modelParams });
-		if (response.error != null || response.parsed == null) {
-			return { parsed: null, text: response.text, usage: response.usage, error: response.error };
-		}
-		return response;
-	} catch (err) {
-		console.warn(`Failed to assign topic for text "${text.substring(0, 50)}...":`, err);
-		return { parsed: null, text: null, usage: null, error: err instanceof Error ? err : new Error(String(err)) };
-	}
-}
-
-/**
- * Parameters for assignTopics.
- */
-export interface AssignTopicsParams {
-	/** Array of texts to assign topics to */
-	texts: Array<string | null>;
-	/** Taxonomy to use for classification */
+export interface TopicAssignerConfig {
 	taxonomy: TaxonomyType | Array<TopicType>;
-	/** Model to use (default: 'gpt-5.1') */
-	model?: string;
-	/** Provider-specific parameters */
-	modelParams?: ProviderParams;
-	/** Max concurrent requests (default: 100) */
-	maxConcurrency?: number;
-	/** Enable cost tracking (default: false) */
-	trackCost?: boolean;
 }
 
 /**
- * Assigns topics to multiple texts concurrently while preserving order.
- * Returns a BatchResponse with usage tracking.
+ * A tool that assigns topic and subtopic labels to text based on a taxonomy.
  */
-export async function assignTopics({
-	texts,
-	taxonomy,
-	model = 'gpt-5.1',
-	modelParams = { reasoning: { effort: 'none' } },
-	maxConcurrency = 100,
-	trackCost = false,
-}: AssignTopicsParams): Promise<BatchResponse<TopicLabel | null>> {
-	// Precompute normalized taxonomy and label schema once for whole batch
-	const normalizedTaxonomy: TaxonomyType = Array.isArray(taxonomy)
-		? { topics: taxonomy }
-		: taxonomy;
+export class TopicAssigner extends Tool<string | null, TopicLabel, TopicLabel> {
+	private readonly labelSchema: z.ZodType<TopicLabel>;
+	private readonly systemPrompt: string;
 
-	const labelSchema = createLabelSchema(normalizedTaxonomy);
-	const serializedTaxonomy = JSON.stringify(normalizedTaxonomy, null, 2);
+	constructor(config: TopicAssignerConfig, modelConfig: ModelConfig) {
+		super(modelConfig);
+		const { taxonomy } = config;
 
-	const responses = await mapParallel(texts, maxConcurrency, (text) =>
-		assignTopic({ text, taxonomy: serializedTaxonomy, labelSchema, model, modelParams })
-	);
+		// Normalize taxonomy to TaxonomyType
+		const normalizedTaxonomy: TaxonomyType = Array.isArray(taxonomy)
+			? { topics: taxonomy }
+			: taxonomy;
 
-	return new BatchResponse(
-		responses.map(r => r.parsed),
-		trackCost ? responses.map(r => r.usage) : undefined,
-		trackCost ? model : undefined
-	);
-}
-
-export interface TopicExtractionOptions {
-	records: Array<Record<string, unknown>>;
-	nTopics?: number;
-	nSubtopics?: number;
-	instructions?: string;
-	maxSamples?: number;
-	model?: string;
-	modelParams?: ProviderParams;
-	maxRetries?: number;
-	language?: string;
-}
-
-/**
- * Extracts a topic hierarchy from an array of records using an LLM.
- */
-export async function extractTopics({
-	records,
-	nTopics = 10,
-	nSubtopics = 5,
-	instructions = '',
-	maxSamples = 500,
-	model = 'gpt-4.1',
-	modelParams = {},
-	maxRetries = 8,
-	language = 'The same language as the records'
-}: TopicExtractionOptions): Promise<TaxonomyType> {
-	if (!records || records.length === 0) {
-		return { topics: [] };
+		// Build schema and system prompt once in constructor
+		this.labelSchema = createLabelSchema(normalizedTaxonomy);
+		this.systemPrompt = LABEL_PROMPT_SYSTEM.replace(
+			'{taxonomy}',
+			JSON.stringify(normalizedTaxonomy, null, 2)
+		);
 	}
 
-	const sampledRecords = records.length > maxSamples
-		? records.slice(0, maxSamples)
-		: records;
-
-	const formattedRecords = formatRecordsAttrWise(sampledRecords);
-
-	const prompt = TOPICS_PROMPT
-		.replace('{n_topics}', String(nTopics))
-		.replace('{n_subtopics}', String(nSubtopics))
-		.replace('{instructions}', instructions)
-		.replace('{records}', formattedRecords)
-		.replace('{language}', language);
-
-	const { parsed, text, error } = await askLLMSafe({
-		prompt,
-		model,
-		schema: Taxonomy,
-		params: modelParams,
-		maxRetries,
-		onError: 'return',
-	});
-
-	if (error != null) {
-		if (text == null) {
-			throw new Error('Failed to get response from LLM');
-		}
-
-		try {
-			const taxonomy = JSON.parse(text);
-			return TaxonomyBase.parse(taxonomy);
-		} catch (parseError) {
-			throw new Error(`Failed to parse response even without validation: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
-		}
+	protected override schema() {
+		return this.labelSchema;
 	}
 
-	if (parsed == null) {
-		throw new Error('Failed to parse response from LLM');
+	protected prompt(text: string | null): Message[] {
+		const userPrompt = LABEL_PROMPT_USER.replace('{text}', text ?? '');
+		return [
+			{ role: 'system', content: this.systemPrompt },
+			{ role: 'user', content: userPrompt }
+		];
 	}
 
-	return parsed;
+	protected override isEmpty(text: string | null): boolean {
+		return text == null || text.trim() === '';
+	}
 }
-

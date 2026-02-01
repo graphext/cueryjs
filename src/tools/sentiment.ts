@@ -1,8 +1,7 @@
-import { mapParallel } from '../helpers/async.ts';
-import { askLLMSafe, type LLMResponse, type Message } from '../llm.ts';
-import { BatchResponse } from '../response.ts';
+import { Tool, type ModelConfig } from '../tool.ts';
+import type { Message } from '../llm.ts';
 import type { BrandContext } from '../schemas/brand.schema.ts';
-import { ABSentimentsSchema, type ABSentiment } from '../schemas/sentiment.schema.ts';
+import { ABSentimentsSchema, type ABSentiment, type ABSentiments } from '../schemas/sentiment.schema.ts';
 import { dedent } from '../helpers/utils.ts';
 
 const ABS_PROMPT_SYSTEM = dedent(`
@@ -41,106 +40,56 @@ Return the entities and their sentiments with reasons from the following text se
 {text}
 `);
 
-/**
- * Parameters for extractAspectBasedSentiments.
- */
-export interface ExtractSentimentsParams {
-	/** Text to analyze */
-	text: string | null;
-	/** Additional instructions */
+
+export interface SentimentExtractorConfig {
+	/** Additional instructions for sentiment extraction */
 	instructions?: string;
-	/** Model to use (default: 'gpt-4.1-mini') */
-	model?: string;
-}
-
-/**
- * Extracts aspect-based sentiments from a text.
- * Returns LLMResult with usage tracking.
- */
-export async function extractAspectBasedSentiments({
-	text,
-	instructions = '',
-	model = 'gpt-4.1-mini',
-}: ExtractSentimentsParams): Promise<LLMResponse<Array<ABSentiment> | null>> {
-	if (text == null || text.trim() === '') {
-		return { parsed: null, text: null, usage: null, error: null };
-	}
-
-	const promptSystem = ABS_PROMPT_SYSTEM.replace('{instructions}', instructions);
-	const promptUser = ABS_PROMPT_USER.replace('{text}', text);
-
-	const conversation: Message[] = [
-		{ role: 'system', content: promptSystem },
-		{ role: 'user', content: promptUser },
-	];
-
-	const response = await askLLMSafe({
-		prompt: conversation,
-		model,
-		schema: ABSentimentsSchema,
-		maxRetries: 3,
-		onError: 'return',
-	});
-
-	if (response.error != null || response.parsed == null) {
-		return {
-			parsed: null,
-			text: response.text,
-			usage: response.usage,
-			error: response.error,
-		};
-	}
-
-	return {
-		parsed: response.parsed.aspects,
-		text: response.text,
-		usage: response.usage,
-		error: null,
-	};
-}
-
-/**
- * Parameters for extractABSForBrandBatch.
- */
-export interface ExtractSentimentsBatchParams {
-	/** Array of texts to analyze */
-	texts: Array<string | null>;
 	/** Brand context for focused analysis */
 	brand?: BrandContext | null;
-	/** Model to use (default: 'gpt-4.1-mini') */
-	model?: string;
-	/** Max concurrent requests (default: 100) */
-	maxConcurrency?: number;
-	/** Enable cost tracking (default: false) */
-	trackCost?: boolean;
 }
 
 /**
- * Extracts aspect-based sentiments from multiple texts with usage tracking.
- * Returns BatchResponse where individual items are null on failure.
+ * A tool that extracts aspect-based sentiments from text.
  */
-export async function extractABSForBrandBatch({
-	texts,
-	brand = null,
-	model = 'gpt-4.1-mini',
-	maxConcurrency = 100,
-	trackCost = false,
-}: ExtractSentimentsBatchParams): Promise<BatchResponse<Array<ABSentiment> | null>> {
-	const instructions = brand
-		? dedent(`
-    When analyzing the text, pay special attention to any mentions of the brand "${brand.shortName}"
-    or its products/services (${brand.portfolio}). Ensure that any sentiments expressed toward this
-    brand or its offerings are accurately captured in your output. Respond in language code ${brand.language}.
-    `)
-		: '';
+export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<ABSentiment>> {
+	private readonly systemPrompt: string;
 
-	const responses = await mapParallel(texts, maxConcurrency, (text) =>
-		extractAspectBasedSentiments({ text, instructions, model })
-	);
+	constructor(config: SentimentExtractorConfig = {}, modelConfig: ModelConfig) {
+		super(modelConfig);
+		const { instructions = '', brand = null } = config;
 
-	return new BatchResponse(
-		responses.map((r) => r.parsed),
-		trackCost ? responses.map((r) => r.usage) : undefined,
-		trackCost ? model : undefined
-	);
+		const brandInstructions = brand
+			? dedent(`
+				When analyzing the text, pay special attention to any mentions of the brand "${brand.shortName}"
+				or its products/services (${brand.portfolio}). Ensure that any sentiments expressed toward this
+				brand or its offerings are accurately captured in your output. Respond in language code ${brand.language}.
+			`)
+			: '';
+
+		const combinedInstructions = [instructions, brandInstructions].filter(Boolean).join('\n\n');
+		this.systemPrompt = ABS_PROMPT_SYSTEM.replace('{instructions}', combinedInstructions);
+	}
+
+	protected override schema() {
+		return ABSentimentsSchema;
+	}
+
+	protected prompt(text: string | null): Message[] {
+		const userPrompt = ABS_PROMPT_USER.replace('{text}', text ?? '');
+		return [
+			{ role: 'system', content: this.systemPrompt },
+			{ role: 'user', content: userPrompt }
+		];
+	}
+
+	protected override isEmpty(text: string | null): boolean {
+		return text == null || text.trim() === '';
+	}
+
+	protected override extractResult(parsed: ABSentiments): Array<ABSentiment> {
+		return parsed.aspects;
+	}
 }
+
+export type { ABSentiment, ABSentiments } from '../schemas/sentiment.schema.ts';
+export { ABSentimentSchema, ABSentimentsSchema } from '../schemas/sentiment.schema.ts';

@@ -1,7 +1,6 @@
-import { askLLMSafe } from '../llm.ts';
-
+import { Tool, type ModelConfig } from '../tool.ts';
 import { buildBrandContext } from './brands.ts';
-import type { PersonasOptions, PersonasResponse } from '../schemas/persona.schema.ts';
+import type { Persona, PersonasResponse } from '../schemas/persona.schema.ts';
 import { PersonasResponseSchema } from '../schemas/persona.schema.ts';
 import { dedent } from '../helpers/utils.ts';
 
@@ -51,60 +50,121 @@ current data. If no modification instructions are provided, maintain the existin
 new competitors if they are relevant.
 `);
 
-export async function generatePersonas({
-	sector,
-	market,
-	brand,
-	brandDomain,
-	language = 'english',
-	userLanguage = null,
-	count = 5,
-	model = 'gpt-4.1',
-	briefing,
-	instructions,
-	personas = null
-}: PersonasOptions): Promise<PersonasResponse> {
-	if (!brand && !brandDomain) {
-		throw new Error('Either brand or brandDomain must be provided');
-	}
+// =============================================================================
+// PersonaGenerator
+// =============================================================================
 
-	const brandContext = buildBrandContext({
-		brand,
-		brandDomain,
-		sector,
-		market,
-		briefing
-	});
-	let brandExclusion: string;
-	if (brandDomain) {
-		if (brand) {
-			brandExclusion = ` "${brand}" or the domain`;
-		} else {
-			brandExclusion = ' or domain';
-		}
-	} else {
-		brandExclusion = ` "${brand}"`;
-	}
-
-	const currentData = personas && personas.length > 0 ? CURRENT_DATA_CLAUSE.replace(
-		'{currentData}',
-		JSON.stringify({ personas }, null, 2)
-	) : null;
-
-	const content = PROMPT
-		.replace('{count}', count.toString())
-		.replaceAll('{sector}', sector)
-		.replaceAll('{market}', market)
-		.replaceAll('{brand_context}', brandContext)
-		.replaceAll('{brand_exclusion}', brandExclusion)
-		.replaceAll('{language}', language)
-		.replaceAll('{userLanguage}', userLanguage ?? language)
-		.replaceAll('{instructions}', instructions || '')
-		.replaceAll('{currentPersonasInfo}', currentData || '');
-
-	const { parsed } = await askLLMSafe({ prompt: content, model, schema: PersonasResponseSchema });
-	if (!parsed) {
-		throw new Error('Failed to parse response from LLM');
-	}
-	return parsed;
+/**
+ * Configuration for the PersonaGenerator tool.
+ */
+export interface PersonaGeneratorConfig {
+	/** Industry sector the brand operates in */
+	sector: string;
+	/** Geographical market or region */
+	market: string;
+	/** Brand name */
+	brand?: string;
+	/** Brand domain */
+	brandDomain?: string;
+	/** Language for keyword seeds (default: 'english') */
+	language?: string;
+	/** Language for persona descriptions (default: same as language) */
+	userLanguage?: string | null;
+	/** Number of personas to generate (default: 5) */
+	count?: number;
+	/** Brand briefing context */
+	briefing?: string;
+	/** Additional instructions */
+	instructions?: string | null;
 }
+
+/**
+ * A tool that generates customer personas for a brand.
+ */
+export class PersonaGenerator extends Tool<Array<Persona> | null, PersonasResponse, PersonasResponse> {
+	private readonly promptTemplate: string;
+
+	constructor(config: PersonaGeneratorConfig, modelConfig: ModelConfig) {
+		super(modelConfig);
+		const {
+			sector,
+			market,
+			brand,
+			brandDomain,
+			language = 'english',
+			userLanguage = null,
+			count = 5,
+			briefing,
+			instructions
+		} = config;
+
+		if (!brand && !brandDomain) {
+			throw new Error('Either brand or brandDomain must be provided');
+		}
+
+		const brandContext = buildBrandContext({
+			brand,
+			brandDomain,
+			sector,
+			market,
+			briefing
+		});
+
+		let brandExclusion: string;
+		if (brandDomain) {
+			if (brand) {
+				brandExclusion = ` "${brand}" or the domain`;
+			} else {
+				brandExclusion = ' or domain';
+			}
+		} else {
+			brandExclusion = ` "${brand}"`;
+		}
+
+		this.promptTemplate = PROMPT
+			.replace('{count}', count.toString())
+			.replaceAll('{sector}', sector)
+			.replaceAll('{market}', market)
+			.replaceAll('{brand_context}', brandContext)
+			.replaceAll('{brand_exclusion}', brandExclusion)
+			.replaceAll('{language}', language)
+			.replaceAll('{userLanguage}', userLanguage ?? language)
+			.replaceAll('{instructions}', instructions || '');
+	}
+
+	protected override schema() {
+		return PersonasResponseSchema;
+	}
+
+	protected prompt(existingPersonas: Array<Persona> | null): string {
+		const currentData = existingPersonas && existingPersonas.length > 0
+			? CURRENT_DATA_CLAUSE.replace(
+					'{currentData}',
+					JSON.stringify({ personas: existingPersonas }, null, 2)
+				)
+			: '';
+
+		return this.promptTemplate.replace('{currentPersonasInfo}', currentData);
+	}
+
+	protected override isEmpty(_input: Array<Persona> | null): boolean {
+		// Never skip - null means generate fresh personas
+		return false;
+	}
+
+	/**
+	 * Not supported. PersonaGenerator is configured for a specific brand context
+	 * and generates personas in a single call. Use invoke() instead.
+	 */
+	override batch(): never {
+		throw new Error(
+			'PersonaGenerator.batch() is not supported. ' +
+			'This tool generates personas for a specific brand context. ' +
+			'Use invoke() instead.'
+		);
+	}
+}
+
+// Re-export types
+export type { Persona, PersonasResponse, PersonasOptions } from '../schemas/persona.schema.ts';
+export { PersonaSchema, PersonasResponseSchema } from '../schemas/persona.schema.ts';
