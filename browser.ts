@@ -12,4 +12,4 @@
 export * from './src/schemas/index.ts';
 
 // Pure functions for seed keyword handling (no external dependencies)
-export * from './src/tools/seedKeywords.ts';
+export * from './src/helpers/seedKeywords.ts';
