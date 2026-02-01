@@ -15,6 +15,7 @@ import { type SearchResult } from './schemas/search.schema.ts';
 import { type Source, type EnrichedSource, type SearchSource } from './schemas/sources.schema.ts';
 import { Scorer } from './tools/scorer.ts';
 import { TopicExtractor, TopicAssigner } from './tools/topics.ts';
+import { PersonaGenerator } from './tools/personas.ts';
 import { dedent } from './helpers/utils.ts';
 
 export type ModelResponse = {
@@ -115,6 +116,56 @@ export async function classifyIntent(
 	const intents = await classifier.batch(textRecords);
 
 	return intents.toArray();
+}
+
+export async function extractTopics(params: {
+	records: Array<Record<string, unknown>>;
+	maxSamples?: number;
+	instructions?: string;
+	language?: string;
+	model?: string;
+}) {
+	const extractor = new TopicExtractor(
+		{
+			maxSamples: params.maxSamples,
+			instructions: params.instructions,
+			language: params.language
+		},
+		{ model: params.model ?? 'gpt-4.1-mini' }
+	);
+	const result = await extractor.invoke(params.records);
+	return result.parsed;
+}
+
+export async function generatePersonas(params: {
+	sector: string;
+	market: string;
+	language: string;
+	brand?: string;
+	brandDomain?: string;
+	count?: number;
+	briefing?: string;
+	instructions?: string;
+	userLanguage?: string;
+	personas?: Array<Persona>;
+	model?: string;
+}) {
+	const generator = new PersonaGenerator(
+		{
+			sector: params.sector,
+			market: params.market,
+			language: params.language,
+			brand: params.brand,
+			brandDomain: params.brandDomain,
+			count: params.count,
+			briefing: params.briefing,
+			instructions: params.instructions,
+			userLanguage: params.userLanguage
+		},
+		{ model: params.model ?? 'gpt-4.1' }
+	);
+	const result = await generator.invoke(params.personas ?? null);
+	return result.parsed;
 }
 
 export async function extractAndAssignTopics(
