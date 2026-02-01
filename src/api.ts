@@ -212,7 +212,7 @@ export async function classifyBrandedNonBranded(
 
 export async function extractEntities(
 	texts: Array<string>
-): Promise<Array<Array<Entity>>> {
+): Promise<Array<Array<Entity> | null>> {
 	const extractor = new EntityExtractor(
 		{
 			entityDefinitions: {
@@ -226,13 +226,13 @@ export async function extractEntities(
 	);
 
 	const result = await extractor.batch(texts);
-	return result.toArray().map(entities => entities ?? []);
+	return result.toArray();
 }
 
 export async function scorePurchaseProbability(
 	texts: Array<string>,
 	numDays: number = 30
-): Promise<Array<number>> {
+): Promise<Array<number | null>> {
 	console.log('Scoring purchase probability...');
 	const records = texts.map(text => ({ text }));
 	const description = dedent(`
@@ -246,13 +246,13 @@ export async function scorePurchaseProbability(
 		{ model: 'gpt-4.1-mini' }
 	);
 	const scores = await scorer.batch(records);
-	return scores.toArray().map(score => score ?? 0);
+	return scores.toArray();
 }
 
 export async function scoreRelevance(
 	prompts: Array<string>,
 	context: BrandContext
-): Promise<Array<number>> {
+): Promise<Array<number | null>> {
 	console.log('Scoring prompt relevance...');
 
 	const contextParts: Array<string> = [];
@@ -296,5 +296,5 @@ export async function scoreRelevance(
 		{ model: 'gpt-4.1-mini' }
 	);
 	const scores = await scorer.batch(records);
-	return scores.toArray().map(score => score ?? 0);
+	return scores.toArray();
 }
