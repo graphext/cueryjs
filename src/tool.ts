@@ -24,12 +24,15 @@ export interface ModelConfig {
 	maxConcurrency?: number;
 	/** Enable cost tracking for batch (default: false) */
 	trackCost?: boolean;
+	/** Throw an error instead of returning null on failure (default: false) */
+	throwOnFailure?: boolean;
 }
 
 const DEFAULTS = {
 	maxRetries: 3,
 	maxConcurrency: 100,
 	trackCost: false,
+	throwOnFailure: false,
 } as const;
 
 /**
@@ -81,7 +84,7 @@ export abstract class Tool<TInput, TOutput, TResult = TOutput> {
 			return { parsed: null, text: null, usage: null, error: null };
 		}
 
-		const { model, modelParams, maxRetries } = { ...DEFAULTS, ...this.modelConfig, ...options };
+		const { model, modelParams, maxRetries, throwOnFailure } = { ...DEFAULTS, ...this.modelConfig, ...options };
 
 		const response = await askLLMSafe({
 			prompt: this.prompt(input),
@@ -93,6 +96,9 @@ export abstract class Tool<TInput, TOutput, TResult = TOutput> {
 		});
 
 		if (response.error != null || response.parsed == null) {
+			if (throwOnFailure) {
+				throw response.error ?? new Error('LLM call failed to produce a result');
+			}
 			return { parsed: null, text: response.text, usage: response.usage, error: response.error };
 		}
 
