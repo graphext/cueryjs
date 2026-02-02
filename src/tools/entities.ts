@@ -82,6 +82,58 @@ export class EntityExtractor extends Tool<string | null, Entities, Array<Entity>
 	}
 }
 
+// =============================================================================
+// CommonEntityExtractor
+// =============================================================================
+
+/**
+ * Predefined common entity types for general-purpose extraction.
+ */
+export const COMMON_ENTITY_DEFINITIONS: Record<string, string> = {
+	person: 'Names of people, individuals, celebrities, public figures',
+	organization: 'Companies, institutions, agencies, teams, corporations',
+	location: 'Places, cities, countries, regions, addresses, landmarks',
+	product: 'Products, services, software, apps, models',
+	brand: 'Brand names, trademarks',
+	date: 'Dates, time periods, years, seasons',
+	money: 'Monetary values, prices, currencies, financial amounts',
+	event: 'Events, conferences, meetings, holidays, incidents'
+};
+
+/**
+ * Configuration for the CommonEntityExtractor tool.
+ */
+export interface CommonEntityExtractorConfig {
+	/** Additional entity definitions to merge with common ones */
+	additionalDefinitions?: Record<string, string>;
+	/** Entity types to exclude from common definitions */
+	excludeTypes?: Array<string>;
+	/** Additional instructions */
+	instructions?: string;
+}
+
+/**
+ * A tool that extracts common entity types (person, organization, location, etc.) from text.
+ * Extends EntityExtractor with predefined entity definitions.
+ */
+export class CommonEntityExtractor extends EntityExtractor {
+	constructor(config: CommonEntityExtractorConfig = {}, modelConfig: ModelConfig) {
+		const { additionalDefinitions = {}, excludeTypes = [], instructions = '' } = config;
+
+		// Filter out excluded types and merge with additional definitions
+		const filteredDefinitions = Object.fromEntries(
+			Object.entries(COMMON_ENTITY_DEFINITIONS).filter(([type]) => !excludeTypes.includes(type))
+		);
+
+		const mergedDefinitions = {
+			...filteredDefinitions,
+			...additionalDefinitions
+		};
+
+		super({ entityDefinitions: mergedDefinitions, instructions }, modelConfig);
+	}
+}
+
 // Re-export schema and types
 export type { Entity, Entities } from '../schemas/entity.schema.ts';
 export { EntitySchema, EntitiesSchema } from '../schemas/entity.schema.ts';
