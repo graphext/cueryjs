@@ -5,6 +5,7 @@
 import OpenAI from '@openai/openai';
 import { z } from '@zod/zod';
 import type { TokenUsage } from '../response.ts';
+import { SchemaValidationError } from './errors.ts';
 import type { LLMProvider, LLMResponse, Message, ProviderParams } from './types.ts';
 
 type AutoParseableTextFormat<ParsedT> = OpenAI.Responses.ResponseFormatTextJSONSchemaConfig & {
@@ -14,8 +15,6 @@ type AutoParseableTextFormat<ParsedT> = OpenAI.Responses.ResponseFormatTextJSONS
 };
 
 const zodTextFormatCache = new Map<z.ZodTypeAny, AutoParseableTextFormat<unknown>>();
-
-class ZodValidationError extends Error {}
 
 /**
  * Sanitizes a JSON schema for OpenAI compatibility.
@@ -87,7 +86,10 @@ function zodTextFormat(zodObject: z.ZodType, name: string): AutoParseableTextFor
 			try {
 				return zodObject.parse(JSON.parse(content));
 			} catch (error) {
-				return new ZodValidationError(error instanceof Error ? error.message : String(error));
+				return new SchemaValidationError(
+					error instanceof Error ? error.message : String(error),
+					error
+				);
 			}
 		},
 		__output: undefined,
@@ -130,27 +132,32 @@ export class OpenAIProvider implements LLMProvider {
 				})),
 				...(schema != null
 					? {
-							text: {
-								format: getCachedZodTextFormat(schema, 'response'),
-							},
-						}
+						text: {
+							format: getCachedZodTextFormat(schema, 'response'),
+						},
+					}
 					: {}),
 			});
 
 			const usage: TokenUsage | null = response.usage
 				? {
-						inputTokens: response.usage.input_tokens,
-						outputTokens: response.usage.output_tokens,
-						totalTokens: response.usage.total_tokens,
-					}
+					inputTokens: response.usage.input_tokens,
+					outputTokens: response.usage.output_tokens,
+					totalTokens: response.usage.total_tokens,
+				}
 				: null;
 
 			if (response.output_parsed instanceof Error) {
+				const parseError = response.output_parsed;
+				const error =
+					parseError instanceof SchemaValidationError
+						? parseError
+						: new SchemaValidationError(parseError.message, parseError);
 				return {
 					parsed: null,
 					text: response.output_text,
 					usage,
-					error: response.output_parsed,
+					error,
 				};
 			}
 

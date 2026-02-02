@@ -12,6 +12,7 @@ export { getProvider, getProviderForModel } from './registry.ts';
 // Re-export provider implementations
 export { OpenAIProvider } from './openai.ts';
 export { GoogleProvider } from './google.ts';
+export { SchemaValidationError } from './errors.ts';
 
 // Re-export pricing utilities
 export {

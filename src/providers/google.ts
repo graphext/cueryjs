@@ -5,6 +5,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { z } from '@zod/zod';
 import type { TokenUsage } from '../response.ts';
+import { SchemaValidationError } from './errors.ts';
 import type { LLMProvider, LLMResponse, Message, ProviderParams } from './types.ts';
 
 /**
@@ -108,7 +109,10 @@ export class GoogleProvider implements LLMProvider {
 						parsed: null,
 						text,
 						usage,
-						error: error instanceof Error ? error : new Error(String(error)),
+						error: new SchemaValidationError(
+							error instanceof Error ? error.message : String(error),
+							error
+						),
 					};
 				}
 			}
