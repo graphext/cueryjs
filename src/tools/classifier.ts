@@ -182,6 +182,56 @@ export class SpeechIntentClassifier extends Classifier {
 }
 
 // =============================================================================
+// PlutchikEmotionClassifier (emotion classification)
+// =============================================================================
+
+/**
+ * Predefined emotion labels based on Plutchik's wheel of emotions.
+ * These represent the 8 primary emotions organized as 4 opposing pairs.
+ */
+export const PLUTCHIK_EMOTION_LABELS: Record<string, string> = {
+	joy: 'A positive, high-energy state of pleasure, happiness, or contentment. Expressed through uplifting language, celebration, gratitude, or satisfaction.',
+	sadness: 'A low-energy state associated with loss, grief, disappointment, or melancholy. Expressed through somber tone, themes of loss, or expressions of sorrow.',
+	trust: 'A positive acceptance or affinity for others. Expressed through confidence, reliability, loyalty, or openness to connection.',
+	disgust: 'A feeling of revulsion, rejection, or strong disapproval. Expressed through aversion, contempt, or moral judgment.',
+	fear: 'An emotional response to danger, threat, or uncertainty. Expressed through anxiety, worry, caution, or alarm.',
+	anger: 'A high-arousal response to frustration, injustice, or provocation. Expressed through criticism, outrage, hostility, or aggression.',
+	surprise: 'A reaction to unexpected events or information. Expressed through astonishment, disbelief, or sudden realization.',
+	anticipation: 'Looking forward to, or preparing for, future events. Expressed through expectation, excitement, hope, or vigilance.'
+};
+
+/**
+ * Predefined instructions for emotion classification.
+ */
+const PLUTCHIK_EMOTION_CLASSIFIER_INSTRUCTIONS = dedent(`
+Identify the DOMINANT emotion conveyed by the text, considering both explicit emotional language and implicit tone.
+Focus on what the author/speaker is feeling or trying to evoke in the reader, not the topic being discussed.
+If multiple emotions are present, choose the one that is most central to the text's emotional impact.
+`);
+
+/**
+ * Configuration for the PlutchikEmotionClassifier tool.
+ */
+export interface PlutchikEmotionClassifierConfig {
+	/** Additional instructions for the classifier */
+	instructions?: string;
+}
+
+/**
+ * A tool that classifies text into dominant emotions based on Plutchik's wheel of emotions.
+ * The 8 primary emotions are organized as 4 opposing pairs: joy/sadness, trust/disgust, fear/anger, surprise/anticipation.
+ */
+export class PlutchikEmotionClassifier extends Classifier {
+	constructor(config: PlutchikEmotionClassifierConfig = {}, modelConfig: ModelConfig) {
+		const { instructions = '' } = config;
+		const combinedInstructions = instructions
+			? `${PLUTCHIK_EMOTION_CLASSIFIER_INSTRUCTIONS}\n\n${instructions}`
+			: PLUTCHIK_EMOTION_CLASSIFIER_INSTRUCTIONS;
+		super({ labels: PLUTCHIK_EMOTION_LABELS, instructions: combinedInstructions }, modelConfig);
+	}
+}
+
+// =============================================================================
 // Labeler (multi-label classification)
 // =============================================================================
 
