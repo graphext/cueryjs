@@ -1,8 +1,10 @@
-import { Tool, type ModelConfig } from '../tool.ts';
+import { dedent } from '../helpers/utils.ts';
 import type { Message } from '../llm.ts';
 import type { BrandContext } from '../schemas/brand.schema.ts';
 import { ABSentimentsSchema, type ABSentiment, type ABSentiments } from '../schemas/sentiment.schema.ts';
-import { dedent } from '../helpers/utils.ts';
+import { Tool, type ModelConfig } from '../tool.ts';
+import { Classifier } from './classifier.ts';
+
 
 const ABS_PROMPT_SYSTEM = dedent(`
 You're an expert in Aspect-Based Sentiment Analysis. Your task involves identifying specific
@@ -91,5 +93,49 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 	}
 }
 
-export type { ABSentiment, ABSentiments } from '../schemas/sentiment.schema.ts';
+// =============================================================================
+// SentimentPolarityClassifier (overall sentiment polarity)
+// =============================================================================
+
+/**
+ * Sentiment polarity labels for classification.
+ */
+export const SENTIMENT_POLARITY_LABELS: Record<string, string> = {
+	positive: 'Expresses favorable opinions, approval, satisfaction, or optimism.',
+	neutral: 'No clear sentiment expressed; factual, balanced, or ambiguous.',
+	negative: 'Expresses unfavorable opinions, criticism, dissatisfaction, or pessimism.'
+};
+
+/**
+ * Predefined instructions for sentiment polarity classification.
+ */
+const SENTIMENT_POLARITY_INSTRUCTIONS = dedent(`
+Analyze the overall sentiment polarity of the text.
+Focus on the dominant emotional tone, not individual aspects or entities.
+Consider both explicit sentiment expressions and implicit tone.
+`);
+
+/**
+ * Configuration for the SentimentPolarityClassifier tool.
+ */
+export interface SentimentPolarityClassifierConfig {
+	/** Additional instructions for the classifier */
+	instructions?: string;
+}
+
+/**
+ * A tool that classifies the overall sentiment polarity of text into positive, neutral, or negative.
+ */
+export class SentimentPolarityClassifier extends Classifier {
+	constructor(config: SentimentPolarityClassifierConfig = {}, modelConfig: ModelConfig) {
+		const { instructions = '' } = config;
+		const combinedInstructions = instructions
+			? `${SENTIMENT_POLARITY_INSTRUCTIONS}\n\n${instructions}`
+			: SENTIMENT_POLARITY_INSTRUCTIONS;
+		super({ labels: SENTIMENT_POLARITY_LABELS, instructions: combinedInstructions }, modelConfig);
+	}
+}
+
 export { ABSentimentSchema, ABSentimentsSchema } from '../schemas/sentiment.schema.ts';
+export type { ABSentiment, ABSentiments } from '../schemas/sentiment.schema.ts';
+
