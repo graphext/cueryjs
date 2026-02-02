@@ -28,6 +28,7 @@ export * from './src/helpers/utils.ts';
 export * from './src/tools/brands.ts';
 export * from './src/tools/translate.ts';
 export * from './src/tools/sentiment.ts';
+export * from './src/tools/summarize.ts';
 export * from './src/tools/sources.ts';
 export * from './src/tools/entities.ts';
 export * from './src/helpers/seedKeywords.ts';
