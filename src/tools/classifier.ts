@@ -135,6 +135,53 @@ export class Classifier extends Tool<Record<string, unknown> | null, { label: st
 }
 
 // =============================================================================
+// SpeechIntentClassifier (communicative intent classification)
+// =============================================================================
+
+/**
+ * Predefined communicative intent labels based on the PIE+ framework.
+ * These represent the core purposes of communication, writing, and rhetoric.
+ */
+export const SPEECH_INTENT_LABELS: Record<string, string> = {
+	inform: 'Provides facts, data, and knowledge about a topic. Uses clear, objective language, numbers, dates, and evidence. Examples: news articles, encyclopedia entries, reports.',
+	persuade: 'Aims to influence the audience\'s point of view, convince them of an idea, or move them to action. Uses emotional appeals (pathos), logical reasoning (logos), and expert credibility (ethos). Examples: speeches, advertisements, editorials.',
+	entertain: 'Aims to amuse, provide enjoyment, or create a pleasant experience. Uses humor, suspense, vivid imagery, and engaging characters. Examples: novels, poems, stories, comics.',
+	educate: 'Aims to teach the audience, instruct them on how to do something, or increase their understanding. Uses step-by-step instructions, clear explanations, and breaks down complex topics. Examples: textbooks, tutorials, how-to guides.',
+	express_emotions: 'Shares personal feelings, evokes a specific mood, or connects emotionally with the reader. Uses vivid, emotive, or sensory language. Examples: diary entries, poetry, journals, personal essays.'
+};
+
+/**
+ * Predefined instructions for speech intent classification.
+ */
+const SPEECH_INTENT_CLASSIFIER_INSTRUCTIONS = dedent(`
+Focus on the author's PURPOSE, not the topic. A news article about entertainment is "inform", not "entertain".
+Ask yourself: What is the author trying to achieve with this text?
+If the text blends multiple purposes, identify the DOMINANT intent based on the overall structure and goal.
+`);
+
+/**
+ * Configuration for the SpeechIntentClassifier tool.
+ */
+export interface SpeechIntentClassifierConfig {
+	/** Additional instructions for the classifier */
+	instructions?: string;
+}
+
+/**
+ * A tool that classifies text into communicative/speech intents (inform, persuade, entertain, educate, express emotions).
+ * Based on the PIE+ framework for understanding author's purpose.
+ */
+export class SpeechIntentClassifier extends Classifier {
+	constructor(config: SpeechIntentClassifierConfig = {}, modelConfig: ModelConfig) {
+		const { instructions = '' } = config;
+		const combinedInstructions = instructions
+			? `${SPEECH_INTENT_CLASSIFIER_INSTRUCTIONS}\n\n${instructions}`
+			: SPEECH_INTENT_CLASSIFIER_INSTRUCTIONS;
+		super({ labels: SPEECH_INTENT_LABELS, instructions: combinedInstructions }, modelConfig);
+	}
+}
+
+// =============================================================================
 // Labeler (multi-label classification)
 // =============================================================================
 
