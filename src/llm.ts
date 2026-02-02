@@ -3,7 +3,13 @@
  */
 
 import type { z } from '@zod/zod';
-import { getProviderForModel, type Message, type LLMResponse, type ProviderParams } from './providers/index.ts';
+import { SchemaValidationError } from './providers/errors.ts';
+import {
+	getProviderForModel,
+	type Message,
+	type LLMResponse,
+	type ProviderParams,
+} from './providers/index.ts';
 
 // Re-export core LLM types from providers
 export type { Message, LLMResponse, LLMProvider, ProviderParams, LLMConversation } from './providers/index.ts';
@@ -71,9 +77,9 @@ export async function askLLMSafe<T = string>({
 		};
 
 		if (attempt < maxRetries && response.error) {
-			// Add error context to messages for retry
-			const errorMessage = `Previous attempt failed with error: ${response.error.message}`;
-			if (response.text) {
+			let errorMessage: string;
+			if (response.error instanceof SchemaValidationError) {
+				errorMessage = `Previous attempt failed with Zod parsing error:\n${response.error.message}.`;
 				messages = [
 					...messages,
 					{
@@ -81,8 +87,12 @@ export async function askLLMSafe<T = string>({
 						content: `${errorMessage}\nYour raw response was:\n${response.text}`,
 					},
 				];
+			} else {
+				errorMessage = `Previous attempt failed with error: ${response.error.message}`;
 			}
-			console.log(`askLLMSafe retrying! Attempt ${attempt + 1} failed: ${response.error.message}`);
+			console.log(
+				`askLLMSafe retrying! Attempt ${attempt + 1} failed with: ${errorMessage}`
+			);
 		}
 	}
 
