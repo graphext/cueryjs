@@ -21,4 +21,4 @@ export type * from './models.schema.ts';
 export type * from './seedKeyword.schema.ts';
 export type * from './topics.schema.ts';
 export type * from './summary.schema.ts';
-
+export type * from './prompt.schema.ts';

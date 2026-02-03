@@ -31,6 +31,7 @@ export * from './src/tools/sentiment.ts';
 export * from './src/tools/summarize.ts';
 export * from './src/tools/sources.ts';
 export * from './src/tools/entities.ts';
+export * from './src/tools/prompts.ts';
 export * from './src/helpers/seedKeywords.ts';
 export * from './src/tools/generic.ts';
 export * from './src/api.ts';
