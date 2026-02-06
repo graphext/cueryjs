@@ -16,7 +16,6 @@ export type * from './persona.schema.ts';
 export type * from './brand.schema.ts';
 export type * from './funnel.schema.ts';
 export type * from './keyword.schema.ts';
-export type * from './pipeline.schema.ts';
 export type * from './models.schema.ts';
 export type * from './seedKeyword.schema.ts';
 export type * from './topics.schema.ts';
