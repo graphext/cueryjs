@@ -1,9 +1,19 @@
 import { dedent } from '../helpers/utils.ts';
 import type { Message } from '../llm.ts';
-import type { BrandContext } from '../schemas/brand.schema.ts';
+import type { BrandContext, Product } from '../schemas/brand.schema.ts';
 import { ABSentimentsSchema, type ABSentiment, type ABSentiments } from '../schemas/sentiment.schema.ts';
 import { Tool, type ModelConfig } from '../tool.ts';
 import { Classifier } from './classifier.ts';
+
+/**
+ * Formats a portfolio array as a comma-separated list of product/service names.
+ * Includes category in parentheses if available.
+ */
+function formatPortfolio(portfolio: Array<Product>): string {
+	return portfolio
+		.map((p) => (p.category ? `${p.name} (${p.category})` : p.name))
+		.join(', ');
+}
 
 
 const ABS_PROMPT_SYSTEM = dedent(`
@@ -31,9 +41,9 @@ Input text: "The room service at the Grand Hotel was absolutely terrible and the
 
 Output:
 [
-  {"aspect": "Grand Hotel's room service", "sentiment": "negative", "reason": "Described as terrible.", "quote": "The room service at the Grand Hotel was absolutely terrible"},
-  {"aspect": "Grand Hotel's staff", "sentiment": "negative", "reason": "Described as rude.", "quote": "the staff were rude"},
-  {"aspect": "Grand Hotel's view", "sentiment": "positive", "reason": "Described as breathtaking.", "quote": "the view from our room was breathtaking"}
+  {"aspect": "The room service at the Grand Hotel", "sentiment": "negative", "reason": "Described as terrible.", "quote": "The room service at the Grand Hotel was absolutely terrible"},
+  {"aspect": "the staff", "sentiment": "negative", "reason": "Described as rude.", "quote": "the staff were rude"},
+  {"aspect": "the view from our room", "sentiment": "positive", "reason": "Described as breathtaking.", "quote": "the view from our room was breathtaking"}
 ]
 
 Only extract aspects that have an explicitly expressed sentiment associated with them, i.e.
@@ -74,7 +84,7 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 
 		const brandInstructions = brand
 			? dedent(`
-				Pay special attention to mentions of "${brand.shortName}" or its products/services (${brand.portfolio}).
+				Pay special attention to mentions of "${brand.shortName}" or its products/services (${formatPortfolio(brand.portfolio)}).
 				Always contextualize aspects with the brand name, e.g. "the teaching method of ${brand.shortName}"
 				instead of just "the teaching method". Respond in language code ${brand.language}.
 			`)
