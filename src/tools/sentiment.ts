@@ -1,5 +1,5 @@
 import { dedent } from '../helpers/utils.ts';
-import type { Message } from '../llm.ts';
+import type { LLMResponse, Message } from '../llm.ts';
 import type { BrandContext, Product } from '../schemas/brand.schema.ts';
 import { ABSentimentsSchema, type ABSentiment, type ABSentiments } from '../schemas/sentiment.schema.ts';
 import { Tool, type ModelConfig } from '../tool.ts';
@@ -25,12 +25,12 @@ Specifically:
 
 1. Identify aspects in the text that have either a positive or negative sentiment expressed toward them.
 2. Ignore(!) all aspects that do not have a sentiment associated with them or where the sentiment is neutral.
-3. Output a list of objects, where each object contains
+3. Output a JSON object with an "aspects" key containing an array of objects, where each object contains:
     a. the aspect as it occurs in the text (key "aspect")
     b. the sentiment label as either "positive" or "negative" (key "sentiment")
     c. the reason for the sentiment assignment as a short text (key "reason")
     d. the exact text fragment containing both the aspect and what is said about it (key "quote") - must be a verbatim substring
-4. If there are no sentiment-bearing aspects in the text, the output should be an empty list
+4. If there are no sentiment-bearing aspects in the text, return {"aspects": []}
 
 IMPORTANT: The "quote" field must be an EXACT verbatim substring from the input text. It should
 include the complete phrase mentioning both the aspect and the sentiment expressed about it.
@@ -40,11 +40,13 @@ Example:
 Input text: "The room service at the Grand Hotel was absolutely terrible and the staff were rude, but the view from our room was breathtaking."
 
 Output:
-[
-  {"aspect": "The room service at the Grand Hotel", "sentiment": "negative", "reason": "Described as terrible.", "quote": "The room service at the Grand Hotel was absolutely terrible"},
-  {"aspect": "the staff", "sentiment": "negative", "reason": "Described as rude.", "quote": "the staff were rude"},
-  {"aspect": "the view from our room", "sentiment": "positive", "reason": "Described as breathtaking.", "quote": "the view from our room was breathtaking"}
-]
+{
+  "aspects": [
+    {"aspect": "The room service at the Grand Hotel", "sentiment": "negative", "reason": "Described as terrible.", "quote": "The room service at the Grand Hotel was absolutely terrible"},
+    {"aspect": "the staff", "sentiment": "negative", "reason": "Described as rude.", "quote": "the staff were rude"},
+    {"aspect": "the view from our room", "sentiment": "positive", "reason": "Described as breathtaking.", "quote": "the view from our room was breathtaking"}
+  ]
+}
 
 Only extract aspects that have an explicitly expressed sentiment associated with them, i.e.
 subjective opinions, feelings, or evaluations. Do not infer sentiment from factual statements,
@@ -85,8 +87,9 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 		const brandInstructions = brand
 			? dedent(`
 				Pay special attention to mentions of "${brand.shortName}" or its products/services (${formatPortfolio(brand.portfolio)}).
-				Always contextualize aspects with the brand name, e.g. "the teaching method of ${brand.shortName}"
-				instead of just "the teaching method". Respond in language code ${brand.language}.
+				When the brand name or its products/services are explicitly mentioned in the text, you may reference them in your reasoning,
+				but keep aspect names and quoted text exactly as they appear in the original input.
+				Respond in language code ${brand.language}.
 			`)
 			: '';
 
@@ -112,6 +115,36 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 
 	protected override extractResult(parsed: ABSentiments): Array<ABSentiment> {
 		return parsed.aspects;
+	}
+
+	/**
+	 * Override invoke to add quote validation
+	 */
+	override async invoke(
+		input: string | null,
+		options: Partial<ModelConfig> = {}
+	): Promise<LLMResponse<Array<ABSentiment> | null>> {
+		const response = await super.invoke(input, options);
+
+		// If we have a successful result and non-empty input, validate quotes
+		if (response.parsed && input && input.trim() !== '') {
+			const validatedResult = response.parsed.filter((sentiment) => {
+				if (!input.includes(sentiment.quote)) {
+					console.warn(
+						`Quote not found in text: "${sentiment.quote}" for aspect "${sentiment.aspect}"`
+					);
+					return false;
+				}
+				return true;
+			});
+
+			return {
+				...response,
+				parsed: validatedResult,
+			};
+		}
+
+		return response;
 	}
 }
 
