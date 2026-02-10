@@ -27,11 +27,14 @@ Deno.test({
 			assertExists(sentiment.sentiment);
 			assertExists(sentiment.reason);
 			assertExists(sentiment.quote);
+			// context can be string or null
+			assertEquals('context' in sentiment, true);
 
 			assertEquals(typeof sentiment.aspect, 'string');
 			assertEquals(['positive', 'negative'].includes(sentiment.sentiment), true);
 			assertEquals(typeof sentiment.reason, 'string');
 			assertEquals(typeof sentiment.quote, 'string');
+			assertEquals(sentiment.context === null || typeof sentiment.context === 'string', true);
 
 			// Verify that the quote is actually a substring of the input
 			assertEquals(text.includes(sentiment.quote), true,
@@ -137,6 +140,8 @@ Deno.test({
 				true,
 				`Quote "${sentiment.quote}" must remain a substring of the original text`
 			);
+			// When brand context is provided, context should be set to the brand name
+			assertEquals(sentiment.context, 'EduCorp');
 		}
 	}
 });

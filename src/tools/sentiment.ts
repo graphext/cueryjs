@@ -30,6 +30,7 @@ Specifically:
     b. the sentiment label as either "positive" or "negative" (key "sentiment")
     c. the reason for the sentiment assignment as a short text (key "reason")
     d. the exact text fragment containing both the aspect and what is said about it (key "quote") - must be a verbatim substring
+    e. optional contextual information about the aspect, such as the brand or entity it relates to (key "context") - use null if not applicable
 4. If there are no sentiment-bearing aspects in the text, the output should be an empty list
 
 IMPORTANT: The "quote" field must be an EXACT verbatim substring from the input text. It should
@@ -41,9 +42,9 @@ Input text: "The room service at the Grand Hotel was absolutely terrible and the
 
 Output:
 [
-  {"aspect": "The room service at the Grand Hotel", "sentiment": "negative", "reason": "Described as terrible.", "quote": "The room service at the Grand Hotel was absolutely terrible"},
-  {"aspect": "the staff", "sentiment": "negative", "reason": "Described as rude.", "quote": "the staff were rude"},
-  {"aspect": "the view from our room", "sentiment": "positive", "reason": "Described as breathtaking.", "quote": "the view from our room was breathtaking"}
+  {"aspect": "The room service at the Grand Hotel", "sentiment": "negative", "reason": "Described as terrible.", "quote": "The room service at the Grand Hotel was absolutely terrible", "context": "Grand Hotel"},
+  {"aspect": "the staff", "sentiment": "negative", "reason": "Described as rude.", "quote": "the staff were rude", "context": "Grand Hotel"},
+  {"aspect": "the view from our room", "sentiment": "positive", "reason": "Described as breathtaking.", "quote": "the view from our room was breathtaking", "context": "Grand Hotel"}
 ]
 
 Only extract aspects that have an explicitly expressed sentiment associated with them, i.e.
@@ -85,8 +86,8 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 		const brandInstructions = brand
 			? dedent(`
 				Pay special attention to mentions of "${brand.shortName}" or its products/services (${formatPortfolio(brand.portfolio)}).
-				When the brand name or its products/services are explicitly mentioned in the text, you may reference them in your the reasoning (key "reason") to support the sentiment classification,
-				but keep aspect names and quoted text exactly as they appear in the original input.
+				When an aspect relates to a brand/entity, set the "context" field to "${brand.shortName}".
+				Keep aspect names and quoted text exactly as they appear in the original input.
 				Respond in language code ${brand.language}.
 			`)
 			: '';
