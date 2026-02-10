@@ -25,12 +25,12 @@ Specifically:
 
 1. Identify aspects in the text that have either a positive or negative sentiment expressed toward them.
 2. Ignore(!) all aspects that do not have a sentiment associated with them or where the sentiment is neutral.
-3. Output a JSON object with an "aspects" key containing an array of objects, where each object contains:
+3. Output a list of objects, where each object contains
     a. the aspect as it occurs in the text (key "aspect")
     b. the sentiment label as either "positive" or "negative" (key "sentiment")
     c. the reason for the sentiment assignment as a short text (key "reason")
     d. the exact text fragment containing both the aspect and what is said about it (key "quote") - must be a verbatim substring
-4. If there are no sentiment-bearing aspects in the text, return {"aspects": []}
+4. If there are no sentiment-bearing aspects in the text, the output should be an empty list
 
 IMPORTANT: The "quote" field must be an EXACT verbatim substring from the input text. It should
 include the complete phrase mentioning both the aspect and the sentiment expressed about it.
@@ -40,13 +40,11 @@ Example:
 Input text: "The room service at the Grand Hotel was absolutely terrible and the staff were rude, but the view from our room was breathtaking."
 
 Output:
-{
-  "aspects": [
-    {"aspect": "The room service at the Grand Hotel", "sentiment": "negative", "reason": "Described as terrible.", "quote": "The room service at the Grand Hotel was absolutely terrible"},
-    {"aspect": "the staff", "sentiment": "negative", "reason": "Described as rude.", "quote": "the staff were rude"},
-    {"aspect": "the view from our room", "sentiment": "positive", "reason": "Described as breathtaking.", "quote": "the view from our room was breathtaking"}
-  ]
-}
+[
+  {"aspect": "The room service at the Grand Hotel", "sentiment": "negative", "reason": "Described as terrible.", "quote": "The room service at the Grand Hotel was absolutely terrible"},
+  {"aspect": "the staff", "sentiment": "negative", "reason": "Described as rude.", "quote": "the staff were rude"},
+  {"aspect": "the view from our room", "sentiment": "positive", "reason": "Described as breathtaking.", "quote": "the view from our room was breathtaking"}
+]
 
 Only extract aspects that have an explicitly expressed sentiment associated with them, i.e.
 subjective opinions, feelings, or evaluations. Do not infer sentiment from factual statements,
