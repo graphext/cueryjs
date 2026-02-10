@@ -3,7 +3,8 @@ import { z } from '@zod/zod';
 export const ABSentimentSchema = z.object({
 	aspect: z.string().describe('The specific entity or aspect mentioned in the text.'),
 	sentiment: z.enum(['positive', 'negative']).describe('The sentiment expressed toward the aspect, either positive or negative.'),
-	reason: z.string().describe('A brief explanation of why this sentiment was assigned to the aspect.')
+	reason: z.string().describe('A brief explanation of why this sentiment was assigned to the aspect.'),
+	quote: z.string().describe('The exact text fragment from the input containing both the aspect and the sentiment expressed about it.')
 });
 
 export const ABSentimentsSchema = z.object({

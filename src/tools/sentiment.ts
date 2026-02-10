@@ -19,10 +19,22 @@ Specifically:
     a. the aspect as it occurs in the text (key "aspect")
     b. the sentiment label as either "positive" or "negative" (key "sentiment")
     c. the reason for the sentiment assignment as a short text (key "reason")
+    d. the exact text fragment containing both the aspect and what is said about it (key "quote") - must be a verbatim substring
 4. If there are no sentiment-bearing aspects in the text, the output should be an empty list
 
-Example Output format:
-[{"aspect": "room service", "sentiment": "negative", "reason": "Room service was mentioned being rude."}, ...]
+IMPORTANT: The "quote" field must be an EXACT verbatim substring from the input text. It should
+include the complete phrase mentioning both the aspect and the sentiment expressed about it.
+
+Example:
+
+Input text: "The room service at the Grand Hotel was absolutely terrible and the staff were rude, but the view from our room was breathtaking."
+
+Output:
+[
+  {"aspect": "Grand Hotel's room service", "sentiment": "negative", "reason": "Described as terrible.", "quote": "The room service at the Grand Hotel was absolutely terrible"},
+  {"aspect": "Grand Hotel's staff", "sentiment": "negative", "reason": "Described as rude.", "quote": "the staff were rude"},
+  {"aspect": "Grand Hotel's view", "sentiment": "positive", "reason": "Described as breathtaking.", "quote": "the view from our room was breathtaking"}
+]
 
 Only extract aspects that have an explicitly expressed sentiment associated with them, i.e.
 subjective opinions, feelings, or evaluations. Do not infer sentiment from factual statements,
@@ -62,9 +74,9 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 
 		const brandInstructions = brand
 			? dedent(`
-				When analyzing the text, pay special attention to any mentions of the brand "${brand.shortName}"
-				or its products/services (${brand.portfolio}). Ensure that any sentiments expressed toward this
-				brand or its offerings are accurately captured in your output. Respond in language code ${brand.language}.
+				Pay special attention to mentions of "${brand.shortName}" or its products/services (${brand.portfolio}).
+				Always contextualize aspects with the brand name, e.g. "the teaching method of ${brand.shortName}"
+				instead of just "the teaching method". Respond in language code ${brand.language}.
 			`)
 			: '';
 
