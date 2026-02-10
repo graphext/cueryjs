@@ -85,7 +85,7 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 		const brandInstructions = brand
 			? dedent(`
 				Pay special attention to mentions of "${brand.shortName}" or its products/services (${formatPortfolio(brand.portfolio)}).
-				When the brand name or its products/services are explicitly mentioned in the text, you may reference them in your reasoning,
+				When the brand name or its products/services are explicitly mentioned in the text, you may reference them in your the reasoning (key "reason") to support the sentiment classification,
 				but keep aspect names and quoted text exactly as they appear in the original input.
 				Respond in language code ${brand.language}.
 			`)
