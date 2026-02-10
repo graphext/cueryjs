@@ -1,5 +1,5 @@
 import { dedent } from '../helpers/utils.ts';
-import type { Message } from '../llm.ts';
+import type { LLMResponse, Message } from '../llm.ts';
 import type { BrandContext, Product } from '../schemas/brand.schema.ts';
 import { ABSentimentsSchema, type ABSentiment, type ABSentiments } from '../schemas/sentiment.schema.ts';
 import { Tool, type ModelConfig } from '../tool.ts';
@@ -85,8 +85,9 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 		const brandInstructions = brand
 			? dedent(`
 				Pay special attention to mentions of "${brand.shortName}" or its products/services (${formatPortfolio(brand.portfolio)}).
-				Always contextualize aspects with the brand name, e.g. "the teaching method of ${brand.shortName}"
-				instead of just "the teaching method". Respond in language code ${brand.language}.
+				When the brand name or its products/services are explicitly mentioned in the text, you may reference them in your reasoning,
+				but keep aspect names and quoted text exactly as they appear in the original input.
+				Respond in language code ${brand.language}.
 			`)
 			: '';
 
@@ -112,6 +113,36 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 
 	protected override extractResult(parsed: ABSentiments): Array<ABSentiment> {
 		return parsed.aspects;
+	}
+
+	/**
+	 * Override invoke to add quote validation
+	 */
+	override async invoke(
+		input: string | null,
+		options: Partial<ModelConfig> = {}
+	): Promise<LLMResponse<Array<ABSentiment> | null>> {
+		const response = await super.invoke(input, options);
+
+		// If we have a successful result and non-empty input, validate quotes
+		if (response.parsed && input && input.trim() !== '') {
+			const validatedResult = response.parsed.filter((sentiment) => {
+				if (!input.includes(sentiment.quote)) {
+					console.warn(
+						`Quote not found in text: "${sentiment.quote}" for aspect "${sentiment.aspect}"`
+					);
+					return false;
+				}
+				return true;
+			});
+
+			return {
+				...response,
+				parsed: validatedResult,
+			};
+		}
+
+		return response;
 	}
 }
 
