@@ -167,7 +167,7 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 
 		// If there are invalid quotes, return an error with metadata about what was dropped
 		const invalidQuotesDetails = invalidSentiments
-			.map(s => {
+			.map((s) => {
 				const truncatedQuote = s.quote.length > 100 ? s.quote.substring(0, 100) + '...' : s.quote;
 				const sanitizedQuote = truncatedQuote.replace(/[\n\r\t]/g, ' ');
 				const sanitizedAspect = s.aspect.replace(/[\n\r\t]/g, ' ');
