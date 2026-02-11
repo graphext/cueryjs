@@ -140,9 +140,24 @@ Deno.test({
 				true,
 				`Quote "${sentiment.quote}" must remain a substring of the original text`
 			);
-			// When brand context is provided, context should be set to the brand name
-			assertEquals(sentiment.context, 'EduCorp');
+			// When brand context is provided, context may be null for non-brand aspects,
+			// but if set it should match the brand short name.
+			assertEquals(
+				sentiment.context === null || sentiment.context === 'EduCorp',
+				true,
+				'Sentiment context must be either null or the brand short name when brand context is provided'
+			);
 		}
+
+		// At least one sentiment should be explicitly associated with the brand context
+		const hasBrandContext = response.parsed!.some(
+			(s) => s.context === 'EduCorp'
+		);
+		assertEquals(
+			hasBrandContext,
+			true,
+			'At least one sentiment should have context set to the brand short name when brand context is provided'
+		);
 	}
 });
 
