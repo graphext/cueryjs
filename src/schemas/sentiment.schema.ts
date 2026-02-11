@@ -9,7 +9,7 @@ export const ABSentimentSchema = z.object({
 });
 
 export const ABSentimentsSchema = z.object({
-	aspects: z.array(ABSentimentSchema).describe('A list of aspects with their associated sentiments, reasons, and quotes.')
+	aspects: z.array(ABSentimentSchema).describe('A list of aspects with their associated sentiments, reasons, quotes, and optional context.')
 });
 
 export type ABSentiment = z.infer<typeof ABSentimentSchema>;
