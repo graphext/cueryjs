@@ -117,33 +117,67 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 	}
 
 	/**
-	 * Override invoke to add quote validation
+	 * Override invoke to add quote validation.
+	 * If invalid quotes are detected, returns an error but includes valid sentiments.
+	 * This allows callers to distinguish between "no sentiments found" vs "sentiments dropped due to invalid quotes".
 	 */
 	override async invoke(
 		input: string | null,
 		options: Partial<ModelConfig> = {}
 	): Promise<LLMResponse<Array<ABSentiment> | null>> {
+		// Get the initial response using parent's invoke
 		const response = await super.invoke(input, options);
 
-		// If we have a successful result and non-empty input, validate quotes
-		if (response.parsed && input && input.trim() !== '') {
-			const validatedResult = response.parsed.filter((sentiment) => {
-				if (!input.includes(sentiment.quote)) {
-					console.warn(
-						`Quote not found in text: "${sentiment.quote}" for aspect "${sentiment.aspect}"`
-					);
-					return false;
-				}
-				return true;
-			});
+		// If no result, error, or empty input, return immediately
+		if (!response.parsed || response.error || !input || input.trim() === '') {
+			return response;
+		}
 
+		// Validate quotes and separate valid from invalid sentiments
+		const validSentiments: Array<ABSentiment> = [];
+		const invalidSentiments: Array<{ aspect: string; quote: string }> = [];
+
+		for (const sentiment of response.parsed) {
+			if (input.includes(sentiment.quote)) {
+				validSentiments.push(sentiment);
+			} else {
+				invalidSentiments.push({
+					aspect: sentiment.aspect,
+					quote: sentiment.quote,
+				});
+				console.warn(
+					`Invalid quote detected: "${sentiment.quote}" for aspect "${sentiment.aspect}"`
+				);
+			}
+		}
+
+		// If all quotes are valid, return success
+		if (invalidSentiments.length === 0) {
 			return {
 				...response,
-				parsed: validatedResult,
+				parsed: validSentiments,
 			};
 		}
 
-		return response;
+		// If there are invalid quotes, return an error with metadata about what was dropped
+		const errorMessage = dedent(`
+			Sentiment extraction completed but ${invalidSentiments.length} sentiment(s) had invalid quotes.
+			The "quote" field must be an exact verbatim substring from the input text.
+			Invalid quotes were: ${invalidSentiments.map(s => `"${s.quote}" (aspect: ${s.aspect})`).join(', ')}.
+			${validSentiments.length > 0 
+				? `Returning ${validSentiments.length} valid sentiment(s).`
+				: 'No valid sentiments found.'}
+		`);
+
+		console.error(errorMessage);
+
+		// Return the valid sentiments but with an error to signal the issue
+		return {
+			parsed: validSentiments.length > 0 ? validSentiments : null,
+			text: response.text,
+			usage: response.usage,
+			error: new Error(errorMessage),
+		};
 	}
 }
 
