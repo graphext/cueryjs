@@ -128,6 +128,14 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 		// If we have a successful result and non-empty input, validate quotes
 		if (response.parsed && input && input.trim() !== '') {
 			const validatedResult = response.parsed.filter((sentiment) => {
+				// Check that quote is non-empty and not just whitespace
+				if (!sentiment.quote || sentiment.quote.trim().length === 0) {
+					console.warn(
+						`Empty or whitespace-only quote for aspect "${sentiment.aspect}"`
+					);
+					return false;
+				}
+				// Check that quote is a substring of the input
 				if (!input.includes(sentiment.quote)) {
 					console.warn(
 						`Quote not found in text: "${sentiment.quote}" for aspect "${sentiment.aspect}"`
