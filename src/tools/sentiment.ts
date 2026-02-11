@@ -1,8 +1,8 @@
 import { dedent } from '../helpers/utils.ts';
 import type { LLMResponse, Message } from '../llm.ts';
 import type { BrandContext, Product } from '../schemas/brand.schema.ts';
-import { ABSentimentsSchema, type ABSentiment, type ABSentiments } from '../schemas/sentiment.schema.ts';
-import { Tool, type ModelConfig } from '../tool.ts';
+import { type ABSentiment, type ABSentiments, ABSentimentsSchema } from '../schemas/sentiment.schema.ts';
+import { type ModelConfig, Tool } from '../tool.ts';
 import { Classifier } from './classifier.ts';
 
 /**
@@ -14,7 +14,6 @@ function formatPortfolio(portfolio: Array<Product>): string {
 		.map((p) => (p.category ? `${p.name} (${p.category})` : p.name))
 		.join(', ');
 }
-
 
 const ABS_PROMPT_SYSTEM = dedent(`
 You're an expert in Aspect-Based Sentiment Analysis. Your task involves identifying specific
@@ -65,7 +64,6 @@ Return the entities and their sentiments with reasons from the following text se
 {text}
 `);
 
-
 export interface SentimentExtractorConfig {
 	/** Additional instructions for sentiment extraction */
 	instructions?: string;
@@ -85,7 +83,9 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 
 		const brandInstructions = brand
 			? dedent(`
-				Pay special attention to mentions of "${brand.shortName}" or its products/services (${formatPortfolio(brand.portfolio)}).
+				Pay special attention to mentions of "${brand.shortName}" or its products/services (${
+				formatPortfolio(brand.portfolio)
+			}).
 				When an aspect relates to a brand/entity, set the "context" field to "${brand.shortName}".
 				Keep aspect names and quoted text exactly as they appear in the original input.
 				Respond in language code ${brand.language}.
@@ -104,7 +104,7 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 		const userPrompt = ABS_PROMPT_USER.replace('{text}', text ?? '');
 		return [
 			{ role: 'system', content: this.systemPrompt },
-			{ role: 'user', content: userPrompt }
+			{ role: 'user', content: userPrompt },
 		];
 	}
 
@@ -121,16 +121,24 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 	 */
 	override async invoke(
 		input: string | null,
-		options: Partial<ModelConfig> = {}
+		options: Partial<ModelConfig> = {},
 	): Promise<LLMResponse<Array<ABSentiment> | null>> {
 		const response = await super.invoke(input, options);
 
 		// If we have a successful result and non-empty input, validate quotes
 		if (response.parsed && input && input.trim() !== '') {
 			const validatedResult = response.parsed.filter((sentiment) => {
+				// Check that quote is non-empty and not just whitespace
+				if (!sentiment.quote || sentiment.quote.trim().length === 0) {
+					console.warn(
+						`Empty or whitespace-only quote for aspect "${sentiment.aspect}"`,
+					);
+					return false;
+				}
+				// Check that quote is a substring of the input
 				if (!input.includes(sentiment.quote)) {
 					console.warn(
-						`Quote not found in text: "${sentiment.quote}" for aspect "${sentiment.aspect}"`
+						`Quote not found in text: "${sentiment.quote}" for aspect "${sentiment.aspect}"`,
 					);
 					return false;
 				}
@@ -157,7 +165,7 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 export const SENTIMENT_POLARITY_LABELS: Record<string, string> = {
 	positive: 'Expresses favorable opinions, approval, satisfaction, or optimism.',
 	neutral: 'No clear sentiment expressed; factual, balanced, or ambiguous.',
-	negative: 'Expresses unfavorable opinions, criticism, dissatisfaction, or pessimism.'
+	negative: 'Expresses unfavorable opinions, criticism, dissatisfaction, or pessimism.',
 };
 
 /**
@@ -192,4 +200,3 @@ export class SentimentPolarityClassifier extends Classifier {
 
 export { ABSentimentSchema, ABSentimentsSchema } from '../schemas/sentiment.schema.ts';
 export type { ABSentiment, ABSentiments } from '../schemas/sentiment.schema.ts';
-
