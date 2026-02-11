@@ -166,13 +166,24 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 		}
 
 		// If there are invalid quotes, return an error with metadata about what was dropped
+		const invalidQuotesDetails = invalidSentiments
+			.map(s => {
+				const truncatedQuote = s.quote.length > 100 ? s.quote.substring(0, 100) + '...' : s.quote;
+				const sanitizedQuote = truncatedQuote.replace(/[\n\r\t]/g, ' ');
+				const sanitizedAspect = s.aspect.replace(/[\n\r\t]/g, ' ');
+				return `"${sanitizedQuote}" (aspect: ${sanitizedAspect})`;
+			})
+			.join(', ');
+
+		const validSentimentsMessage = validSentiments.length > 0 
+			? `Returning ${validSentiments.length} valid sentiment(s).`
+			: 'No valid sentiments found.';
+
 		const errorMessage = dedent(`
 			Sentiment extraction completed but ${invalidSentiments.length} sentiment(s) had invalid quotes.
 			The "quote" field must be an exact verbatim substring from the input text.
-			Invalid quotes were: ${invalidSentiments.map(s => `"${s.quote}" (aspect: ${s.aspect})`).join(', ')}.
-			${validSentiments.length > 0 
-				? `Returning ${validSentiments.length} valid sentiment(s).`
-				: 'No valid sentiments found.'}
+			Invalid quotes were: ${invalidQuotesDetails}.
+			${validSentimentsMessage}
 		`);
 
 		console.error(errorMessage);
