@@ -161,6 +161,48 @@ Deno.test({
 	}
 });
 
+Deno.test({
+	name: 'SentimentExtractor.invoke - handles brand context with empty portfolio',
+	ignore: SKIP_OPENAI,
+	async fn() {
+		const text = 'I love the teaching method, it makes learning so easy!';
+
+		const brand = {
+			name: 'EduCorp Inc.',
+			shortName: 'EduCorp',
+			description: 'An online education platform',
+			domain: 'educorp.com',
+			sectors: ['Education'],
+			markets: ['US'],
+			portfolio: [],  // Empty portfolio
+			marketPosition: 'leader' as const,
+			favicon: null,
+			language: 'en',
+			country: 'US',
+			sector: 'Education',
+			briefing: null
+		};
+
+		const extractor = new SentimentExtractor({ brand }, { model: 'gpt-4.1-mini' });
+		const response = await extractor.invoke(text);
+
+		assertExists(response.parsed);
+		assertEquals(Array.isArray(response.parsed), true);
+
+		// Check that quotes are still valid substrings even with empty portfolio
+		for (const sentiment of response.parsed!) {
+			assertExists(sentiment.quote);
+			assertEquals(
+				text.includes(sentiment.quote),
+				true,
+				`Quote "${sentiment.quote}" must remain a substring of the original text`
+			);
+			// When brand context is provided, context should be set to the brand name
+			assertEquals(sentiment.context, 'EduCorp');
+		}
+	}
+});
+
 // =============================================================================
 // Tests that don't require OpenAI (null/empty handling)
 // =============================================================================

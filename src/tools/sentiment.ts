@@ -82,14 +82,18 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 		const { instructions = '', brand = null } = config;
 
 		const brandInstructions = brand
-			? dedent(`
-				Pay special attention to mentions of "${brand.shortName}" or its products/services (${
-				formatPortfolio(brand.portfolio)
-			}).
-				When an aspect relates to a brand/entity, set the "context" field to "${brand.shortName}".
-				Keep aspect names and quoted text exactly as they appear in the original input.
-				Respond in language code ${brand.language}.
-			`)
+			? (() => {
+				const portfolio = formatPortfolio(brand.portfolio);
+				const portfolioText = portfolio
+					? ` or its products/services (${portfolio})`
+					: '';
+				return dedent(`
+					Pay special attention to mentions of "${brand.shortName}"${portfolioText}.
+					When an aspect relates to a brand/entity, set the "context" field to "${brand.shortName}".
+					Keep aspect names and quoted text exactly as they appear in the original input.
+					Respond in language code ${brand.language}.
+				`);
+			})()
 			: '';
 
 		const combinedInstructions = [instructions, brandInstructions].filter(Boolean).join('\n\n');
