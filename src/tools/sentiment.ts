@@ -75,6 +75,12 @@ export interface SentimentExtractorConfig {
 
 /**
  * A tool that extracts aspect-based sentiments from text.
+ * 
+ * The extractor validates that each sentiment's quote is an exact substring of the input text.
+ * If invalid quotes are detected:
+ * - Valid sentiments are still returned in the `parsed` field
+ * - The `error` field is populated with details about invalid quotes
+ * - This allows callers to distinguish between "no sentiments found" and "sentiments dropped"
  */
 export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<ABSentiment>> {
 	private readonly systemPrompt: string;
