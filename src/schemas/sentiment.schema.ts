@@ -6,11 +6,11 @@ export const ABSentimentSchema = z.object({
 		'The sentiment expressed toward the aspect, either positive or negative.',
 	),
 	reason: z.string().describe('A brief explanation of why this sentiment was assigned to the aspect.'),
-	quote: z.string().min(1).describe(
-		'The exact text fragment from the input containing both the aspect and the sentiment expressed about it.',
-	).refine((val) => val.trim().length > 0, {
+	quote: z.string().min(1).refine((val) => val.trim().length > 0, {
 		message: 'Quote must not be empty or whitespace-only',
-	}),
+	}).describe(
+		'The exact text fragment from the input containing both the aspect and the sentiment expressed about it.',
+	),
 	context: z.string().nullable().describe(
 		'Optional contextual information about the aspect, such as the brand or entity it relates to.',
 	),
