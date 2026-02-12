@@ -16,7 +16,6 @@ src/
 - Pure functions, no LLM calls
 - Shared across tools
 - Examples: `async.ts`, `urls.ts`, `utils.ts`
-- Orchestrators: `api.ts`
 
 ### `/src/tools/` (LLM Tools)
 - Functions that call OpenAI

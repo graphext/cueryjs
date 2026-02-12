@@ -32,7 +32,6 @@ cueryjs/
 ├── mod.ts                      # Main entry point - exports public API
 ├── deno.json                   # Deno configuration and tasks
 ├── src/
-│   ├── api.ts                  # Main orchestration API
 │   ├── async.ts                # Async utilities (mapParallel, withRetries, sleep)
 │   ├── llm.ts                  # Provider-agnostic LLM interface
 │   ├── batch-response.ts       # BatchResponse class with usage tracking
