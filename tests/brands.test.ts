@@ -206,6 +206,61 @@ Deno.test('rankBrandsInText - should find brand via domain when text contains do
 	assertEquals(result.includes('Acme&Co'), true);
 });
 
+Deno.test('rankBrandsInText - should match brand by alias when shortName is not mentioned', () => {
+	const text = 'Many families compare helen doron english with other options.';
+
+	const brands: Array<FlaggedBrand> = [
+		{
+			name: 'Helen Doron Educational Group',
+			shortName: 'Helen Doron',
+			aliases: ['Helen Doron English'],
+			description: 'Education brand',
+			domain: 'helendoron.es',
+			sectors: ['education'],
+			markets: ['Spain'],
+			portfolio: [],
+			marketPosition: 'leader',
+			favicon: null,
+			isCompetitor: true
+		}
+	];
+
+	const result = rankBrandsInText(text, brands, []);
+
+	assertEquals(result, ['Helen Doron']);
+});
+
+Deno.test('rankBrandsInText - should not leave alias entities as unmatched brands', () => {
+	const text = 'Many families compare helen doron english with other options.';
+
+	const brands: Array<FlaggedBrand> = [
+		{
+			name: 'Helen Doron Educational Group',
+			shortName: 'Helen Doron',
+			aliases: ['Helen Doron English'],
+			description: 'Education brand',
+			domain: 'helendoron.es',
+			sectors: ['education'],
+			markets: ['Spain'],
+			portfolio: [],
+			marketPosition: 'leader',
+			favicon: null,
+			isCompetitor: true
+		}
+	];
+
+	const entities: Array<Entity> = [
+		{
+			name: 'helen doron english',
+			type: 'brand'
+		}
+	];
+
+	const result = rankBrandsInText(text, brands, entities);
+
+	assertEquals(result, ['Helen Doron']);
+});
+
 Deno.test('rankBrandsInText - should work when entities is undefined', () => {
 	const text = 'Acme&Co is a great company.';
 
