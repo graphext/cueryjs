@@ -1,5 +1,5 @@
 /* eslint no-console: ["warn", { allow: ["log", "warn", "error"] }] */
-import { mapParallel } from '../../async.ts';
+import { mapParallel } from '../../helpers/async.ts';
 
 import {
 	fetchHasDataWithRetry,
@@ -337,7 +337,7 @@ export async function fetchSerpBatch(
 	return mapParallel(
 		queries,
 		maxConcurrency,
-		async query => {
+		async (query: string) => {
 			url.searchParams.set('q', query);
 			return await fetchSerpInternal(url.toString());
 		}

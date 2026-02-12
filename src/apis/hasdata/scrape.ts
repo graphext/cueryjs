@@ -1,6 +1,6 @@
 /* eslint no-console: ["warn", { allow: ["log", "warn", "error"] }] */
 
-import { mapParallel, withRetries, type RetryConfig } from '../../async.ts';
+import { mapParallel, withRetries, type RetryConfig } from '../../helpers/async.ts';
 
 
 const HASDATA_CONCURRENCY = 29;
@@ -278,7 +278,7 @@ export async function scrapeWebBatch(
 	return mapParallel(
 		urls,
 		maxConcurrency,
-		async (url) => {
+		async (url: string) => {
 			return await scrapeWeb(url, options);
 		}
 	);
@@ -428,7 +428,7 @@ export async function runBatchScrape(
 		const scrapeResponses = await mapParallel(
 			pageResults.results,
 			HASDATA_CONCURRENCY,
-			async (item) => {
+			async (item: BatchResultItem) => {
 				if (item.result.status === 'ok' && item.result.json) {
 					try {
 						const response = await fetchWithRetry(item.result.json, { method: 'GET' });

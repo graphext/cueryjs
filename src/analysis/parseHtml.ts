@@ -533,7 +533,7 @@ export function checkStructuredDataTypes(blocks: Array<Record<string, unknown>>)
 			break;
 		}
 		if (b['author']) {
-			const author = b['author'];
+			const author = b['author'] as Record<string, unknown>;
 			if (typeof author === 'object' && author['@type'] === 'Person') {
 				authorFound = author;
 				break;

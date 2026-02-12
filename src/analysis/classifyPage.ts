@@ -3,7 +3,7 @@ import { z } from '@zod/zod';
 import { askLLMSafe, type ProviderParams } from '../llm.ts';
 
 import { type ScrapeResponse } from '../apis/hasdata/scrape.ts';
-import { type TopicLabel, createLabelSchema } from '../topics.ts';
+import { type TopicLabel, createLabelSchema } from '../tools/topics.ts';
 import { type StructuredAnalysis, type StructuredContent, type StructuredStats } from './analyse.ts';
 import { flattenHeadingStructure } from './parseHtml.ts';
 import { Defuddle } from 'npm:defuddle/node';
