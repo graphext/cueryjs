@@ -14,10 +14,14 @@
 // Export types from schema files (single source of truth)
 export type * from './persona.schema.ts';
 export type * from './brand.schema.ts';
+export type * from './entity.schema.ts';
 export type * from './funnel.schema.ts';
 export type * from './keyword.schema.ts';
 export type * from './models.schema.ts';
-export type * from './seedKeyword.schema.ts';
-export type * from './topics.schema.ts';
-export type * from './summary.schema.ts';
 export type * from './prompt.schema.ts';
+export type * from './search.schema.ts';
+export type * from './seedKeyword.schema.ts';
+export type * from './sentiment.schema.ts';
+export type * from './sources.schema.ts';
+export type * from './summary.schema.ts';
+export type * from './topics.schema.ts';
