@@ -38,6 +38,7 @@ export * from './src/tools/scorer.ts';
 export * from './src/helpers/seedKeywords.ts';
 export * from './src/tools/generic.ts';
 export * from './src/apis/hasdata/index.ts';
+export * from './src/apis/brightdata/index.ts';
 export * from './src/apis/chatgptScraper/index.ts';
 export * from './src/apis/googleAds/keywordPlanner.ts';
 export * from './src/schemas/index.ts';
