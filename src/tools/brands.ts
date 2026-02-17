@@ -99,6 +99,8 @@ should have the following fields:
 - shortName: A short, common/canonical name of the competitor brand, if different from the official name.
   E.g. "Tesla" instead of "Tesla, Inc.", or "Peugeot" instead of "Automobiles Peugeot". If not applicable,
   set same as name.
+- aliases: Array of alternative names for the competitor brand (e.g., local variants, abbreviations,
+  common misspellings, legacy names). Always include this field; if no reliable aliases are known, use [].
 - description: A brief description of the competitor brand's main activity.
 - domain: The official website of the competitor brand, if available.
 - sectors: A list of main industrial sectors the competitor brand operates in.
@@ -113,6 +115,7 @@ It's more important to be comprehensive than selective, so include more competit
 Try to order them by relevance, with the most direct and bigger competitors first.
 
 Return the answer (field values) in the language "{language}".
+Always include "aliases" for every brand object, even if it is an empty array.
 
 Also provide an "explanation" field with a brief summary (2-3 sentences) explaining the reasoning behind
 the competitors you identified: what makes them relevant competitors, how they relate to the original brand,
@@ -152,6 +155,8 @@ Find out the following information about this brand:
 - shortName: A short, common/canonical name of the brand, if different from the official name.
   E.g. "Tesla" instead of "Tesla, Inc.", or "Peugeot" instead of "Automobiles Peugeot". If not applicable,
   set same as name.
+- aliases: Array of alternative names for the same brand (local variants, abbreviations, common misspellings,
+  or legacy names). Always include this field; if no reliable aliases are known, use [].
 - description: A brief description of the brand's main activity.
 - domain: The official website of the brand, if available.
 - sectors: A list of specific industrial sectors the brand operates in, ordered by relevance. Be precise and concrete rather than generic - for example, instead of "education", use "professional training for unemployed", "corporate learning and development", or "online coding bootcamps". Adapt the specificity level to match the brand's actual focus and niche.
@@ -163,7 +168,17 @@ Find out the following information about this brand:
 - favicon: URL of the brand's favicon, if available.
 
 Return the answer as a JSON object with field values in the language "{language}".
+Always include "aliases", even when empty.
 `);
+
+function ensureBrandAliases<T extends Brand>(brand: T): T & { aliases: Array<string> } {
+	return {
+		...brand,
+		aliases: Array.isArray(brand.aliases)
+			? brand.aliases
+			: []
+	};
+}
 
 /**
  * Generate seed keywords for a single portfolio item using an LLM.
@@ -193,14 +208,14 @@ export async function generatePortfolioKeywords(
  * Generate seed keywords for all portfolio items in a brand concurrently,
  * updating the keywordSeeds field in-place for each product.
  */
-export async function enrichBrandPortfolioWithKeywords(
-	brand: Brand,
+export async function enrichBrandPortfolioWithKeywords<T extends Brand>(
+	brand: T,
 	language: string = 'en',
 	model: string = 'gpt-4.1',
 	maxConcurrency: number = 100,
 	sector?: string | null,
 	market?: string | null
-): Promise<Brand> {
+): Promise<T> {
 	if (!brand.portfolio || brand.portfolio.length === 0) {
 		return brand;
 	}
@@ -275,10 +290,12 @@ export async function generateCompetitorsInfo({
 	});
 
 	// Make sure these are clean domains
-	response.brands.map(brand => {
+	response.brands = response.brands.map((brand) => {
+		const normalizedBrand = ensureBrandAliases(brand);
 		if (brand.domain) {
-			brand.domain = extractDomain(brand.domain);
+			normalizedBrand.domain = extractDomain(brand.domain);
 		}
+		return normalizedBrand;
 	});
 
 	const enrichedBrands = await mapParallel(
@@ -334,11 +351,13 @@ export async function generateBrandInfo({
 		useSearch
 	});
 
+	const normalizedBrandInfo = ensureBrandAliases(brandInfo);
+
 	// Make sure this is a clean domain
-	brandInfo.domain = extractDomain(brandInfo.domain);
+	normalizedBrandInfo.domain = extractDomain(normalizedBrandInfo.domain);
 
 	const enrichedBrand = await enrichBrandPortfolioWithKeywords(
-		brandInfo as Brand,
+		normalizedBrandInfo,
 		language,
 		model,
 		undefined,
@@ -354,12 +373,12 @@ export function concatBrands(
 	competitors: Array<Brand>
 ): Array<FlaggedBrand> {
 	const ownBrandsWithFlag = ownBrands.map((brand) => ({
-		...brand,
+		...ensureBrandAliases(brand),
 		isCompetitor: false
 	}));
 
 	const competitorsWithFlag = competitors.map((brand) => ({
-		...brand,
+		...ensureBrandAliases(brand),
 		isCompetitor: true
 	}));
 
@@ -511,11 +530,16 @@ export function rankBrandsInText(
 
 	const brandEntities = entities?.filter(entity => entity.type.toLowerCase() === 'brand') ?? [];
 
-	// Build a map from ultra-normalized FlaggedBrand name to the entity text variation (if any)
-	// Using createBrandMatchKey to handle cases like "acmeco" matching "Acme&Co"
+	// Build a map from ultra-normalized brand token to the entity text variation (if any)
+	// Using createBrandMatchKey to handle cases like "acmeco" matching "Acme&Co".
+	// This map is used for shortName and aliases alike.
 	const entityTextByNormalizedBrand = new Map<string, string>();
 	for (const entity of brandEntities) {
-		entityTextByNormalizedBrand.set(createBrandMatchKey(entity.name), entity.name);
+		const key = createBrandMatchKey(entity.name);
+		if (!key || entityTextByNormalizedBrand.has(key)) {
+			continue;
+		}
+		entityTextByNormalizedBrand.set(key, entity.name);
 	}
 
 	// Set of ultra-normalized entity names that match a FlaggedBrand (to exclude from separate processing)
@@ -537,11 +561,22 @@ export function rankBrandsInText(
 	// Process FlaggedBrands, using entity text as an additional search variant when available
 	for (const brand of brands) {
 		let earliestPosition = Infinity;
-		const normalizedShortName = createBrandMatchKey(brand.shortName);
+		const brandNameVariants = [
+			brand.shortName,
+			...(Array.isArray(brand.aliases) ? brand.aliases : [])
+		].filter((value): value is string => value != null && value.trim() !== '');
+		const normalizedBrandVariants = new Set<string>(
+			brandNameVariants
+				.map((value) => createBrandMatchKey(value))
+				.filter((value) => value.length > 0)
+		);
 
-		// Check if there's a matching entity for this brand (using ultra-normalized comparison)
-		const entityText = entityTextByNormalizedBrand.get(normalizedShortName);
-		if (entityText != null) {
+		// Check if there's a matching entity for this brand (shortName or alias key match)
+		for (const normalizedVariant of normalizedBrandVariants) {
+			const entityText = entityTextByNormalizedBrand.get(normalizedVariant);
+			if (entityText == null) {
+				continue;
+			}
 			matchedEntityNames.add(createBrandMatchKey(entityText));
 			// Use flexible pattern matching to find the entity in text (handles CamelCase, &/and, etc.)
 			const entityPattern = createBrandMatchPattern(entityText);
@@ -551,9 +586,9 @@ export function rankBrandsInText(
 			}
 		}
 
-		// Check for shortName using flexible pattern matching
-		if (brand.shortName != null && brand.shortName.trim() !== '') {
-			const brandPattern = createBrandMatchPattern(brand.shortName);
+		// Check shortName + aliases using flexible pattern matching
+		for (const brandNameVariant of brandNameVariants) {
+			const brandPattern = createBrandMatchPattern(brandNameVariant);
 			const position = findPatternPosition(brandPattern);
 			if (position !== -1) {
 				earliestPosition = Math.min(earliestPosition, position);

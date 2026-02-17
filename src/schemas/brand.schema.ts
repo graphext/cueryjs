@@ -27,6 +27,10 @@ export const BrandSchema = z.object({
 		'Short, common/canonical name of the brand, if different from the official name. ' +
 		'E.g. "Tesla" instead of "Tesla, Inc.", or "Peugeot" instead of "Automobiles Peugeot".'
 	),
+	aliases: z.array(z.string()).describe(
+		'Alternative names for the same brand (e.g., local variants, abbreviations, or common misspellings). ' +
+		'Always include this field; use [] when no reliable aliases are known.'
+	),
 	description: z.string().describe('Description of the brand.'),
 	domain: z.string().min(1).describe('Official website of the brand.'),
 	sectors: z.array(z.string()).describe('List of main industrial sectors the brand operates in.'),
@@ -47,10 +51,13 @@ export type Product = z.infer<typeof ProductSchema> & {
 /**
  * TypeScript type inferred from BrandSchema.
  * Extended to use the enriched Product type for portfolio.
+ * Keeps aliases optional at type-level for backward compatibility with
+ * legacy persisted Brand payloads that may not include this field.
  * Safe to import in frontend with `import type`.
  */
-export type Brand = Omit<z.infer<typeof BrandSchema>, 'portfolio'> & {
+export type Brand = Omit<z.infer<typeof BrandSchema>, 'portfolio' | 'aliases'> & {
 	portfolio: Array<Product>;
+	aliases?: Array<string>;
 };
 
 /**
