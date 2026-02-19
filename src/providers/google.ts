@@ -46,6 +46,16 @@ function convertMessages(messages: Message[]): string | Array<{ role: string; pa
 }
 
 /**
+ * Convert a Zod schema to a Gemini-compatible response schema.
+ *
+ * Gemini `responseSchema` expects an OpenAPI-style schema object and rejects
+ * JSON Schema root fields like `$schema`.
+ */
+function toGeminiResponseSchema<T>(schema: z.ZodType<T>): Record<string, unknown> {
+	return z.toJSONSchema(schema, { target: 'openapi-3.0' }) as Record<string, unknown>;
+}
+
+/**
  * Google LLM provider (for Gemini models).
  */
 export class GoogleProvider implements LLMProvider {
@@ -75,7 +85,7 @@ export class GoogleProvider implements LLMProvider {
 
 			if (schema != null) {
 				config.responseMimeType = 'application/json';
-				config.responseSchema = z.toJSONSchema(schema, { target: 'draft-7' });
+				config.responseSchema = toGeminiResponseSchema(schema);
 			}
 
 			const response = await this.client.models.generateContent({
