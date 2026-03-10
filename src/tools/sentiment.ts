@@ -88,8 +88,9 @@ export class SentimentExtractor extends Tool<string | null, ABSentiments, Array<
 					? ` or its products/services (${portfolio})`
 					: '';
 				return dedent(`
-					Pay special attention to mentions of "${brand.shortName}"${portfolioText}.
-					When an aspect relates to a brand/entity, set the "context" field to "${brand.shortName}".
+					When an aspect relates specifically to "${brand.shortName}"${portfolioText}, set the "context" field to "${brand.shortName}".
+					If it relates to a different brand/entity, use that brand/entity as the "context" exactly as implied by the input, or null if unclear.
+						If additional instructions provide brand/entity names to use, apply those names exactly when setting the "context" field.
 					Keep aspect names and quoted text exactly as they appear in the original input.
 					Respond in language code ${brand.language}.
 				`);
