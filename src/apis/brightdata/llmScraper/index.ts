@@ -16,7 +16,7 @@ import { createOxylabsProvider } from './oxy.ts';
 // Re-export types
 export type { BatchOptions };
 export type JobId = string | null;
-export type ScraperTarget = 'chatgpt' | 'aim';
+export type ScraperTarget = 'chatgpt' | 'aim' | 'generic';
 
 // ============================================================================
 // Scraper Instance (lazy singleton)
@@ -73,10 +73,20 @@ function getLLMScraper(target: ScraperTarget = 'chatgpt'): LLMScraper {
 	}
 
 	const providerName = getProviderName();
-	const targetOptions = getTargetOptions(target);
-	const provider = providerName === 'brightdata'
-		? createBrightdataProvider(targetOptions.brightdata)
-		: createOxylabsProvider(targetOptions.oxylabs);
+
+	let provider;
+	if (target === 'generic') {
+		// Generic instance: only used for download/monitor, no target-specific config needed
+		provider = providerName === 'brightdata'
+			? createBrightdataProvider()
+			: createOxylabsProvider();
+	} else {
+		const targetOptions = getTargetOptions(target);
+		provider = providerName === 'brightdata'
+			? createBrightdataProvider(targetOptions.brightdata)
+			: createOxylabsProvider(targetOptions.oxylabs);
+	}
+
 	const scraper = createLLMScraper(provider);
 	scrapers.set(target, scraper);
 	return scraper;
@@ -105,7 +115,7 @@ export async function triggerGPTBatch(options: BatchOptions): Promise<Array<stri
 }
 
 export async function downloadGPTSnapshots(jobIds: Array<string | null>): Promise<Array<ModelResult>> {
-	return getLLMScraper('chatgpt').downloadLLMSnapshots(jobIds);
+	return downloadSnapshots(jobIds);
 }
 
 // AIM scraper methods
@@ -118,5 +128,10 @@ export async function triggerAIMBatch(options: BatchOptions): Promise<Array<stri
 }
 
 export async function downloadAIMSnapshots(jobIds: Array<string | null>): Promise<Array<ModelResult>> {
-	return getLLMScraper('aim').downloadLLMSnapshots(jobIds);
+	return downloadSnapshots(jobIds);
+}
+
+// Generic download — target-agnostic, works with any job IDs
+export async function downloadSnapshots(jobIds: Array<string | null>): Promise<Array<ModelResult>> {
+	return getLLMScraper('generic').downloadLLMSnapshots(jobIds);
 }
