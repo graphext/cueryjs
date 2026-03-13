@@ -1,6 +1,6 @@
 import { assertEquals, assert } from '@std/assert';
 
-import { scrapeBrightData } from '../src/apis/brightdata/scrape.ts';
+import { scrapeBrightData } from '../src/apis/brightdata/contentScraper/scrape.ts';
 
 const SKIP_BRIGHTDATA = !Deno.env.get('RUN_BRIGHTDATA_TESTS');
 

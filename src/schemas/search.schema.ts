@@ -1,6 +1,6 @@
 import type { z } from '@zod/zod';
 
-import type { SearchSource, Source } from './sources.schema.ts';
+import type { Source } from './sources.schema.ts';
 export type ContextSize = 'low' | 'medium' | 'high';
 export type ReasoningEffort = 'low' | 'medium' | 'high';
 
@@ -9,7 +9,6 @@ export interface SearchResult {
 	answer_text_markdown?: string;
 	sources: Array<Source>;
 	searchQueries?: Array<string>;
-	searchSources?: Array<SearchSource>;
 }
 
 export type SearchOptions = {

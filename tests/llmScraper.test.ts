@@ -1,7 +1,7 @@
 import { assertEquals, assertExists } from '@std/assert';
 
-import { brightdataProvider } from '../src/apis/chatgptScraper/brightdata.ts';
-import { oxylabsProvider } from '../src/apis/chatgptScraper/oxy.ts';
+import { brightdataProvider } from '../src/apis/brightdata/llmScraper/brightdata.ts';
+import { oxylabsProvider } from '../src/apis/brightdata/llmScraper/oxy.ts';
 
 Deno.test('brightdataProvider.transformResponse prefers plain text and maps positions from links_attached', () => {
 	const raw = [{
@@ -16,7 +16,6 @@ Deno.test('brightdataProvider.transformResponse prefers plain text and maps posi
 		citations: [
 			{ url: 'https://citations.test/source', title: 'Citation Source', cited: false },
 		],
-		search_sources: [],
 	}];
 
 	const result = brightdataProvider.transformResponse(raw);
@@ -59,7 +58,6 @@ Deno.test('brightdataProvider.transformResponse merges exact URL overlap between
 		citations: [
 			{ url: 'https://example.com/page', title: 'Full citation title', cited: false },
 		],
-		search_sources: [],
 	}];
 
 	const result = brightdataProvider.transformResponse(raw);

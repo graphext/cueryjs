@@ -2,7 +2,7 @@
  * Browser-safe exports for @graphext/cuery
  *
  * This module only exports types and pure functions that can safely run in the browser.
- * It excludes server-only modules like chatgptScraper, googleAds, and API functions
+ * It excludes server-only modules like llmScraper, googleAds, and API functions
  * that depend on Node.js or Deno-specific APIs.
  *
  * @module

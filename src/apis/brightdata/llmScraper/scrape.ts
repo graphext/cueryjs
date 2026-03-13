@@ -1,15 +1,15 @@
 /* eslint no-console: ["warn", { allow: ["log", "warn", "error"] }] */
 /**
- * GPT Scraper - Core types and orchestration logic.
+ * LLM Scraper - Core types and orchestration logic.
  *
  * Uses composition: providers supply functions, this module orchestrates them.
  */
 
-import { mapParallel } from '../../helpers/async.ts';
+import { mapParallel } from '../../../helpers/async.ts';
 
-import type { ModelResult } from '../../schemas/models.schema.ts';
-import type { SearchSource, Source } from '../../schemas/sources.schema.ts';
-import { extractDomain } from '../../helpers/urls.ts';
+import type { ModelResult } from '../../../schemas/models.schema.ts';
+import type { Source } from '../../../schemas/sources.schema.ts';
+import { extractDomain } from '../../../helpers/urls.ts';
 
 // ============================================================================
 // Types
@@ -31,12 +31,12 @@ export interface ProviderFunctions {
 	transformResponse: (raw: unknown) => ModelResult | null;
 }
 
-export interface GPTScraper {
+export interface LLMScraper {
 	maxConcurrency: number;
 	maxPromptsPerRequest: number;
-	scrapeGPTBatch: (options: BatchOptions) => Promise<Array<ModelResult>>;
-	triggerGPTBatch: (options: BatchOptions) => Promise<Array<string | null>>;
-	downloadGPTSnapshots: (jobIds: Array<string | null>) => Promise<Array<ModelResult>>;
+	scrapeLLMBatch: (options: BatchOptions) => Promise<Array<ModelResult>>;
+	triggerLLMBatch: (options: BatchOptions) => Promise<Array<string | null>>;
+	downloadLLMSnapshots: (jobIds: Array<string | null>) => Promise<Array<ModelResult>>;
 }
 
 // ============================================================================
@@ -55,20 +55,54 @@ export function cleanAnswer(answer: string): string {
 		.trim();
 }
 
+/**
+ * Derive a merge key from a URL: origin + pathname, stripping query and fragment.
+ * Falls back to the raw URL if parsing fails.
+ */
+function urlMergeKey(url: string): string {
+	try {
+		const parsed = new URL(url);
+		return parsed.origin + parsed.pathname;
+	} catch {
+		return url;
+	}
+}
+
+/**
+ * Returns true when `candidate` carries extra info (hash or search params)
+ * that `current` does not.
+ */
+function hasExtraUrlInfo(current: string, candidate: string): boolean {
+	try {
+		const cur = new URL(current);
+		const cand = new URL(candidate);
+		const hasNewHash = cand.hash !== '' && cur.hash === '';
+		const hasNewParams = cand.search !== '' && cur.search === '';
+		return hasNewHash || hasNewParams;
+	} catch {
+		return false;
+	}
+}
+
 export function buildSources(
 	citations: Array<{ url: string; title?: string; description?: string; text?: string; cited?: boolean }>,
 	linksAttached: Array<{ url?: string; text?: string; position?: number }> = [],
 ): Array<Source> {
 	const sources: Array<Source> = [];
-	const sourcesByUrl = new Map<string, Source>();
+	const sourcesByKey = new Map<string, Source>();
 
 	const upsertSource = (url: string, initialTitle: string, cited: boolean): Source => {
-		const existing = sourcesByUrl.get(url);
+		const key = urlMergeKey(url);
+		const existing = sourcesByKey.get(key);
 		if (existing) {
 			if (!existing.title && initialTitle) {
 				existing.title = initialTitle;
 			}
 			existing.cited = existing.cited || cited;
+			// Keep the most informative URL (with fragment/params)
+			if (hasExtraUrlInfo(existing.url, url)) {
+				existing.url = url;
+			}
 			return existing;
 		}
 
@@ -80,7 +114,7 @@ export function buildSources(
 		};
 
 		sources.push(source);
-		sourcesByUrl.set(url, source);
+		sourcesByKey.set(key, source);
 		return source;
 	};
 
@@ -106,7 +140,8 @@ export function buildSources(
 	for (const citation of citations) {
 		if (!citation.url) continue;
 
-		const existing = sourcesByUrl.get(citation.url);
+		const key = urlMergeKey(citation.url);
+		const existing = sourcesByKey.get(key);
 		const title = citation.title || citation.description || citation.text || '';
 
 		if (existing) {
@@ -114,16 +149,21 @@ export function buildSources(
 				existing.title = title;
 			}
 			existing.cited = existing.cited || citation.cited;
+			// Append extra fragment/params from citation
+			if (hasExtraUrlInfo(existing.url, citation.url)) {
+				existing.url = citation.url;
+			}
 			continue;
 		}
 
-		sources.push({
+		const source: Source = {
 			title,
 			url: citation.url,
 			domain: extractDomain(citation.url),
 			cited: citation.cited,
-		});
-		sourcesByUrl.set(citation.url, sources[sources.length - 1]);
+		};
+		sources.push(source);
+		sourcesByKey.set(key, source);
 	}
 
 	for (const source of sources) {
@@ -131,18 +171,6 @@ export function buildSources(
 	}
 
 	return sources;
-}
-
-export function buildSearchSources(
-	sources: Array<{ url?: string; title?: string; snippet?: string; rank?: number; date_published?: string }>,
-): Array<SearchSource> {
-	return sources.map((s) => ({
-		title: s.title || s.snippet || '',
-		url: s.url || '',
-		domain: s.url ? extractDomain(s.url) : '',
-		rank: s.rank || 0,
-		datePublished: s.date_published || null,
-	}));
 }
 
 /**
@@ -165,7 +193,7 @@ export function emptyModelResult(providerName: string, errorMessage?: string, co
 // Scraper Factory
 // ============================================================================
 
-export function createScraper(provider: ProviderFunctions): GPTScraper {
+export function createLLMScraper(provider: ProviderFunctions): LLMScraper {
 	const {
 		name,
 		maxConcurrency,
@@ -176,7 +204,7 @@ export function createScraper(provider: ProviderFunctions): GPTScraper {
 		transformResponse,
 	} = provider;
 
-	async function triggerGPTBatch({
+	async function triggerLLMBatch({
 		prompts,
 		useSearch = false,
 		countryISOCode = null,
@@ -191,7 +219,7 @@ export function createScraper(provider: ProviderFunctions): GPTScraper {
 		return jobIds;
 	}
 
-	async function downloadGPTSnapshots(jobIds: Array<string | null>): Promise<Array<ModelResult>> {
+	async function downloadLLMSnapshots(jobIds: Array<string | null>): Promise<Array<ModelResult>> {
 		const results: Array<ModelResult> = [];
 
 		for (const jobId of jobIds) {
@@ -219,16 +247,16 @@ export function createScraper(provider: ProviderFunctions): GPTScraper {
 		return results;
 	}
 
-	async function scrapeGPTBatch(options: BatchOptions): Promise<Array<ModelResult>> {
-		const jobIds = await triggerGPTBatch(options);
-		return downloadGPTSnapshots(jobIds);
+	async function scrapeLLMBatch(options: BatchOptions): Promise<Array<ModelResult>> {
+		const jobIds = await triggerLLMBatch(options);
+		return downloadLLMSnapshots(jobIds);
 	}
 
 	return {
 		maxConcurrency,
 		maxPromptsPerRequest,
-		scrapeGPTBatch,
-		triggerGPTBatch,
-		downloadGPTSnapshots,
+		scrapeLLMBatch,
+		triggerLLMBatch,
+		downloadLLMSnapshots,
 	};
 }

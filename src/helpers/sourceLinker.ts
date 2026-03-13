@@ -15,15 +15,12 @@
  * - Position-based matching (for links_attached with position info)
  */
 
-import type { Source, SearchSource } from '../schemas/sources.schema.ts';
+import type { Source } from '../schemas/sources.schema.ts';
 
 // --- Types ---
 
 export interface LinkableSource extends Source {
-	positions?: Array<number>;  // Citation positions [N] in the text (from links_attached)
-	snippet?: string;           // Search snippet (from search_sources)
-	rank?: number;              // Search rank (from search_sources)
-	datePublished?: string | null;
+	positions?: Array<number>; // Citation positions [N] in the text (from links_attached)
 }
 
 export interface StatementWithSources {
@@ -56,7 +53,7 @@ const DEFAULT_OPTIONS: Required<SourceLinkingOptions> = {
 	maxSourcesPerStatement: 5,
 	domainMatchWeight: 0.5,
 	textMatchWeight: 0.3,
-	snippetMatchWeight: 0.2
+	snippetMatchWeight: 0.2,
 };
 
 // --- Utility Functions ---
@@ -101,8 +98,8 @@ function extractBrandFromDomain(domain: string): Array<string> {
  * Calculates word overlap ratio between two texts
  */
 function wordOverlapScore(text1: string, text2: string): number {
-	const words1 = new Set(normalizeText(text1).split(' ').filter(w => w.length > 2));
-	const words2 = new Set(normalizeText(text2).split(' ').filter(w => w.length > 2));
+	const words1 = new Set(normalizeText(text1).split(' ').filter((w) => w.length > 2));
+	const words2 = new Set(normalizeText(text2).split(' ').filter((w) => w.length > 2));
 
 	if (words1.size === 0 || words2.size === 0) return 0;
 
@@ -121,7 +118,7 @@ function wordOverlapScore(text1: string, text2: string): number {
  */
 function companyDomainMatch(companyName: string, source: LinkableSource): number {
 	const normalizedCompany = normalizeText(companyName);
-	const companyWords = normalizedCompany.split(' ').filter(w => w.length > 2);
+	const companyWords = normalizedCompany.split(' ').filter((w) => w.length > 2);
 
 	// Check domain
 	const brandNames = extractBrandFromDomain(source.domain);
@@ -131,7 +128,7 @@ function companyDomainMatch(companyName: string, source: LinkableSource): number
 
 		// Check if company words appear in brand
 		const brandWords = brand.split(' ');
-		const matchingWords = companyWords.filter(w => brandWords.some(bw => bw.includes(w) || w.includes(bw)));
+		const matchingWords = companyWords.filter((w) => brandWords.some((bw) => bw.includes(w) || w.includes(bw)));
 		if (matchingWords.length > 0) {
 			return matchingWords.length / Math.max(companyWords.length, brandWords.length);
 		}
@@ -143,7 +140,7 @@ function companyDomainMatch(companyName: string, source: LinkableSource): number
 		if (titleNorm.includes(normalizedCompany)) return 0.8;
 
 		// Partial match in title
-		const matchingWords = companyWords.filter(w => titleNorm.includes(w));
+		const matchingWords = companyWords.filter((w) => titleNorm.includes(w));
 		if (matchingWords.length > 0) {
 			return (matchingWords.length / companyWords.length) * 0.6;
 		}
@@ -185,15 +182,34 @@ function getCompanyNameVariations(companyName: string): Array<string> {
 	variations.push(normalized);
 
 	// Common stop words to filter out
-	const stopWords = ['academia', 'centro', 'escuela', 'english', 'language', 'school', 'centre', 'center', 'de', 'en', 'para', 'the', 'and', 'y', 'la', 'el', 'los', 'las'];
+	const stopWords = [
+		'academia',
+		'centro',
+		'escuela',
+		'english',
+		'language',
+		'school',
+		'centre',
+		'center',
+		'de',
+		'en',
+		'para',
+		'the',
+		'and',
+		'y',
+		'la',
+		'el',
+		'los',
+		'las',
+	];
 	const words = companyName.toLowerCase().split(/\s+/)
-		.filter(w => !stopWords.includes(normalizeForMatching(w)) && w.length > 2);
+		.filter((w) => !stopWords.includes(normalizeForMatching(w)) && w.length > 2);
 
 	for (const word of words) {
 		variations.push(normalizeForMatching(word));
 	}
 
-	return [...new Set(variations)].filter(v => v.length >= 3);
+	return [...new Set(variations)].filter((v) => v.length >= 3);
 }
 
 /**
@@ -204,7 +220,7 @@ function getCompanyNameVariations(companyName: string): Array<string> {
 export function findSourcesForCompany(
 	companyName: string,
 	sources: Array<LinkableSource>,
-	maxSources: number = 3
+	maxSources: number = 3,
 ): Array<InfluencingSource> {
 	const variations = getCompanyNameVariations(companyName);
 	const matched: Array<{ source: LinkableSource; match: boolean }> = [];
@@ -251,7 +267,7 @@ export function findSourcesForCompany(
 			url: source.url,
 			domain: source.domain || '',
 			title: source.title,
-			positions: source.positions
+			positions: source.positions,
 		}));
 }
 
@@ -269,7 +285,7 @@ const CITATION_PATTERN = /\\?\[(\d+)\\?\]/g;
  */
 export function extractInlineCitations(text: string): Array<number> {
 	const matches = [...text.matchAll(CITATION_PATTERN)];
-	const citations = matches.map(m => parseInt(m[1], 10));
+	const citations = matches.map((m) => parseInt(m[1], 10));
 	// Return unique, sorted citation numbers
 	return [...new Set(citations)].sort((a, b) => a - b);
 }
@@ -281,16 +297,14 @@ export function extractInlineCitations(text: string): Array<number> {
  */
 export function mapCitationsToSources(
 	citationNumbers: Array<number>,
-	sources: Array<LinkableSource>
+	sources: Array<LinkableSource>,
 ): Array<LinkableSource> {
 	const result: Array<LinkableSource> = [];
 	const seenUrls = new Set<string>();
 
 	for (const num of citationNumbers) {
 		// First, try to find a source with this position in its positions array
-		const sourceWithPosition = sources.find(s =>
-			s.positions != null && s.positions.includes(num)
-		);
+		const sourceWithPosition = sources.find((s) => s.positions != null && s.positions.includes(num));
 
 		if (sourceWithPosition != null && !seenUrls.has(sourceWithPosition.url)) {
 			result.push(sourceWithPosition);
@@ -318,7 +332,7 @@ export function mapCitationsToSources(
  */
 export function extractSourcesFromText(
 	text: string,
-	sources: Array<LinkableSource>
+	sources: Array<LinkableSource>,
 ): Array<LinkableSource> {
 	const citationNumbers = extractInlineCitations(text);
 	return mapCitationsToSources(citationNumbers, sources);
@@ -329,7 +343,7 @@ export function extractSourcesFromText(
  */
 export function enrichStatementWithCitations(
 	statementText: string,
-	sources: Array<LinkableSource>
+	sources: Array<LinkableSource>,
 ): {
 	text: string;
 	citation_numbers: Array<number>;
@@ -341,7 +355,7 @@ export function enrichStatementWithCitations(
 	return {
 		text: statementText,
 		citation_numbers: citationNumbers,
-		sources_from_citations: resolvedSources
+		sources_from_citations: resolvedSources,
 	};
 }
 
@@ -354,7 +368,7 @@ export function calculateMatchScore(
 	statementText: string,
 	companyName: string | null,
 	source: LinkableSource,
-	options: SourceLinkingOptions = {}
+	options: SourceLinkingOptions = {},
 ): { score: number; reasons: Array<string> } {
 	const opts = { ...DEFAULT_OPTIONS, ...options };
 	const reasons: Array<string> = [];
@@ -405,7 +419,7 @@ export function linkSourcesToStatement(
 	statementText: string,
 	companyName: string | null,
 	sources: Array<LinkableSource>,
-	options: SourceLinkingOptions = {}
+	options: SourceLinkingOptions = {},
 ): StatementWithSources {
 	const opts = { ...DEFAULT_OPTIONS, ...options };
 
@@ -421,27 +435,27 @@ export function linkSourcesToStatement(
 			inferred_topic: '',
 			inferred_subtopic: '',
 			supporting_sources: citedSources,
-			source_match_scores: citedSources.map(s => {
+			source_match_scores: citedSources.map((s) => {
 				// Find which citation number(s) this source corresponds to
-				const matchingCitations = citationNumbers.filter(n =>
+				const matchingCitations = citationNumbers.filter((n) =>
 					s.positions?.includes(n) || sources[n - 1]?.url === s.url
 				);
 				return {
 					source_url: s.url,
 					score: 1.0, // Perfect match - direct citation
-					match_reasons: matchingCitations.map(n => `inline citation [${n}]`)
+					match_reasons: matchingCitations.map((n) => `inline citation [${n}]`),
 				};
-			})
+			}),
 		};
 	}
 
 	// FALLBACK: Use heuristic matching
-	const scoredSources = sources.map(source => {
+	const scoredSources = sources.map((source) => {
 		const { score, reasons } = calculateMatchScore(statementText, companyName, source, options);
 		return {
 			source,
 			score,
-			reasons
+			reasons,
 		};
 	});
 
@@ -450,60 +464,20 @@ export function linkSourcesToStatement(
 
 	// Filter by minimum score and take top N
 	const matchingSources = scoredSources
-		.filter(s => s.score >= opts.minMatchScore)
+		.filter((s) => s.score >= opts.minMatchScore)
 		.slice(0, opts.maxSourcesPerStatement);
 
 	return {
 		text: statementText,
 		inferred_topic: '', // To be filled by caller
 		inferred_subtopic: '', // To be filled by caller
-		supporting_sources: matchingSources.map(s => s.source),
-		source_match_scores: matchingSources.map(s => ({
+		supporting_sources: matchingSources.map((s) => s.source),
+		source_match_scores: matchingSources.map((s) => ({
 			source_url: s.source.url,
 			score: s.score,
-			match_reasons: s.reasons
-		}))
+			match_reasons: s.reasons,
+		})),
 	};
-}
-
-/**
- * Converts raw scraper response sources to LinkableSource format
- * Citations now include `positions` field directly from Brightdata API
- */
-export function mergeSources(
-	citations: Array<Source>,
-	searchSources: Array<SearchSource>
-): Array<LinkableSource> {
-	const merged: Array<LinkableSource> = [];
-	const seenUrls = new Set<string>();
-
-	// Add citations first (these include positions from links_attached mapping)
-	for (const cite of citations) {
-		if (!seenUrls.has(cite.url)) {
-			merged.push({
-				...cite,
-				positions: cite.positions,
-				cited: cite.cited ?? false
-			});
-			seenUrls.add(cite.url);
-		}
-	}
-
-	// Add search sources with their additional metadata
-	for (const src of searchSources) {
-		if (src.url && !seenUrls.has(src.url)) {
-			merged.push({
-				title: src.title,
-				url: src.url,
-				domain: src.domain,
-				rank: src.rank,
-				datePublished: src.datePublished
-			});
-			seenUrls.add(src.url);
-		}
-	}
-
-	return merged;
 }
 
 /**
@@ -523,7 +497,7 @@ function extractDomainFromUrl(url: string): string {
  * Aggregates sources by topic/subtopic for summary statistics
  */
 export function aggregateSourcesByTopic(
-	statementsWithSources: Array<StatementWithSources>
+	statementsWithSources: Array<StatementWithSources>,
 ): Map<string, Map<string, Array<LinkableSource>>> {
 	const topicMap = new Map<string, Map<string, Array<LinkableSource>>>();
 
@@ -553,7 +527,7 @@ export function getTopSourcesForTopic(
 	topicMap: Map<string, Map<string, Array<LinkableSource>>>,
 	topic: string,
 	subtopic?: string,
-	limit: number = 5
+	limit: number = 5,
 ): Array<{ source: LinkableSource; frequency: number }> {
 	const urlCounts = new Map<string, { source: LinkableSource; count: number }>();
 
@@ -580,4 +554,3 @@ export function getTopSourcesForTopic(
 		.slice(0, limit)
 		.map(({ source, count }) => ({ source, frequency: count }));
 }
-

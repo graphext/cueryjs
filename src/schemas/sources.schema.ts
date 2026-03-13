@@ -3,6 +3,7 @@ export interface Source {
 	url: string;
 	domain: string;
 	cited?: boolean;
+	snippet?: string;
 	positions?: Array<number>;
 }
 
@@ -23,9 +24,4 @@ export interface EnrichedSource extends Source {
 export interface CategorizedSource extends EnrichedSource {
 	category: string | null;
 	subcategory: string | null;
-}
-
-export interface SearchSource extends Source {
-	rank: number;
-	datePublished: string | null;
 }

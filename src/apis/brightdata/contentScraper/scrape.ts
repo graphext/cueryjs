@@ -1,4 +1,4 @@
-import { mapParallel, withRetries, type RetryConfig } from '../../helpers/async.ts';
+import { mapParallel, withRetries, type RetryConfig } from '../../../helpers/async.ts';
 
 
 const BRIGHTDATA_CONCURRENCY = 10;

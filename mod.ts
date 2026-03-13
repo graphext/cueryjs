@@ -8,13 +8,13 @@
 export * from './src/llm.ts';
 export { BatchResponse } from './src/response.ts';
 export {
+	calculateCost,
+	getModelInfo,
+	getModelPricing,
 	getProvider,
 	getProviderForModel,
-	getModelPricing,
-	getModelInfo,
-	calculateCost,
-	type ModelPricing,
 	type ModelInfo,
+	type ModelPricing,
 } from './src/providers/index.ts';
 
 // Tools
@@ -38,7 +38,7 @@ export * from './src/tools/scorer.ts';
 export * from './src/helpers/seedKeywords.ts';
 export * from './src/tools/generic.ts';
 export * from './src/apis/hasdata/index.ts';
-export * from './src/apis/brightdata/index.ts';
-export * from './src/apis/chatgptScraper/index.ts';
+export * from './src/apis/brightdata/contentScraper/index.ts';
+export * from './src/apis/brightdata/llmScraper/index.ts';
 export * from './src/apis/googleAds/keywordPlanner.ts';
 export * from './src/schemas/index.ts';
