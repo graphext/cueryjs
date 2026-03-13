@@ -194,6 +194,13 @@ function formatCode(block: TextBlock): string {
 	return `${header}\n${snippet.trim()}`;
 }
 
+function formatCitationMarkers(refIndexes: Array<number>): string {
+	if (refIndexes.length === 0) {
+		return '';
+	}
+	return ' ' + refIndexes.map(i => `[${i + 1}]`).join('');
+}
+
 function parseAIResult(
 	data: AIOverview,
 	{
@@ -201,6 +208,32 @@ function parseAIResult(
 	}: ParseOptions = {}
 ): AIOParsed {
 	const textBlocks = data.textBlocks || (allowNestedOverview ? data.aiOverview?.textBlocks : []) || [];
+
+	// Build reference index → source index mapping and track cited refs
+	const refs = data.references || (allowNestedOverview ? data.aiOverview?.references : []) || [];
+	const sources: Array<Source> = [];
+	const refIndexToSourceIndex = new Map<number, number>();
+
+	for (const r of refs) {
+		const link = r.link || r.url;
+		const title = [r.title, r.source, r.snippet].filter(Boolean).join(' - ');
+		if (link && r.index != null) {
+			// Deduplicate by URL
+			const existingIdx = sources.findIndex(s => s.url === link);
+			if (existingIdx >= 0) {
+				refIndexToSourceIndex.set(r.index, existingIdx);
+			} else {
+				refIndexToSourceIndex.set(r.index, sources.length);
+				sources.push({
+					title,
+					url: link,
+					domain: extractDomain(link)
+				});
+			}
+		}
+	}
+
+	const citedSourceIndexes = new Set<number>();
 
 	const parts: Array<string> = [];
 	const handlers: Record<string, (block: TextBlock) => string> = {
@@ -216,17 +249,43 @@ function parseAIResult(
 			continue;
 		}
 		const handler = handlers[btype];
+		let rendered = '';
 		if (handler) {
-			const rendered = handler(block);
-			if (rendered) {
-				parts.push(rendered);
-			}
+			rendered = handler(block);
 		} else {
 			const snippet = block.snippet || '';
 			if (snippet) {
-				parts.push(cleanText(snippet));
+				rendered = cleanText(snippet);
 			}
 		}
+		if (rendered) {
+			// Append citation markers and track positions
+			const refIndexes = block.referenceIndexes || [];
+			if (refIndexes.length > 0) {
+				// Map ref indexes to 1-based source indexes for display
+				const sourceIndexes = refIndexes
+					.map(ri => refIndexToSourceIndex.get(ri))
+					.filter((si): si is number => si != null);
+
+				for (const si of sourceIndexes) {
+					citedSourceIndexes.add(si);
+					sources[si].positions ??= [];
+					if (!sources[si].positions!.includes(parts.length)) {
+						sources[si].positions!.push(parts.length);
+					}
+				}
+
+				rendered += formatCitationMarkers(
+					sourceIndexes.filter((v, i, a) => a.indexOf(v) === i)
+				);
+			}
+			parts.push(rendered);
+		}
+	}
+
+	// Mark cited sources
+	for (const si of citedSourceIndexes) {
+		sources[si].cited = true;
 	}
 
 	const deduped: Array<string> = [];
@@ -241,20 +300,6 @@ function parseAIResult(
 	if (answer.length > 16000) {
 		console.warn('Warning: AI answer truncated to 16000 characters');
 		answer = answer.slice(0, 16000);
-	}
-
-	const refs = data.references || (allowNestedOverview ? data.aiOverview?.references : []) || [];
-	const sources: Array<Source> = [];
-	for (const r of refs) {
-		const link = r.link || r.url;
-		const title = [r.title, r.source, r.snippet].filter(Boolean).join(' - ');
-		if (link) {
-			sources.push({
-				title,
-				url: link,
-				domain: extractDomain(link)
-			});
-		}
 	}
 
 	return { answer, sources };
