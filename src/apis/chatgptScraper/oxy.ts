@@ -8,15 +8,10 @@
  * 3. Download: GET /v1/queries/{id}/results
  */
 
-import { withRetries, sleep, type RetryConfig } from '../../helpers/async.ts';
+import { type RetryConfig, sleep, withRetries } from '../../helpers/async.ts';
 
 import type { ModelResult } from '../../schemas/models.schema.ts';
-import {
-	type ProviderFunctions,
-	getAbortSignal,
-	cleanAnswer,
-	buildSources
-} from './scraper.ts';
+import { buildSources, cleanAnswer, getAbortSignal, type ProviderFunctions } from './scraper.ts';
 
 // ============================================================================
 // Types
@@ -48,7 +43,7 @@ const API_BASE = 'https://data.oxylabs.io/v1';
 const RETRY_CONFIG: RetryConfig = {
 	maxRetries: 3,
 	initialDelay: 1000,
-	statusCodes: [429, 500, 502, 503, 504, 524, 612, 613]
+	statusCodes: [429, 500, 502, 503, 504, 524, 612, 613],
 };
 
 const MAX_WAIT_MS = 600_000; // 10 minutes
@@ -81,7 +76,7 @@ async function triggerJob(prompt: string, useSearch: boolean, countryISOCode: st
 		source: 'chatgpt',
 		prompt,
 		parse: true,
-		search: true // Oxylabs requires search: true (cannot be false or blank)
+		search: true, // Oxylabs requires search: true (cannot be false or blank)
 	};
 
 	if (countryISOCode) {
@@ -90,16 +85,17 @@ async function triggerJob(prompt: string, useSearch: boolean, countryISOCode: st
 
 	try {
 		const response = await withRetries(
-			() => fetch(url, {
-				method: 'POST',
-				headers: {
-					'Authorization': authHeader,
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify(body),
-				signal: getAbortSignal()
-			}),
-			RETRY_CONFIG
+			() =>
+				fetch(url, {
+					method: 'POST',
+					headers: {
+						'Authorization': authHeader,
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(body),
+					signal: getAbortSignal(),
+				}),
+			RETRY_CONFIG,
 		);
 
 		if (!response.ok) {
@@ -127,7 +123,7 @@ async function monitorJob(jobId: string): Promise<boolean> {
 		try {
 			const response = await fetch(url, {
 				headers: { 'Authorization': authHeader },
-				signal: abortSignal
+				signal: abortSignal,
 			});
 
 			// 204 = job not completed yet, continue polling
@@ -158,11 +154,12 @@ async function downloadJob(jobId: string): Promise<OxylabsGPTResponse | null> {
 
 	try {
 		const response = await withRetries(
-			() => fetch(url, {
-				headers: { 'Authorization': authHeader },
-				signal: getAbortSignal()
-			}),
-			RETRY_CONFIG
+			() =>
+				fetch(url, {
+					headers: { 'Authorization': authHeader },
+					signal: getAbortSignal(),
+				}),
+			RETRY_CONFIG,
 		);
 
 		if (!response.ok) {
@@ -183,21 +180,22 @@ function transformResponse(raw: unknown): ModelResult | null {
 
 	if (!content) return null;
 
-	let answer = content.markdown_text || content.response_text || '';
-	answer = cleanAnswer(answer);
+	const answerText = cleanAnswer(content.response_text || '');
+	const answerTextMarkdown = cleanAnswer(content.markdown_text || '');
 
 	// Map section='citations' to cited=true (like Brightdata's cited field)
-	const citations = (content.citations ?? []).map(c => ({
+	const citations = (content.citations ?? []).map((c) => ({
 		...c,
-		cited: c.section === 'citations'
+		cited: c.section === 'citations',
 	}));
 
 	return {
 		prompt: content.prompt || '',
-		answer,
+		answer: answerText,
+		answer_text_markdown: answerTextMarkdown,
 		sources: buildSources(citations),
 		searchQueries: [],
-		searchSources: []
+		searchSources: [],
 	};
 }
 
@@ -212,5 +210,5 @@ export const oxylabsProvider: ProviderFunctions = {
 	triggerJob,
 	monitorJob,
 	downloadJob,
-	transformResponse
+	transformResponse,
 };

@@ -8,16 +8,9 @@
  * 3. Download: GET /datasets/v3/snapshot/{snapshot_id}
  */
 
-import { withRetries, sleep, type RetryConfig } from '../../helpers/async.ts';
-
+import { type RetryConfig, sleep, withRetries } from '../../helpers/async.ts';
 import type { ModelResult } from '../../schemas/models.schema.ts';
-import {
-	type ProviderFunctions,
-	getAbortSignal,
-	cleanAnswer,
-	buildSources,
-	buildSearchSources
-} from './scraper.ts';
+import { buildSearchSources, buildSources, cleanAnswer, getAbortSignal, type ProviderFunctions } from './scraper.ts';
 
 // ============================================================================
 // Types
@@ -29,6 +22,7 @@ interface BrightdataGPTResponse {
 	answer_text_markdown?: string;
 	links_attached?: Array<{
 		url?: string;
+		text?: string;
 		position?: number;
 	}>;
 	citations?: Array<{
@@ -53,24 +47,25 @@ interface BrightdataGPTResponse {
 
 const API_BASE = 'https://api.brightdata.com';
 const DATASET_ID = 'gd_m7aof0k82r803d5bjm';
-const OUTPUT_FIELDS = 'url|prompt|answer_text|answer_text_markdown|citations|links_attached|search_sources|country|model|web_search_triggered|web_search_query|index';
+const OUTPUT_FIELDS =
+	'url|prompt|answer_text|answer_text_markdown|citations|links_attached|search_sources|country|model|web_search_triggered|web_search_query|index';
 
 const TRIGGER_RETRY: RetryConfig = {
 	maxRetries: 3,
 	initialDelay: 0,
-	statusCodes: [429, 500, 502, 503, 504]
+	statusCodes: [429, 500, 502, 503, 504],
 };
 
 const DOWNLOAD_RETRY: RetryConfig = {
 	maxRetries: 5,
 	initialDelay: 2000,
-	statusCodes: [202, 500, 502, 503, 504]
+	statusCodes: [202, 500, 502, 503, 504],
 };
 
 const MONITOR_RETRY: RetryConfig = {
 	maxRetries: 4,
 	initialDelay: 1000,
-	statusCodes: [408, 425, 429, 500, 502, 503, 504]
+	statusCodes: [408, 425, 429, 500, 502, 503, 504],
 };
 
 const MONITOR_RETRIABLE = new Set(MONITOR_RETRY.statusCodes ?? []);
@@ -104,22 +99,23 @@ async function triggerJob(prompt: string, useSearch: boolean, countryISOCode: st
 			prompt,
 			web_search: useSearch,
 			country: countryISOCode || '',
-			index: 0
-		}]
+			index: 0,
+		}],
 	};
 
 	try {
 		const response = await withRetries(
-			() => fetch(url, {
-				method: 'POST',
-				headers: {
-					'Authorization': `Bearer ${apiKey}`,
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify(body),
-				signal: getAbortSignal()
-			}),
-			TRIGGER_RETRY
+			() =>
+				fetch(url, {
+					method: 'POST',
+					headers: {
+						'Authorization': `Bearer ${apiKey}`,
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(body),
+					signal: getAbortSignal(),
+				}),
+			TRIGGER_RETRY,
 		);
 
 		if (!response.ok) {
@@ -146,11 +142,12 @@ async function monitorJob(snapshotId: string): Promise<boolean> {
 
 		try {
 			const response = await withRetries(
-				() => fetch(url, {
-					headers: { 'Authorization': `Bearer ${apiKey}` },
-					signal: abortSignal
-				}),
-				MONITOR_RETRY
+				() =>
+					fetch(url, {
+						headers: { 'Authorization': `Bearer ${apiKey}` },
+						signal: abortSignal,
+					}),
+				MONITOR_RETRY,
 			);
 
 			if (!response.ok) {
@@ -177,11 +174,12 @@ async function downloadJob(snapshotId: string): Promise<Array<BrightdataGPTRespo
 
 	try {
 		const response = await withRetries(
-			() => fetch(url, {
-				headers: { 'Authorization': `Bearer ${apiKey}` },
-				signal: getAbortSignal()
-			}),
-			DOWNLOAD_RETRY
+			() =>
+				fetch(url, {
+					headers: { 'Authorization': `Bearer ${apiKey}` },
+					signal: getAbortSignal(),
+				}),
+			DOWNLOAD_RETRY,
 		);
 
 		if (!response.ok) {
@@ -203,24 +201,16 @@ function transformResponse(raw: unknown): ModelResult | null {
 
 	const response = responses[0];
 
-	let answer = response.answer_text_markdown || response.answer_text || '';
-	answer = cleanAnswer(answer);
-
-	// Build link positions map
-	const linkPositions: Record<string, Array<number>> = {};
-	for (const link of response.links_attached ?? []) {
-		if (link.url && link.position != null) {
-			linkPositions[link.url] ??= [];
-			linkPositions[link.url].push(link.position);
-		}
-	}
+	const answerText = cleanAnswer(response.answer_text || '');
+	const answerTextMarkdown = cleanAnswer(response.answer_text_markdown || '');
 
 	return {
 		prompt: response.prompt,
-		answer,
-		sources: buildSources(response.citations ?? [], linkPositions),
+		answer: answerText,
+		answer_text_markdown: answerTextMarkdown,
+		sources: buildSources(response.citations ?? [], response.links_attached ?? []),
 		searchQueries: response.web_search_query || [],
-		searchSources: buildSearchSources(response.search_sources ?? [])
+		searchSources: buildSearchSources(response.search_sources ?? []),
 	};
 }
 
@@ -235,5 +225,5 @@ export const brightdataProvider: ProviderFunctions = {
 	triggerJob,
 	monitorJob,
 	downloadJob,
-	transformResponse
+	transformResponse,
 };

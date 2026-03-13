@@ -8,7 +8,7 @@
 import { mapParallel } from '../../helpers/async.ts';
 
 import type { ModelResult } from '../../schemas/models.schema.ts';
-import type { Source, SearchSource } from '../../schemas/sources.schema.ts';
+import type { SearchSource, Source } from '../../schemas/sources.schema.ts';
 import { extractDomain } from '../../helpers/urls.ts';
 
 // ============================================================================
@@ -57,26 +57,91 @@ export function cleanAnswer(answer: string): string {
 
 export function buildSources(
 	citations: Array<{ url: string; title?: string; description?: string; text?: string; cited?: boolean }>,
-	linkPositions?: Record<string, Array<number>>
+	linksAttached: Array<{ url?: string; text?: string; position?: number }> = [],
 ): Array<Source> {
-	return citations.map(c => ({
-		title: c.title || c.description || c.text || '',
-		url: c.url,
-		domain: extractDomain(c.url),
-		cited: c.cited,
-		positions: linkPositions?.[c.url]
-	}));
+	const sources: Array<Source> = [];
+	const sourcesByUrl = new Map<string, Source>();
+
+	const upsertSource = (url: string, initialTitle: string, cited: boolean): Source => {
+		const existing = sourcesByUrl.get(url);
+		if (existing) {
+			if (!existing.title && initialTitle) {
+				existing.title = initialTitle;
+			}
+			existing.cited = existing.cited || cited;
+			return existing;
+		}
+
+		const source: Source = {
+			title: initialTitle,
+			url,
+			domain: extractDomain(url),
+			cited,
+		};
+
+		sources.push(source);
+		sourcesByUrl.set(url, source);
+		return source;
+	};
+
+	const sortedLinks = [...linksAttached].sort((a, b) => {
+		const aPos = a.position ?? Number.MAX_SAFE_INTEGER;
+		const bPos = b.position ?? Number.MAX_SAFE_INTEGER;
+		return aPos - bPos;
+	});
+
+	for (const link of sortedLinks) {
+		if (!link.url) continue;
+
+		const source = upsertSource(link.url, link.text ?? '', true);
+
+		if (link.position != null) {
+			source.positions ??= [];
+			if (!source.positions.includes(link.position)) {
+				source.positions.push(link.position);
+			}
+		}
+	}
+
+	for (const citation of citations) {
+		if (!citation.url) continue;
+
+		const existing = sourcesByUrl.get(citation.url);
+		const title = citation.title || citation.description || citation.text || '';
+
+		if (existing) {
+			if (title) {
+				existing.title = title;
+			}
+			existing.cited = existing.cited || citation.cited;
+			continue;
+		}
+
+		sources.push({
+			title,
+			url: citation.url,
+			domain: extractDomain(citation.url),
+			cited: citation.cited,
+		});
+		sourcesByUrl.set(citation.url, sources[sources.length - 1]);
+	}
+
+	for (const source of sources) {
+		source.positions?.sort((a, b) => a - b);
+	}
+
+	return sources;
 }
 
 export function buildSearchSources(
-	sources: Array<{ url?: string; title?: string; snippet?: string; rank?: number; date_published?: string }>
+	sources: Array<{ url?: string; title?: string; snippet?: string; rank?: number; date_published?: string }>,
 ): Array<SearchSource> {
-	return sources.map(s => ({
+	return sources.map((s) => ({
 		title: s.title || s.snippet || '',
 		url: s.url || '',
 		domain: s.url ? extractDomain(s.url) : '',
 		rank: s.rank || 0,
-		datePublished: s.date_published || null
+		datePublished: s.date_published || null,
 	}));
 }
 
@@ -91,7 +156,8 @@ export function emptyModelResult(providerName: string, errorMessage?: string, co
 	return {
 		prompt: '',
 		answer: '',
-		sources: []
+		answer_text_markdown: '',
+		sources: [],
 	};
 }
 
@@ -107,18 +173,18 @@ export function createScraper(provider: ProviderFunctions): GPTScraper {
 		triggerJob,
 		monitorJob,
 		downloadJob,
-		transformResponse
+		transformResponse,
 	} = provider;
 
 	async function triggerGPTBatch({
 		prompts,
 		useSearch = false,
-		countryISOCode = null
+		countryISOCode = null,
 	}: BatchOptions): Promise<Array<string | null>> {
 		const jobIds = await mapParallel(
 			prompts,
 			maxConcurrency,
-			(prompt) => triggerJob(prompt, useSearch, countryISOCode)
+			(prompt) => triggerJob(prompt, useSearch, countryISOCode),
 		);
 
 		console.log(`[${name}] Triggered ${jobIds.length} jobs for ${prompts.length} prompts`);
@@ -163,6 +229,6 @@ export function createScraper(provider: ProviderFunctions): GPTScraper {
 		maxPromptsPerRequest,
 		scrapeGPTBatch,
 		triggerGPTBatch,
-		downloadGPTSnapshots
+		downloadGPTSnapshots,
 	};
 }
