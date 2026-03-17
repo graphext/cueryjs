@@ -14,7 +14,12 @@ Deno.test('brightdataProvider.transformResponse prefers plain text and maps posi
 			{ url: 'https://links.test/b', text: 'Link B', position: 3 },
 		],
 		citations: [
-			{ url: 'https://citations.test/source', title: 'Citation Source', cited: false },
+			{
+				url: 'https://citations.test/source',
+				title: 'Citation Source',
+				description: 'Citation snippet',
+				cited: false,
+			},
 		],
 	}];
 
@@ -22,7 +27,7 @@ Deno.test('brightdataProvider.transformResponse prefers plain text and maps posi
 
 	assertExists(result);
 	assertEquals(result.answer, 'Plain answer [1] [2] [3]');
-	assertEquals(result.answer_text_markdown, '**Markdown answer** \\[1\\]');
+	assertEquals(result.answerMarkdown, '**Markdown answer** \\[1\\]');
 	assertEquals('answer_text' in result, false);
 	assertEquals(result.sources, [
 		{
@@ -41,6 +46,7 @@ Deno.test('brightdataProvider.transformResponse prefers plain text and maps posi
 		},
 		{
 			title: 'Citation Source',
+			snippet: 'Citation snippet',
 			url: 'https://citations.test/source',
 			domain: 'citations.test',
 			cited: false,
@@ -56,7 +62,12 @@ Deno.test('brightdataProvider.transformResponse merges exact URL overlap between
 			{ url: 'https://example.com/page', text: 'Short label', position: 1 },
 		],
 		citations: [
-			{ url: 'https://example.com/page', title: 'Full citation title', cited: false },
+			{
+				url: 'https://example.com/page',
+				title: 'Full citation title',
+				description: 'Citation snippet',
+				cited: false,
+			},
 		],
 	}];
 
@@ -64,11 +75,12 @@ Deno.test('brightdataProvider.transformResponse merges exact URL overlap between
 
 	assertExists(result);
 	assertEquals(result.answer, 'Plain answer [1]');
-	assertEquals(result.answer_text_markdown, '');
+	assertEquals(result.answerMarkdown, '');
 	assertEquals('answer_text' in result, false);
 	assertEquals(result.sources, [
 		{
 			title: 'Full citation title',
+			snippet: 'Citation snippet',
 			url: 'https://example.com/page',
 			domain: 'example.com',
 			cited: true,
@@ -93,6 +105,6 @@ Deno.test('oxylabsProvider.transformResponse prefers plain response_text over ma
 
 	assertExists(result);
 	assertEquals(result.answer, 'Plain response [1]');
-	assertEquals(result.answer_text_markdown, '**Markdown response** \\[1\\]');
+	assertEquals(result.answerMarkdown, '**Markdown response** \\[1\\]');
 	assertEquals('answer_text' in result, false);
 });

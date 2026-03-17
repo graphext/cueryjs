@@ -84,8 +84,8 @@ function hasExtraUrlInfo(current: string, candidate: string): boolean {
 	}
 }
 
-export function buildSources(
-	citations: Array<{ url: string; title?: string; description?: string; text?: string; cited?: boolean }>,
+export function parseSources(
+	citations: Array<{ url: string; title?: string; description?: string; cited?: boolean }>,
 	linksAttached: Array<{ url?: string; text?: string; position?: number }> = [],
 ): Array<Source> {
 	const sources: Array<Source> = [];
@@ -142,11 +142,15 @@ export function buildSources(
 
 		const key = urlMergeKey(citation.url);
 		const existing = sourcesByKey.get(key);
-		const title = citation.title || citation.description || citation.text || '';
+		const title = citation.title ?? '';
+		const snippet = citation.description;
 
 		if (existing) {
 			if (title) {
 				existing.title = title;
+			}
+			if (snippet) {
+				existing.snippet = snippet;
 			}
 			existing.cited = existing.cited || citation.cited;
 			// Append extra fragment/params from citation
@@ -158,6 +162,7 @@ export function buildSources(
 
 		const source: Source = {
 			title,
+			snippet,
 			url: citation.url,
 			domain: extractDomain(citation.url),
 			cited: citation.cited,
@@ -184,7 +189,7 @@ export function emptyModelResult(providerName: string, errorMessage?: string, co
 	return {
 		prompt: '',
 		answer: '',
-		answer_text_markdown: '',
+		answerMarkdown: '',
 		sources: [],
 	};
 }

@@ -10,7 +10,7 @@
 
 import { type RetryConfig, sleep, withRetries } from '../../../helpers/async.ts';
 import type { ModelResult } from '../../../schemas/models.schema.ts';
-import { buildSources, cleanAnswer, getAbortSignal, type ProviderFunctions } from './scrape.ts';
+import { parseSources, cleanAnswer, getAbortSignal, type ProviderFunctions } from './scrape.ts';
 
 // ============================================================================
 // Types
@@ -240,8 +240,8 @@ export function createBrightdataProvider(
 		return {
 			prompt: response.prompt,
 			answer: answerText,
-			answer_text_markdown: answerTextMarkdown,
-			sources: buildSources(response.citations ?? [], response.links_attached ?? []),
+			answerMarkdown: answerTextMarkdown,
+			sources: parseSources(response.citations ?? [], response.links_attached ?? []),
 			searchQueries: response.web_search_query || [],
 		};
 	}

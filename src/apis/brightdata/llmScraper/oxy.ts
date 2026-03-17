@@ -11,7 +11,7 @@
 import { type RetryConfig, sleep, withRetries } from '../../../helpers/async.ts';
 
 import type { ModelResult } from '../../../schemas/models.schema.ts';
-import { buildSources, cleanAnswer, getAbortSignal, type ProviderFunctions } from './scrape.ts';
+import { parseSources, cleanAnswer, getAbortSignal, type ProviderFunctions } from './scrape.ts';
 
 // ============================================================================
 // Types
@@ -25,7 +25,6 @@ interface OxylabsLLMResponse {
 			response_text?: string;
 			citations?: Array<{
 				url: string;
-				text?: string;
 				title?: string;
 				description?: string;
 				section?: 'citations' | 'more';
@@ -227,8 +226,8 @@ export function createOxylabsProvider(overrides: Partial<OxylabsProviderConfig> 
 		return {
 			prompt: content.prompt || '',
 			answer: answerText,
-			answer_text_markdown: answerTextMarkdown,
-			sources: buildSources(citations),
+			answerMarkdown: answerTextMarkdown,
+			sources: parseSources(citations),
 			searchQueries: [],
 		};
 	}

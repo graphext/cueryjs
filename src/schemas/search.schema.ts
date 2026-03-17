@@ -6,9 +6,9 @@ export type ReasoningEffort = 'low' | 'medium' | 'high';
 
 export interface SearchResult {
 	answer: string;
-	answer_text_markdown?: string;
 	sources: Array<Source>;
 	searchQueries?: Array<string>;
+	answerMarkdown?: string;
 }
 
 export type SearchOptions = {

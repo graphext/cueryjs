@@ -216,16 +216,24 @@ function parseAIResult(
 
 	for (const r of refs) {
 		const link = r.link || r.url;
-		const title = [r.title, r.source, r.snippet].filter(Boolean).join(' - ');
+		const title = [r.title, r.source].filter(Boolean).join(' - ');
+		const snippet = cleanText(r.snippet || '') || undefined;
 		if (link && r.index != null) {
 			// Deduplicate by URL
 			const existingIdx = sources.findIndex(s => s.url === link);
 			if (existingIdx >= 0) {
 				refIndexToSourceIndex.set(r.index, existingIdx);
+				if (!sources[existingIdx].title && title) {
+					sources[existingIdx].title = title;
+				}
+				if (!sources[existingIdx].snippet && snippet) {
+					sources[existingIdx].snippet = snippet;
+				}
 			} else {
 				refIndexToSourceIndex.set(r.index, sources.length);
 				sources.push({
 					title,
+					snippet,
 					url: link,
 					domain: extractDomain(link)
 				});
@@ -266,18 +274,18 @@ function parseAIResult(
 				const sourceIndexes = refIndexes
 					.map(ri => refIndexToSourceIndex.get(ri))
 					.filter((si): si is number => si != null);
+				const uniqueSourceIndexes = sourceIndexes.filter((v, i, a) => a.indexOf(v) === i);
 
-				for (const si of sourceIndexes) {
+				for (const si of uniqueSourceIndexes) {
 					citedSourceIndexes.add(si);
 					sources[si].positions ??= [];
-					if (!sources[si].positions!.includes(parts.length)) {
-						sources[si].positions!.push(parts.length);
+					const citationNumber = si + 1;
+					if (!sources[si].positions!.includes(citationNumber)) {
+						sources[si].positions!.push(citationNumber);
 					}
 				}
 
-				rendered += formatCitationMarkers(
-					sourceIndexes.filter((v, i, a) => a.indexOf(v) === i)
-				);
+				rendered += formatCitationMarkers(uniqueSourceIndexes);
 			}
 			parts.push(rendered);
 		}
