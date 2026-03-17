@@ -107,6 +107,7 @@ export interface AIMode {
 
 export interface AIOParsed {
 	answer: string;
+	answerMarkdown?: string;
 	sources: Array<Source>;
 }
 
@@ -168,6 +169,20 @@ function* iterListItems(items: Array<ListItem>, indent: number = 0): Generator<s
 	}
 }
 
+function* iterPlainListItems(items: Array<ListItem>): Generator<string> {
+	for (const obj of items) {
+		const title = obj.title || '';
+		const snippet = obj.snippet || '';
+		const line = [title, snippet].filter(Boolean).join(' ').trim();
+		if (line) {
+			yield cleanText(line);
+		}
+		if (obj.list && Array.isArray(obj.list)) {
+			yield* iterPlainListItems(obj.list);
+		}
+	}
+}
+
 function formatTable(block: TextBlock): string {
 	const rows = block.rows || [];
 	if (rows.length === 0) {
@@ -192,6 +207,20 @@ function formatCode(block: TextBlock): string {
 	}
 	const header = `[Code${lang ? ': ' + lang : ''}]`;
 	return `${header}\n${snippet.trim()}`;
+}
+
+function formatPlainTable(block: TextBlock): string {
+	const rows = block.rows || [];
+	if (rows.length === 0) {
+		return '';
+	}
+	return rows
+		.map((row) => row.map(cell => removeCSSChunks(cell)).join(' | '))
+		.join('\n');
+}
+
+function formatPlainCode(block: TextBlock): string {
+	return cleanText(block.snippet || '');
 }
 
 function formatCitationMarkers(refIndexes: Array<number>): string {
@@ -243,8 +272,15 @@ function parseAIResult(
 
 	const citedSourceIndexes = new Set<number>();
 
-	const parts: Array<string> = [];
-	const handlers: Record<string, (block: TextBlock) => string> = {
+	const answerParts: Array<string> = [];
+	const answerMarkdownParts: Array<string> = [];
+	const plainHandlers: Record<string, (block: TextBlock) => string> = {
+		paragraph: (b) => cleanText(b.snippet || ''),
+		list: (b) => Array.from(iterPlainListItems(b.list || [])).join('\n'),
+		table: formatPlainTable,
+		code: formatPlainCode
+	};
+	const markdownHandlers: Record<string, (block: TextBlock) => string> = {
 		paragraph: (b) => cleanText(b.snippet || ''),
 		list: (b) => Array.from(iterListItems(b.list || [])).join('\n'),
 		table: formatTable,
@@ -256,17 +292,27 @@ function parseAIResult(
 		if (!btype || btype === 'carousel') {
 			continue;
 		}
-		const handler = handlers[btype];
+		const plainHandler = plainHandlers[btype];
+		const markdownHandler = markdownHandlers[btype];
 		let rendered = '';
-		if (handler) {
-			rendered = handler(block);
+		let renderedMarkdown = '';
+		if (plainHandler) {
+			rendered = plainHandler(block);
 		} else {
 			const snippet = block.snippet || '';
 			if (snippet) {
 				rendered = cleanText(snippet);
 			}
 		}
-		if (rendered) {
+		if (markdownHandler) {
+			renderedMarkdown = markdownHandler(block);
+		} else {
+			const snippet = block.snippet || '';
+			if (snippet) {
+				renderedMarkdown = cleanText(snippet);
+			}
+		}
+		if (rendered || renderedMarkdown) {
 			// Append citation markers and track positions
 			const refIndexes = block.referenceIndexes || [];
 			if (refIndexes.length > 0) {
@@ -285,9 +331,12 @@ function parseAIResult(
 					}
 				}
 
-				rendered += formatCitationMarkers(uniqueSourceIndexes);
+				const citationMarkers = formatCitationMarkers(uniqueSourceIndexes);
+				rendered += citationMarkers;
+				renderedMarkdown += citationMarkers;
 			}
-			parts.push(rendered);
+			answerParts.push(rendered);
+			answerMarkdownParts.push(renderedMarkdown);
 		}
 	}
 
@@ -296,21 +345,34 @@ function parseAIResult(
 		sources[si].cited = true;
 	}
 
-	const deduped: Array<string> = [];
-	for (const p of parts) {
-		if (deduped.length === 0 || deduped[deduped.length - 1] !== p) {
-			deduped.push(p);
+	const dedupedAnswer: Array<string> = [];
+	for (const part of answerParts) {
+		if (dedupedAnswer.length === 0 || dedupedAnswer[dedupedAnswer.length - 1] !== part) {
+			dedupedAnswer.push(part);
 		}
 	}
 
-	let answer = cleanText(deduped.join('\n\n'));
+	const dedupedAnswerMarkdown: Array<string> = [];
+	for (const part of answerMarkdownParts) {
+		if (dedupedAnswerMarkdown.length === 0 || dedupedAnswerMarkdown[dedupedAnswerMarkdown.length - 1] !== part) {
+			dedupedAnswerMarkdown.push(part);
+		}
+	}
+
+	let answer = cleanText(dedupedAnswer.join('\n\n'));
+	let answerMarkdown = cleanText(dedupedAnswerMarkdown.join('\n\n'));
 
 	if (answer.length > 16000) {
 		console.warn('Warning: AI answer truncated to 16000 characters');
 		answer = answer.slice(0, 16000);
 	}
 
-	return { answer, sources };
+	if (answerMarkdown.length > 16000) {
+		console.warn('Warning: AI markdown answer truncated to 16000 characters');
+		answerMarkdown = answerMarkdown.slice(0, 16000);
+	}
+
+	return { answer, answerMarkdown, sources };
 }
 
 export function parseAIO(aio: AIOverview): AIOParsed {

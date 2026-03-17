@@ -23,6 +23,7 @@ Deno.test('parseAIO preserves reference snippet separately from source title', (
 	});
 
 	assertEquals(result.answer, 'Answer block [1]');
+	assertEquals(result.answerMarkdown, 'Answer block [1]');
 	assertEquals(result.sources, [
 		{
 			title: 'Example Title - Example Publisher',
@@ -64,6 +65,7 @@ Deno.test('parseAIM stores citation positions using displayed citation numbers',
 	});
 
 	assertEquals(result.answer, 'First block [1]\n\nSecond block [2]');
+	assertEquals(result.answerMarkdown, 'First block [1]\n\nSecond block [2]');
 	assertEquals(result.sources, [
 		{
 			title: 'First Source',
@@ -80,4 +82,34 @@ Deno.test('parseAIM stores citation positions using displayed citation numbers',
 			positions: [2],
 		},
 	]);
+});
+
+Deno.test('parseAIO returns formatted markdown separately from minimal answer', () => {
+	const result = parseAIO({
+		textBlocks: [
+			{
+				type: 'list',
+				list: [
+					{ title: 'First', snippet: 'Alpha' },
+					{ title: 'Second', snippet: 'Beta' },
+				],
+				referenceIndexes: [0],
+			},
+			{
+				type: 'code',
+				language: 'ts',
+				snippet: 'const x = 1;',
+			},
+		],
+		references: [
+			{
+				index: 0,
+				title: 'List Source',
+				url: 'https://list.test/source',
+			},
+		],
+	});
+
+	assertEquals(result.answer, 'First Alpha\nSecond Beta [1]\n\nconst x = 1;');
+	assertEquals(result.answerMarkdown, '- First Alpha\n- Second Beta [1]\n\n[Code: ts]\nconst x = 1;');
 });
