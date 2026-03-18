@@ -245,7 +245,7 @@ function parseAIResult(
 
 	for (const r of refs) {
 		const link = r.link || r.url;
-		const title = [r.title, r.source].filter(Boolean).join(' - ');
+		const title = r.title ?? '';
 		const snippet = cleanText(r.snippet || '') || undefined;
 		if (link && r.index != null) {
 			// Deduplicate by URL

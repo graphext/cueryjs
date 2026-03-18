@@ -2,7 +2,7 @@ import { assertEquals } from '@std/assert';
 
 import { parseAIM, parseAIO } from '../src/apis/hasdata/helpers.ts';
 
-Deno.test('parseAIO preserves reference snippet separately from source title', () => {
+Deno.test('parseAIO preserves reference snippet separately from reference title', () => {
 	const result = parseAIO({
 		textBlocks: [
 			{
@@ -26,8 +26,37 @@ Deno.test('parseAIO preserves reference snippet separately from source title', (
 	assertEquals(result.answerMarkdown, 'Answer block [1]');
 	assertEquals(result.sources, [
 		{
-			title: 'Example Title - Example Publisher',
+			title: 'Example Title',
 			snippet: 'Reference snippet',
+			url: 'https://example.com/article',
+			domain: 'example.com',
+			cited: true,
+			positions: [1],
+		},
+	]);
+});
+
+Deno.test('parseAIO does not use source as a fallback title', () => {
+	const result = parseAIO({
+		textBlocks: [
+			{
+				type: 'paragraph',
+				snippet: 'Answer block',
+				referenceIndexes: [0],
+			},
+		],
+		references: [
+			{
+				index: 0,
+				source: 'Example Publisher',
+				url: 'https://example.com/article',
+			},
+		],
+	});
+
+	assertEquals(result.sources, [
+		{
+			title: '',
 			url: 'https://example.com/article',
 			domain: 'example.com',
 			cited: true,

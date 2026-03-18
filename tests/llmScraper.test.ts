@@ -3,7 +3,7 @@ import { assertEquals, assertExists } from '@std/assert';
 import { brightdataProvider } from '../src/apis/brightdata/llmScraper/brightdata.ts';
 import { oxylabsProvider } from '../src/apis/brightdata/llmScraper/oxy.ts';
 
-Deno.test('brightdataProvider.transformResponse prefers plain text and maps positions from links_attached', () => {
+Deno.test('brightdataProvider.transformResponse ignores link text as title and maps positions from links_attached', () => {
 	const raw = [{
 		prompt: 'prompt',
 		answer_text: 'Plain answer [1] [2] [3]',
@@ -31,14 +31,14 @@ Deno.test('brightdataProvider.transformResponse prefers plain text and maps posi
 	assertEquals('answer_text' in result, false);
 	assertEquals(result.sources, [
 		{
-			title: 'Link A',
+			title: '',
 			url: 'https://links.test/a',
 			domain: 'links.test',
 			cited: true,
 			positions: [1, 2],
 		},
 		{
-			title: 'Link B',
+			title: '',
 			url: 'https://links.test/b',
 			domain: 'links.test',
 			cited: true,

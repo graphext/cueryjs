@@ -127,7 +127,7 @@ export function parseSources(
 	for (const link of sortedLinks) {
 		if (!link.url) continue;
 
-		const source = upsertSource(link.url, link.text ?? '', true);
+		const source = upsertSource(link.url, '', true);
 
 		if (link.position != null) {
 			source.positions ??= [];
