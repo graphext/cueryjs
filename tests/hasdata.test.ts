@@ -57,6 +57,7 @@ Deno.test('parseAIO does not use source as a fallback title', () => {
 	assertEquals(result.sources, [
 		{
 			title: '',
+			snippet: undefined,
 			url: 'https://example.com/article',
 			domain: 'example.com',
 			cited: true,
@@ -98,6 +99,7 @@ Deno.test('parseAIM stores citation positions using displayed citation numbers',
 	assertEquals(result.sources, [
 		{
 			title: 'First Source',
+			snippet: undefined,
 			url: 'https://first.test/page',
 			domain: 'first.test',
 			cited: true,
@@ -105,6 +107,7 @@ Deno.test('parseAIM stores citation positions using displayed citation numbers',
 		},
 		{
 			title: 'Second Source',
+			snippet: undefined,
 			url: 'https://second.test/page',
 			domain: 'second.test',
 			cited: true,

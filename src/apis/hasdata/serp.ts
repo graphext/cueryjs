@@ -1,13 +1,7 @@
 /* eslint no-console: ["warn", { allow: ["log", "warn", "error"] }] */
 import { mapParallel } from '../../helpers/async.ts';
 
-import {
-	fetchHasDataWithRetry,
-	HASDATA_CONCURRENCY,
-	parseAIO,
-	type AIOverview,
-	type AIOParsed
-} from './helpers.ts';
+import { type AIOParsed, type AIOverview, fetchHasDataWithRetry, HASDATA_CONCURRENCY, parseAIO } from './helpers.ts';
 
 type SerpSearchType = 'all' | 'images' | 'videos' | 'news' | 'shopping' | 'local';
 
@@ -16,13 +10,13 @@ const SEARCH_TYPE_TO_TBM: Record<Exclude<SerpSearchType, 'all'>, string> = {
 	videos: 'vid',
 	news: 'nws',
 	shopping: 'shop',
-	local: 'lcl'
+	local: 'lcl',
 };
 
 export interface SerpRequestOptions {
-	location: string; // HasData param: location
-	country: string; // HasData param: gl
-	language: string; // HasData param: hl
+	location?: string; // HasData param: location
+	country?: string; // HasData param: gl
+	language?: string; // HasData param: hl
 	contentLanguage?: string; // HasData param: lr
 	domain?: string; // HasData param: domain
 	filters?: string | Array<string>; // HasData param: tbs
@@ -74,15 +68,21 @@ export interface SerpOrganicResult {
 	source?: string;
 	snippet?: string;
 	snippetHighlitedWords?: Array<string>;
+	date?: string;
 	images?: Array<string>;
 	richSnippet?: SerpRichSnippet;
 	sitelinks?: SerpSiteLinks;
+}
+
+export interface SerpAnswerBox extends SerpOrganicResult {
+	type?: string;
 }
 
 export interface SerpRequestMetadata {
 	id?: string;
 	status?: string;
 	html?: string;
+	json?: string;
 	url?: string;
 }
 
@@ -91,6 +91,8 @@ export interface SerpSearchInformation {
 	formattedTotalResults?: string;
 	timeTaken?: number;
 	searchTime?: number;
+	queryDisplayed?: string;
+	organicResultsState?: string;
 }
 
 export interface SerpLocalPlace {
@@ -99,10 +101,13 @@ export interface SerpLocalPlace {
 	rating?: number;
 	reviews?: number;
 	reviewsOriginal?: string;
+	phone?: string;
 	address?: string;
 	hours?: string;
 	placeId?: string;
 	description?: string;
+	type?: string;
+	links?: Record<string, string>;
 }
 
 export interface SerpLocalResults {
@@ -125,6 +130,31 @@ export interface SerpRelatedQuestion {
 	list?: Array<string>;
 	table?: Array<Array<string>>;
 	aiOverview?: AIOverview;
+}
+
+export interface SerpDiscussionReply {
+	title?: string;
+	link?: string;
+	extensions?: Array<string>;
+}
+
+export interface SerpDiscussion {
+	title?: string;
+	link?: string;
+	date?: string;
+	extensions?: Array<string>;
+	source?: string;
+	replies?: Array<SerpDiscussionReply>;
+}
+
+export interface SerpInlineVideo {
+	position?: number;
+	title?: string;
+	link?: string;
+	duration?: string;
+	platform?: string;
+	channel?: string;
+	date?: string;
 }
 
 export interface SerpPerspective {
@@ -166,6 +196,7 @@ export interface SerpResponse {
 	searchMetadata?: Record<string, unknown>;
 	searchParameters?: Record<string, unknown>;
 	searchInformation?: SerpSearchInformation;
+	answerBox?: SerpAnswerBox;
 	organicResults?: Array<SerpOrganicResult>;
 	adsResults?: Array<Record<string, unknown>>;
 	localResults?: SerpLocalResults;
@@ -176,7 +207,9 @@ export interface SerpResponse {
 	relatedQuestions?: Array<SerpRelatedQuestion>;
 	imagesResults?: Array<Record<string, unknown>>;
 	videosResults?: Array<Record<string, unknown>>;
+	inlineVideos?: Array<SerpInlineVideo>;
 	perspectives?: Array<SerpPerspective>;
+	discussionsAndForums?: Array<SerpDiscussion>;
 	immersiveProducts?: Array<SerpImmersiveProduct>;
 	pagination?: SerpPagination;
 	aiOverview?: AIOParsed;
@@ -191,7 +224,7 @@ function appendParam(url: URL, key: string, value: string | number | boolean): v
 function appendOptionalParam(
 	url: URL,
 	key: string,
-	value: string | number | boolean | null | undefined
+	value: string | number | boolean | null | undefined,
 ): void {
 	if (value === undefined || value === null) {
 		return;
@@ -226,7 +259,7 @@ function normalizeTbs(value?: string | Array<string>): string | undefined {
 		return undefined;
 	}
 	if (Array.isArray(value)) {
-		return value.map(entry => entry.trim()).filter(Boolean).join(',');
+		return value.map((entry) => entry.trim()).filter(Boolean).join(',');
 	}
 	return value;
 }
@@ -253,12 +286,9 @@ function applySerpParams(url: URL, options: SerpRequestOptions): void {
 	}
 
 	if (options.safeSearch !== undefined) {
-		const safeValue =
-			typeof options.safeSearch === 'boolean'
-				? options.safeSearch
-					? 'active'
-					: 'off'
-				: options.safeSearch;
+		const safeValue = typeof options.safeSearch === 'boolean'
+			? options.safeSearch ? 'active' : 'off'
+			: options.safeSearch;
 		appendParam(url, 'safe', safeValue);
 	}
 
@@ -328,8 +358,8 @@ export async function fetchSerp(query: string, options: SerpRequestOptions): Pro
 
 export async function fetchSerpBatch(
 	queries: Array<string>,
-	options: SerpRequestOptions,
-	maxConcurrency: number = HASDATA_CONCURRENCY
+	options: SerpRequestOptions = {},
+	maxConcurrency: number = HASDATA_CONCURRENCY,
 ): Promise<Array<SerpResponse>> {
 	const url = new URL(SERP_ENDPOINT);
 	applySerpParams(url, options);
@@ -340,6 +370,6 @@ export async function fetchSerpBatch(
 		async (query: string) => {
 			url.searchParams.set('q', query);
 			return await fetchSerpInternal(url.toString());
-		}
+		},
 	);
 }
