@@ -6,9 +6,6 @@
  *
  * Types are inferred from Zod schemas using z.infer<typeof Schema>
  * This ensures a single source of truth.
- *
- * NOTE: For seed keyword functions, import from '@supabase/lib/seedKeywords' (frontend)
- * or 'shared/cuery/lib/seedKeywords/index.ts' (backend).
  */
 
 // Export types from schema files (single source of truth)
@@ -20,7 +17,6 @@ export type * from './keyword.schema.ts';
 export type * from './models.schema.ts';
 export type * from './prompt.schema.ts';
 export type * from './search.schema.ts';
-export type * from './seedKeyword.schema.ts';
 export type * from './sentiment.schema.ts';
 export type * from './sources.schema.ts';
 export type * from './summary.schema.ts';

@@ -3,7 +3,8 @@
 	"version": "0.10.6",
 	"license": "MIT",
 	"exports": {
-		".": "./mod.ts"
+		".": "./mod.ts",
+		"./browser": "./browser.ts"
 	},
 	"imports": {
 		"@openai/openai": "npm:openai@^6.9.1",
