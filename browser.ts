@@ -20,7 +20,7 @@ export {
 	GOOGLE_SEARCH_CONSOLE_QUERY_PAGE_DIMENSIONS,
 	GOOGLE_SEARCH_CONSOLE_READONLY_SCOPE,
 	listSearchConsoleSites,
-} from './src/apis/googleSearchConsole/index.ts';
+} from './src/apis/googleSearchConsole/browser.ts';
 export type {
 	FetchSearchConsoleQueriesParams,
 	ListSearchConsoleSitesParams,
@@ -34,4 +34,4 @@ export type {
 	SearchConsoleQueryRow,
 	SearchConsoleSearchType,
 	SearchConsoleSite,
-} from './src/apis/googleSearchConsole/index.ts';
+} from './src/apis/googleSearchConsole/browser.ts';
