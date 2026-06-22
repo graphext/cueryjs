@@ -140,10 +140,6 @@ interface GoogleIdTokenPayload {
 
 const ERROR_BODY_PREVIEW_LENGTH = 500;
 
-function getAbortSignal(signal?: AbortSignal): AbortSignal | undefined {
-	return signal ?? (globalThis as Record<string, unknown>).abortSignal as AbortSignal | undefined;
-}
-
 function sanitizeGoogleErrorMessage(message: string, sensitiveValues: Array<string | undefined>): string {
 	let sanitized = message;
 	for (const value of sensitiveValues) {
@@ -218,7 +214,7 @@ async function requestGoogleOAuthToken(
 			'Content-Type': 'application/x-www-form-urlencoded',
 		},
 		body,
-		signal: getAbortSignal(signal),
+		signal,
 	});
 
 	if (response.ok) {
@@ -383,7 +379,7 @@ export async function listSearchConsoleSites(
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
 		},
-		signal: getAbortSignal(params.signal),
+		signal: params.signal,
 	});
 	const data = await parseGoogleResponse<SearchConsoleSitesResponse>(response, accessToken);
 
@@ -404,7 +400,7 @@ export async function fetchSearchConsoleQueries(
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify(buildSearchAnalyticsRequest(params, dimensions)),
-			signal: getAbortSignal(params.signal),
+			signal: params.signal,
 		},
 	);
 	const data = await parseGoogleResponse<SearchConsoleAnalyticsResponse>(response, accessToken);

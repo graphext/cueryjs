@@ -166,18 +166,13 @@ Deno.test('refreshGoogleAccessToken exchanges a refresh token for an access toke
 	}
 });
 
-Deno.test('Google Search Console network calls use the global abort signal when no explicit signal is passed', async () => {
-	const global = globalThis as Record<string, unknown>;
-	const originalAbortSignal = global.abortSignal;
-	const signal = new AbortController().signal;
+Deno.test('Google Search Console network calls omit signal when no explicit signal is passed', async () => {
 	const { calls, restore } = installFetch(
 		jsonResponse({ access_token: 'access-token', refresh_token: 'refresh-token' }),
 		jsonResponse({ access_token: 'new-access-token' }),
 		jsonResponse({ siteEntry: [] }),
 		jsonResponse({ rows: [] }),
 	);
-
-	global.abortSignal = signal;
 
 	try {
 		await exchangeGoogleOAuthCode({
@@ -199,14 +194,9 @@ Deno.test('Google Search Console network calls use the global abort signal when 
 			endDate: '2026-06-01',
 		});
 
-		assertEquals(calls.map((call) => call.init?.signal), [signal, signal, signal, signal]);
+		assertEquals(calls.map((call) => call.init?.signal), [undefined, undefined, undefined, undefined]);
 	} finally {
 		restore();
-		if (originalAbortSignal === undefined) {
-			delete global.abortSignal;
-		} else {
-			global.abortSignal = originalAbortSignal;
-		}
 	}
 });
 
