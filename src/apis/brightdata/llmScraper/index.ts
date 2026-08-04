@@ -5,7 +5,7 @@
  * Selects between Brightdata and Oxylabs based on LLM_SCRAPER_PROVIDER env var.
  * Falls back to CHATGPT_SCRAPER_PROVIDER for backward compatibility.
  * Exposes ChatGPT and AIM variants while preserving the legacy GPT method names.
- * Default: oxylabs
+ * Default: brightdata
  */
 
 import type { ModelResult } from '../../../schemas/models.schema.ts';
@@ -49,9 +49,10 @@ const AIM_OXYLABS_OPTIONS = {
 	search: undefined,
 };
 
-function getProviderName(): string | undefined {
+function getProviderName(): string {
 	return Deno.env.get('LLM_SCRAPER_PROVIDER')?.toLowerCase() ??
-		Deno.env.get('CHATGPT_SCRAPER_PROVIDER')?.toLowerCase();
+		Deno.env.get('CHATGPT_SCRAPER_PROVIDER')?.toLowerCase() ??
+		'brightdata';
 }
 
 function getTargetOptions(target: ScraperTarget) {
