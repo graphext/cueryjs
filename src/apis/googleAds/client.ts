@@ -26,6 +26,80 @@ interface GoogleAdsCredentials {
 }
 
 const MAX_RETRIES = 50;
+const MAX_ERROR_CONTEXT_LENGTH = 4000;
+
+interface GoogleAdsErrorMessageParams {
+	apiMethod: string;
+	params: Record<string, unknown>;
+	status: number;
+	statusText: string;
+	requestId?: string | null;
+	responseBody?: string;
+}
+
+function serializeErrorContext(value: unknown): string | null {
+	if (value == null) {
+		return null;
+	}
+
+	let serialized: string;
+	try {
+		serialized = typeof value === 'string' ? value.trim() : JSON.stringify(value);
+	} catch {
+		serialized = String(value);
+	}
+
+	if (serialized.length === 0) {
+		return null;
+	}
+
+	return serialized.length <= MAX_ERROR_CONTEXT_LENGTH
+		? serialized
+		: `${serialized.slice(0, MAX_ERROR_CONTEXT_LENGTH)}... [truncated]`;
+}
+
+function summarizeGoogleAdsRequest(apiMethod: string, params: Record<string, unknown>): Record<string, unknown> {
+	const summary: Record<string, unknown> = { apiMethod };
+	const observableFields = [
+		'keywords',
+		'keywordSeed',
+		'keywordAndUrlSeed',
+		'urlSeed',
+		'siteSeed',
+		'language',
+		'geoTargetConstants',
+		'keywordPlanNetwork',
+		'pageSize',
+	];
+
+	for (const field of observableFields) {
+		if (params[field] != null) {
+			summary[field] = params[field];
+		}
+	}
+
+	return summary;
+}
+
+export function buildGoogleAdsErrorMessage({
+	apiMethod,
+	params,
+	status,
+	statusText,
+	requestId,
+	responseBody,
+}: GoogleAdsErrorMessageParams): string {
+	const responseContext = serializeErrorContext(responseBody);
+	const requestContext = serializeErrorContext(summarizeGoogleAdsRequest(apiMethod, params));
+	const details = [
+		`HTTP ${status}${statusText ? ` ${statusText}` : ''}`,
+		requestId ? `request ID: ${requestId}` : null,
+		requestContext ? `request: ${requestContext}` : null,
+		responseContext ? `response: ${responseContext}` : null,
+	].filter((value): value is string => value != null);
+
+	return `Google Ads API error (${details.join('; ')})`;
+}
 
 function normalizeCustomerId(id: string): string {
 	return id.replace(/-/g, '');
@@ -63,7 +137,7 @@ function getCredentialsFromEnv(): GoogleAdsCredentials {
 		serviceAccountJson,
 		customerId: normalizeCustomerId(customerId),
 		loginCustomerId: loginCustomerId ? normalizeCustomerId(loginCustomerId) : undefined,
-		linkedCustomerId: linkedCustomerId ? normalizeCustomerId(linkedCustomerId) : undefined
+		linkedCustomerId: linkedCustomerId ? normalizeCustomerId(linkedCustomerId) : undefined,
 	};
 }
 
@@ -73,9 +147,10 @@ let cachedClient: {
 } | null = null;
 
 export async function createGoogleAdsClient() {
-	if (cachedClient
-		&& cachedClient.expiration
-		&& cachedClient.expiration > Date.now() + 60000
+	if (
+		cachedClient &&
+		cachedClient.expiration &&
+		cachedClient.expiration > Date.now() + 60000
 	) {
 		return cachedClient.client;
 	}
@@ -85,36 +160,47 @@ export async function createGoogleAdsClient() {
 	const authClient = new JWT({
 		email: credentials.serviceAccountJson.client_email,
 		key: credentials.serviceAccountJson.private_key,
-		scopes: ['https://www.googleapis.com/auth/adwords']
+		scopes: ['https://www.googleapis.com/auth/adwords'],
 	});
 	const { access_token, expiry_date: expiration } = await authClient.authorize();
 
 	const client = async (apiMethod: string, params: Record<string, any>) => {
 		let retries = MAX_RETRIES;
 		while (retries > 0) {
-			const response = await fetch(`https://googleads.googleapis.com/v21/customers/${credentials.customerId}:${apiMethod}`, {
-				method: 'POST',
-				headers: {
-					'Authorization': `Bearer ${access_token}`,
-					'Content-Type': 'application/json',
-					'developer-token': credentials.developerToken,
-					'customer_id': credentials.customerId,
-					'login-customer-id': credentials.loginCustomerId ?? ''
+			const response = await fetch(
+				`https://googleads.googleapis.com/v21/customers/${credentials.customerId}:${apiMethod}`,
+				{
+					method: 'POST',
+					headers: {
+						'Authorization': `Bearer ${access_token}`,
+						'Content-Type': 'application/json',
+						'developer-token': credentials.developerToken,
+						'customer_id': credentials.customerId,
+						'login-customer-id': credentials.loginCustomerId ?? '',
+					},
+					body: JSON.stringify(params),
+					signal: (globalThis as any).abortSignal, // Pass through abort signal if available
 				},
-				body: JSON.stringify(params),
-				signal: (globalThis as any).abortSignal // Pass through abort signal if available
-			});
+			);
 
 			if (!response.ok) {
 				if (response.status === 429) {
 					// Rate limit exceeded, retry after a delay
 					const delay = ((MAX_RETRIES + 1) - retries) * 500; // Exponential backoff
 					console.log('Rate limit exceeded, retrying after', delay, 'ms');
-					await new Promise(res => setTimeout(res, delay));
+					await new Promise((res) => setTimeout(res, delay));
 					retries--;
 					continue;
 				}
-				throw new Error(`Google Ads API error: ${response.statusText} (response code: ${response.status})`);
+				const responseBody = await response.text().catch(() => '');
+				throw new Error(buildGoogleAdsErrorMessage({
+					apiMethod,
+					params,
+					status: response.status,
+					statusText: response.statusText,
+					requestId: response.headers.get('request-id'),
+					responseBody,
+				}));
 			}
 
 			try {
