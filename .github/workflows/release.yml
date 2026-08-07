@@ -32,6 +32,12 @@ jobs:
       - name: Setup Deno
         if: steps.version.outputs.changed == 'true'
         uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.1.13
+
+      - name: Check dependency age
+        if: steps.version.outputs.changed == 'true'
+        run: deno task check:dependency-age
 
       - name: Setup Node
         if: steps.version.outputs.changed == 'true'

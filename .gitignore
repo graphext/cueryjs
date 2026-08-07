@@ -35,4 +35,3 @@ coverage/
 *.tmp
 *.temp
 *.backup
-deno.lock
