@@ -16,10 +16,10 @@ Useful documentation:
 	- Keyword ideas:
 		- https://developers.google.com/google-ads/api/docs/keyword-planning/generate-keyword-ideas
 		- https://developers.google.com/google-ads/api/samples/generate-keyword-ideas
-		- https://developers.google.com/google-ads/api/reference/rpc/v21/KeywordPlanIdeaService/GenerateKeywordIdeas?transport=rest
+		- https://developers.google.com/google-ads/api/reference/rpc/v25/KeywordPlanIdeaService/GenerateKeywordIdeas?transport=rest
 	- Historical metrics:
 		- https://developers.google.com/google-ads/api/docs/keyword-planning/generate-historical-metrics
-		- https://developers.google.com/google-ads/api/reference/rpc/v21/KeywordPlanIdeaService/GenerateKeywordHistoricalMetrics?transport=rest
+		- https://developers.google.com/google-ads/api/reference/rpc/v25/KeywordPlanIdeaService/GenerateKeywordHistoricalMetrics?transport=rest
 	- ID/Code references:
 		- https://developers.google.com/google-ads/api/data/codes-formats#expandable-7
 		- https://developers.google.com/google-ads/api/data/geotargets

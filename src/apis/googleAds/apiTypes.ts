@@ -1,6 +1,6 @@
 
 /**
- * @link https://developers.google.com/google-ads/api/reference/rpc/v21/KeywordPlanNetworkEnum.KeywordPlanNetwork
+ * @link https://developers.google.com/google-ads/api/reference/rpc/v25/KeywordPlanNetworkEnum.KeywordPlanNetwork
  */
 export type KeywordPlanNetwork =
 	| 'UNSPECIFIED'
@@ -9,7 +9,7 @@ export type KeywordPlanNetwork =
 	| 'GOOGLE_SEARCH_AND_PARTNERS';
 
 /**
- * @link https://developers.google.com/google-ads/api/reference/rpc/v21/KeywordPlanKeywordAnnotationEnum.KeywordPlanKeywordAnnotation
+ * @link https://developers.google.com/google-ads/api/reference/rpc/v25/KeywordPlanKeywordAnnotationEnum.KeywordPlanKeywordAnnotation
  */
 export type KeywordPlanKeywordAnnotation =
 	| 'UNSPECIFIED'
@@ -17,7 +17,7 @@ export type KeywordPlanKeywordAnnotation =
 	| 'KEYWORD_CONCEPT';
 
 /**
- * @link https://developers.google.com/google-ads/api/reference/rpc/v21/KeywordPlanCompetitionLevelEnum.KeywordPlanCompetitionLevel
+ * @link https://developers.google.com/google-ads/api/reference/rpc/v25/KeywordPlanCompetitionLevelEnum.KeywordPlanCompetitionLevel
  */
 export type KeywordPlanCompetitionLevel =
 	| 'UNSPECIFIED'
@@ -27,7 +27,7 @@ export type KeywordPlanCompetitionLevel =
 	| 'HIGH';
 
 /**
- * @link https://developers.google.com/google-ads/api/reference/rpc/v21/KeywordPlanIdeaService/GenerateKeywordIdeas?transport=rest#keywordplanconceptgrouptype
+ * @link https://developers.google.com/google-ads/api/reference/rpc/v25/KeywordPlanIdeaService/GenerateKeywordIdeas?transport=rest#keywordplanconceptgrouptype
  */
 type KeywordPlanConceptGroupType =
 	| 'UNSPECIFIED'
@@ -37,7 +37,7 @@ type KeywordPlanConceptGroupType =
 	| 'NON_BRAND';
 
 /**
- * @link https://developers.google.com/google-ads/api/reference/rpc/v21/MonthOfYearEnum.MonthOfYear
+ * @link https://developers.google.com/google-ads/api/reference/rpc/v25/MonthOfYearEnum.MonthOfYear
  */
 export type MonthOfYear =
 	| 'UNSPECIFIED'
@@ -56,7 +56,7 @@ export type MonthOfYear =
 	| 'DECEMBER';
 
 /**
- * @link https://developers.google.com/google-ads/api/reference/rpc/v21/KeywordPlanIdeaService/GenerateKeywordIdeas?transport=rest#request-body
+ * @link https://developers.google.com/google-ads/api/reference/rpc/v25/KeywordPlanIdeaService/GenerateKeywordIdeas?transport=rest#request-body
  */
 export interface GenerateKeywordIdeasRequest {
 	language?: string;
@@ -98,7 +98,7 @@ export interface GenerateKeywordIdeasRequest {
 }
 
 /**
- * @link https://developers.google.com/google-ads/api/reference/rpc/v21/KeywordPlanIdeaService/GenerateKeywordHistoricalMetrics?transport=rest#request-body
+ * @link https://developers.google.com/google-ads/api/reference/rpc/v25/KeywordPlanIdeaService/GenerateKeywordHistoricalMetrics?transport=rest#request-body
  */
 export interface GenerateKeywordHistoricalMetricsRequest {
 	keywords?: Array<string>;

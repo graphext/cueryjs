@@ -1,6 +1,10 @@
 import { assertEquals, assertStringIncludes } from '@std/assert';
 
-import { buildGoogleAdsErrorMessage } from '../src/apis/googleAds/client.ts';
+import { buildGoogleAdsErrorMessage, GOOGLE_ADS_API_VERSION } from '../src/apis/googleAds/client.ts';
+
+Deno.test('Google Ads client targets a supported API version', () => {
+	assertEquals(GOOGLE_ADS_API_VERSION, 'v25');
+});
 
 Deno.test('buildGoogleAdsErrorMessage includes actionable Google Ads diagnostics', () => {
 	const message = buildGoogleAdsErrorMessage({

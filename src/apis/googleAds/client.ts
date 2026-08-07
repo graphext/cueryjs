@@ -27,6 +27,7 @@ interface GoogleAdsCredentials {
 
 const MAX_RETRIES = 50;
 const MAX_ERROR_CONTEXT_LENGTH = 4000;
+export const GOOGLE_ADS_API_VERSION = 'v25';
 
 interface GoogleAdsErrorMessageParams {
 	apiMethod: string;
@@ -168,7 +169,7 @@ export async function createGoogleAdsClient() {
 		let retries = MAX_RETRIES;
 		while (retries > 0) {
 			const response = await fetch(
-				`https://googleads.googleapis.com/v21/customers/${credentials.customerId}:${apiMethod}`,
+				`https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/customers/${credentials.customerId}:${apiMethod}`,
 				{
 					method: 'POST',
 					headers: {
