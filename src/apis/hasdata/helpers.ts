@@ -1,9 +1,9 @@
-import { withRetries, type RetryConfig } from '../../helpers/async.ts';
+import { NetworkRetryError, sleep, withRetries, type RetryConfig } from '../../helpers/async.ts';
 
 import type { Source } from '../../schemas/sources.schema.ts';
 import { extractDomain } from '../../helpers/urls.ts';
 
-export const HASDATA_CONCURRENCY = 29;
+export const HASDATA_CONCURRENCY = 15;
 
 export const HASDATA_RETRY_CONFIG: RetryConfig = {
 	maxRetries: 3,
@@ -12,6 +12,16 @@ export const HASDATA_RETRY_CONFIG: RetryConfig = {
 	backoffMultiplier: 2,
 	statusCodes: [429, 500]
 };
+
+export class HasDataError extends Error {
+	readonly retryable: boolean;
+
+	constructor(message: string, readonly status?: number, options?: ErrorOptions) {
+		super(message, options);
+		this.name = 'HasDataError';
+		this.retryable = status == null || [408, 425, 429, 500, 502, 503, 504].includes(status);
+	}
+}
 
 export function getHasDataApiKey(): string {
 	const apiKey = Deno.env.get('HASDATA_API_KEY');
@@ -23,19 +33,64 @@ export function getHasDataApiKey(): string {
 
 export async function fetchHasDataWithRetry(
 	url: string,
-	retryConfig: RetryConfig = HASDATA_RETRY_CONFIG
+	retryConfig: RetryConfig = HASDATA_RETRY_CONFIG,
+	requestSignal?: AbortSignal
 ): Promise<Response> {
 	const headers: Record<string, string> = {
 		'x-api-key': getHasDataApiKey()
 	};
+	const globalSignal = (globalThis as Record<string, unknown>).abortSignal as AbortSignal | undefined;
+	const signals = [requestSignal, retryConfig.signal, globalSignal].filter((value): value is AbortSignal => value != null);
+	const signal = signals.length > 0 ? AbortSignal.any(signals) : undefined;
+	let rateLimitDelay = retryConfig.initialDelay ?? 1000;
 
-	const response = await withRetries(
-		async () => fetch(url, {
-			headers,
-			signal: (globalThis as Record<string, unknown>).abortSignal as AbortSignal | undefined
-		}),
-		retryConfig
-	);
+	let response: Response;
+	try {
+		response = await withRetries(
+			async () => {
+				while (true) {
+					signal?.throwIfAborted();
+					const response = await fetch(url, { headers, signal });
+					if (response.status !== 429) {
+						return response;
+					}
+
+					// Rate limiting defers this attempt; it does not consume the failure budget.
+					const retryAfter = response.headers.get('Retry-After')?.trim();
+					let delay = rateLimitDelay;
+					if (retryAfter) {
+						const seconds = /^\d+$/.test(retryAfter) ? Number(retryAfter) : NaN;
+						const date = /^[A-Za-z]{3}, \d{2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2} GMT$/.test(retryAfter)
+							? Date.parse(retryAfter) : NaN;
+						if (Number.isSafeInteger(seconds * 1000)) {
+							delay = seconds * 1000;
+						} else if (Number.isFinite(date)) {
+							delay = Math.max(0, date - Date.now());
+						}
+					}
+					await response.body?.cancel();
+					// setTimeout overflows above a signed 32-bit duration; keep long waits abortable.
+					while (delay > 2147483647) {
+						await sleep(2147483647, signal);
+						delay -= 2147483647;
+					}
+					await sleep(delay, signal);
+					rateLimitDelay = Math.min(
+						rateLimitDelay * (retryConfig.backoffMultiplier ?? 2),
+						retryConfig.maxDelay ?? 8000
+					);
+				}
+			},
+			{ ...retryConfig, signal }
+		);
+	} catch (error) {
+		signal?.throwIfAborted();
+		if (error instanceof NetworkRetryError) {
+			throw new HasDataError(error.message, undefined, { cause: error.cause });
+		}
+		throw error;
+	}
+	signal?.throwIfAborted();
 
 	if (!response.ok) {
 		const status = response.status;
@@ -52,7 +107,7 @@ export async function fetchHasDataWithRetry(
 		}
 
 		console.error(errorMessage);
-		throw new Error(errorMessage);
+		throw new HasDataError(errorMessage, status);
 	}
 
 	return response;

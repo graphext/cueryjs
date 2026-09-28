@@ -42,6 +42,7 @@ export function sleep(ms: number, abortSignal?: AbortSignal): Promise<void> {
 // ============================================================================
 
 export interface RetryConfig {
+	signal?: AbortSignal;
 	maxRetries?: number;
 	initialDelay?: number; // in milliseconds
 	maxDelay?: number; // in milliseconds
@@ -57,6 +58,13 @@ export const RETRY_DEFAULTS = {
 	statusCodes: [429, 500]
 };
 
+export class NetworkRetryError extends Error {
+	constructor(message: string, cause?: unknown) {
+		super(message, { cause });
+		this.name = 'NetworkRetryError';
+	}
+}
+
 /**
  * Executes a fetch operation with exponential backoff retry logic.
  * Only retries on network errors or specific HTTP status codes (default: 429, 500).
@@ -68,14 +76,15 @@ export async function withRetries(
 		initialDelay = RETRY_DEFAULTS.initialDelay,
 		maxDelay = RETRY_DEFAULTS.maxDelay,
 		backoffMultiplier = RETRY_DEFAULTS.backoffMultiplier,
-		statusCodes = RETRY_DEFAULTS.statusCodes
+		statusCodes = RETRY_DEFAULTS.statusCodes,
+		signal = (globalThis as Record<string, unknown>).abortSignal as AbortSignal | undefined
 	}: RetryConfig = {}
 ): Promise<Response> {
 	let lastError: Error | undefined;
 	let lastResponse: Response | undefined;
 	let delay = initialDelay;
 
-	const abortSignal = (globalThis as Record<string, unknown>).abortSignal as AbortSignal | undefined;
+	const abortSignal = signal;
 	if (abortSignal?.aborted) {
 		throw new Error('Operation aborted');
 	}
@@ -84,8 +93,8 @@ export async function withRetries(
 		try {
 			const response = await fn();
 
-			// Return immediately if successful and not in retry status codes
-			if (response.ok && !statusCodes.includes(response.status)) {
+			// Only the configured HTTP statuses consume the retry budget.
+			if (!statusCodes.includes(response.status)) {
 				return response;
 			}
 
@@ -99,6 +108,7 @@ export async function withRetries(
 			await sleep(delay, abortSignal);
 			delay = Math.min(delay * backoffMultiplier, maxDelay);
 		} catch (error) {
+			abortSignal?.throwIfAborted();
 			lastError = error as Error;
 
 			if (attempt === maxRetries) {
@@ -114,8 +124,9 @@ export async function withRetries(
 		return lastResponse;
 	}
 
-	throw new Error(
-		`Network request failed after ${maxRetries + 1} attempts: ${lastError?.message || 'Unknown error'}`
+	throw new NetworkRetryError(
+		`Network request failed after ${maxRetries + 1} attempts: ${lastError?.message || 'Unknown error'}`,
+		lastError
 	);
 }
 

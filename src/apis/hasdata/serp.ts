@@ -14,6 +14,7 @@ const SEARCH_TYPE_TO_TBM: Record<Exclude<SerpSearchType, 'all'>, string> = {
 };
 
 export interface SerpRequestOptions {
+	signal?: AbortSignal;
 	location?: string; // HasData param: location
 	country?: string; // HasData param: gl
 	language?: string; // HasData param: hl
@@ -331,13 +332,13 @@ function applySerpParams(url: URL, options: SerpRequestOptions): void {
 	appendOptionalParam(url, 'si', options.searchId);
 }
 
-async function fetchSerpInternal(url: string): Promise<SerpResponse> {
-	const response = await fetchHasDataWithRetry(url);
+async function fetchSerpInternal(url: string, signal?: AbortSignal): Promise<SerpResponse> {
+	const response = await fetchHasDataWithRetry(url, undefined, signal);
 	const content = (await response.json()) as SerpResponse;
 	let aio = content.aiOverview as AIOverview | { pageToken?: string; hasdataLink?: string } | undefined;
 
 	if (aio && aio.pageToken && aio.hasdataLink) {
-		const aioResponse = await fetchHasDataWithRetry(aio.hasdataLink);
+		const aioResponse = await fetchHasDataWithRetry(aio.hasdataLink, undefined, signal);
 		aio = await aioResponse.json();
 	}
 
@@ -353,7 +354,7 @@ export async function fetchSerp(query: string, options: SerpRequestOptions): Pro
 	url.searchParams.set('q', query);
 	applySerpParams(url, options);
 
-	return fetchSerpInternal(url.toString());
+	return fetchSerpInternal(url.toString(), options.signal);
 }
 
 export async function fetchSerpBatch(
@@ -369,7 +370,7 @@ export async function fetchSerpBatch(
 		maxConcurrency,
 		async (query: string) => {
 			url.searchParams.set('q', query);
-			return await fetchSerpInternal(url.toString());
+			return await fetchSerpInternal(url.toString(), options.signal);
 		},
 	);
 }
