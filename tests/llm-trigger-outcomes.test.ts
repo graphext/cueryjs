@@ -80,7 +80,7 @@ Deno.test('trigger configuration rejection and missing credentials are not parti
 Deno.test('mixed trigger receipts retain input order and sanitized uncertainty metadata', async () => {
 	await mocked(async (setFetch) => {
 		setFetch((_url, init) => {
-			const body = JSON.parse(String(init?.body));
+			const body = JSON.parse(String(init != null && 'body' in init ? init.body : undefined));
 			return Promise.resolve(
 				body.input[0].prompt === 'second'
 					? Response.json({ error_code: 'provider_busy', error: 'private prompt' }, { status: 503 })
