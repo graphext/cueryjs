@@ -332,13 +332,23 @@ function applySerpParams(url: URL, options: SerpRequestOptions): void {
 	appendOptionalParam(url, 'si', options.searchId);
 }
 
+const AIO_TOKEN_RETRY_WINDOW_MS = 180000;
+
 async function fetchSerpInternal(url: string, signal?: AbortSignal): Promise<SerpResponse> {
 	const response = await fetchHasDataWithRetry(url, undefined, signal);
+	const receivedAt = Date.now();
 	const content = (await response.json()) as SerpResponse;
 	let aio = content.aiOverview as AIOverview | { pageToken?: string; hasdataLink?: string } | undefined;
 
 	if (aio && aio.pageToken && aio.hasdataLink) {
-		const aioResponse = await fetchHasDataWithRetry(aio.hasdataLink, undefined, signal);
+		// Allow three minutes after SERP receipt, excluding any earlier rate-limit waits.
+		// AIO links expire after four minutes; a caller retry must obtain a fresh SERP token.
+		const aioResponse = await fetchHasDataWithRetry(
+			aio.hasdataLink, undefined, signal, {
+				diagnosticSensitiveValues: [new URL(url).searchParams.get('q') ?? ''],
+				expiresAt: receivedAt + AIO_TOKEN_RETRY_WINDOW_MS
+			}
+		);
 		aio = await aioResponse.json();
 	}
 

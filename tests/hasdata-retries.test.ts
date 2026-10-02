@@ -4,8 +4,9 @@ import { fetchSerpBatch } from '../src/apis/hasdata/serp.ts';
 
 async function withMockRequests(
 	responses: Array<Response | Error>,
-	run: (delays: Array<number>, requestCount: () => number, controller: AbortController) => Promise<void>,
-	abortOnWait = false
+	run: (delays: Array<number>, requestCount: () => number, controller: AbortController, urls: Array<string>) => Promise<void>,
+	abortOnWait = false,
+	onWait?: (delay: number) => void
 ): Promise<void> {
 	const originalFetch = globalThis.fetch;
 	const originalTimeout = globalThis.setTimeout;
@@ -14,10 +15,12 @@ async function withMockRequests(
 	const originalKey = Deno.env.get('HASDATA_API_KEY');
 	const controller = new AbortController();
 	const delays: Array<number> = [];
+	const urls: Array<string> = [];
 	let calls = 0;
 	Deno.env.set('HASDATA_API_KEY', 'test-key');
 	globals.abortSignal = controller.signal;
-	globalThis.fetch = () => {
+	globalThis.fetch = (url) => {
+		urls.push(String(url));
 		const response = responses[calls++];
 		if (response instanceof Error) {
 			return Promise.reject(response);
@@ -30,6 +33,7 @@ async function withMockRequests(
 	globalThis.setTimeout = ((callback: () => void, delay: number) => {
 		delays.push(delay);
 		queueMicrotask(() => {
+			onWait?.(delay);
 			if (abortOnWait) {
 				controller.abort(new Error('Stopped'));
 			} else {
@@ -39,7 +43,7 @@ async function withMockRequests(
 		return 0;
 	}) as unknown as typeof setTimeout;
 	try {
-		await run(delays, () => calls, controller);
+		await run(delays, () => calls, controller, urls);
 	} finally {
 		globalThis.fetch = originalFetch;
 		globalThis.setTimeout = originalTimeout;
@@ -55,6 +59,202 @@ async function withMockRequests(
 const limited = (retryAfter?: string): Response => new Response('limited', {
 	status: 429,
 	headers: retryAfter == null ? undefined : { 'Retry-After': retryAfter }
+});
+
+Deno.test('HasData retries transient 400 responses with a bounded failure budget', async () => {
+	await withMockRequests([
+		new Response(null, { status: 400 }), limited('0'), new Response('ok')
+	], async (delays, calls) => {
+		assertEquals(await (await fetchHasDataWithRetry('https://example.test')).text(), 'ok');
+		assertEquals(calls(), 3);
+		assertEquals(delays, [1000, 0]);
+	});
+	await withMockRequests(Array.from({ length: 4 }, () => new Response(null, { status: 400 })), async (delays, calls) => {
+		const error = await assertRejects(() => fetchHasDataWithRetry('https://example.test'), HasDataError);
+		assertEquals(error.retryable, true);
+		assertEquals(calls(), 4);
+		assertEquals(delays, [1000, 2000, 4000]);
+	});
+});
+
+Deno.test('HasData logs sanitized validation diagnostics without exposing them in errors or retrying 422', async () => {
+	const originalError = console.error;
+	const messages: Array<unknown> = [];
+	console.error = (...values) => { messages.push(values); };
+	try {
+		await withMockRequests([Response.json({
+			detail: [{ loc: ['query', 'pageToken'], type: 'invalid_token',
+				msg: 'Rejected confidential-query and private-token using test-key https://example.test/?secret=yes',
+				input: 'private-input', ctx: { secret: 'private-context' } }]
+		}, { status: 422, headers: { 'x-request-id': 'ba3419b0-ea51-49d2-8801-bea6f74d57df' } })], async (delays, calls) => {
+			const error = await assertRejects(() => fetchHasDataWithRetry(
+				'https://example.test/aio?pageToken=private-token&gl=it', undefined, undefined,
+				{ diagnosticSensitiveValues: ['confidential-query'] }
+			), HasDataError);
+			assertEquals(error.message, 'HasData API error: 422 ');
+			assertEquals(error.retryable, false);
+			assertEquals(error.cause, undefined);
+			assertEquals(calls(), 1);
+			assertEquals(delays, []);
+			const logged = JSON.stringify(messages);
+			for (const secret of ['confidential-query', 'private-token', 'test-key', 'private-input', 'private-context', 'secret=yes']) {
+				assertEquals(logged.includes(secret), false);
+			}
+			assertEquals(logged.includes('invalid_token'), true);
+			assertEquals(logged.includes('pageToken'), true);
+			assertEquals(logged.includes('ba3419b0-ea51-49d2-8801-bea6f74d57df'), true);
+		});
+	} finally { console.error = originalError; }
+});
+
+const tokenSerp = (token: string): Response => Response.json({
+	organicResults: [], aiOverview: { pageToken: token, hasdataLink: `https://example.test/aio?pageToken=${token}` }
+});
+
+Deno.test('HasData retries AIO 400 without repeating the successful initial search', async () => {
+	await withMockRequests([tokenSerp('first'), new Response(null, { status: 400 }), Response.json({ textBlocks: [] })], async (_delays, calls, _controller, urls) => {
+		await fetchSerpBatch(['example']);
+		assertEquals(calls(), 3);
+		assertEquals(urls[1], urls[2]);
+	});
+});
+
+Deno.test('HasData exhausted AIO retries propagate and a caller retry obtains a fresh token', async () => {
+	await withMockRequests([
+		tokenSerp('first'), ...Array.from({ length: 4 }, () => new Response(null, { status: 400 })),
+		tokenSerp('fresh'), Response.json({ textBlocks: [] })
+	], async (_delays, calls, _controller, urls) => {
+		const error = await assertRejects(() => fetchSerpBatch(['example']), HasDataError);
+		assertEquals(error.retryable, true);
+		await fetchSerpBatch(['example']);
+		assertEquals(calls(), 7);
+		assertEquals(urls[5], urls[0]);
+		assertEquals(urls[6], 'https://example.test/aio?pageToken=fresh');
+	});
+});
+
+Deno.test('HasData aborts AIO rate limiting without refreshing or hiding caller cancellation', async () => {
+	await withMockRequests([tokenSerp('first'), limited('1000')], async (_delays, calls, controller) => {
+		await assertRejects(() => fetchSerpBatch(['example'], { signal: controller.signal }), Error, 'Stopped');
+		assertEquals(calls(), 2);
+	}, true);
+});
+
+Deno.test('HasData rejects AIO tokens that age after SERP receipt before requesting them', async () => {
+	const originalNow = Date.now;
+	let reads = 0;
+	Date.now = () => reads++ === 0 ? 0 : 180001;
+	try {
+		await withMockRequests([tokenSerp('stale')], async (_delays, calls) => {
+			const error = await assertRejects(() => fetchSerpBatch(['example']), HasDataError, 'refresh the search');
+			assertEquals(error.retryable, true);
+			assertEquals(calls(), 1);
+		});
+	} finally { Date.now = originalNow; }
+});
+
+Deno.test('HasData accepts fresh AIO tokens after a prolonged initial SERP rate-limit wait', async () => {
+	const originalNow = Date.now;
+	let now = 0;
+	Date.now = () => now;
+	try {
+		await withMockRequests([
+			limited('240'), tokenSerp('fresh'), Response.json({ textBlocks: [] })
+		], async (delays, calls, _controller, urls) => {
+			await fetchSerpBatch(['example']);
+			assertEquals(calls(), 3);
+			assertEquals(delays, [240000]);
+			assertEquals(urls[0], urls[1]);
+			assertEquals(urls[2], 'https://example.test/aio?pageToken=fresh');
+		}, false, delay => { now += delay; });
+	} finally { Date.now = originalNow; }
+});
+
+Deno.test('HasData redacts space and Unicode query values in URL and form encodings', async () => {
+	const query = 'hipotecas más económicas';
+	const encoded = [
+		query,
+		encodeURIComponent(query),
+		new URLSearchParams({ q: query }).toString().slice(2),
+		new URLSearchParams({ q: query }).toString().slice(2).replace(/%[A-F\d]{2}/g, part => part.toLowerCase())
+	];
+	const originalError = console.error;
+	const logs: Array<unknown> = [];
+	console.error = (...values) => { logs.push(values); };
+	try {
+		await withMockRequests([Response.json({ message: encoded.join(' | ') }, { status: 422 })], async () => {
+			await assertRejects(() => fetchHasDataWithRetry(
+				`https://example.test/search?${new URLSearchParams({ q: query })}`
+			), HasDataError);
+			const logged = JSON.stringify(logs);
+			for (const value of encoded) { assertEquals(logged.includes(value), false); }
+			assertEquals(logged.includes('hipotecas'), false);
+			assertEquals(logged.includes('[redacted]'), true);
+		});
+	} finally { console.error = originalError; }
+});
+
+Deno.test('HasData honors the full AIO Retry-After before refreshing an expired token', async () => {
+	const originalNow = Date.now;
+	let now = 0;
+	Date.now = () => now;
+	try {
+		await withMockRequests([
+			tokenSerp('first'), limited('1000'), tokenSerp('fresh'), Response.json({ textBlocks: [] })
+		], async (delays, calls, _controller, urls) => {
+			const error = await assertRejects(() => fetchSerpBatch(['example']), HasDataError, 'refresh the search');
+			assertEquals(error.retryable, true);
+			assertEquals(delays, [1000000]);
+			assertEquals(now, 1000000);
+			assertEquals(calls(), 2);
+			await fetchSerpBatch(['example']);
+			assertEquals(calls(), 4);
+			assertEquals(urls[2], urls[0]);
+			assertEquals(urls[3], 'https://example.test/aio?pageToken=fresh');
+		}, false, delay => { now += delay; });
+	} finally { Date.now = originalNow; }
+});
+
+Deno.test('HasData caller cancellation takes precedence when AIO deadline also expires', async () => {
+	const originalNow = Date.now;
+	let now = 0;
+	Date.now = () => now;
+	try {
+		await withMockRequests([tokenSerp('first'), limited('1000')], async (_delays, calls, controller) => {
+			await assertRejects(() => fetchSerpBatch(['example'], { signal: controller.signal }), Error, 'Stopped');
+			assertEquals(calls(), 2);
+		}, true, delay => { now += delay; });
+	} finally { Date.now = originalNow; }
+});
+
+Deno.test('HasData does not retry a rejected AIO token or silently return partial SERP', async () => {
+	await withMockRequests([tokenSerp('invalid'), Response.json({ detail: 'Invalid token' }, { status: 422 })], async (delays, calls) => {
+		const error = await assertRejects(() => fetchSerpBatch(['example']), HasDataError);
+		assertEquals(error.status, 422);
+		assertEquals(error.retryable, false);
+		assertEquals(delays, []);
+		assertEquals(calls(), 2);
+	});
+});
+
+Deno.test('HasData bounds diagnostics and never logs raw non-JSON response bodies', async () => {
+	const originalError = console.error;
+	const logs: Array<unknown> = [];
+	console.error = (...values) => { logs.push(values); };
+	try {
+		await withMockRequests([
+			new Response('private raw error', { status: 422 }),
+			Response.json({ message: 'sensitive'.repeat(2000) }, { status: 422 })
+		], async () => {
+			await assertRejects(() => fetchHasDataWithRetry('https://example.test'), HasDataError);
+			await assertRejects(() => fetchHasDataWithRetry('https://example.test'), HasDataError);
+			const logged = JSON.stringify(logs);
+			assertEquals(logged.includes('private raw error'), false);
+			assertEquals(logged.includes('sensitive'), false);
+			assertEquals(logged.includes('exceeds diagnostic limit'), true);
+			assertEquals(logged.length < 1000, true);
+		});
+	} finally { console.error = originalError; }
 });
 
 Deno.test('HasData does not classify unsupported server capabilities as transient', () => {

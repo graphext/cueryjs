@@ -10,7 +10,7 @@ export const HASDATA_RETRY_CONFIG: RetryConfig = {
 	initialDelay: 1000,
 	maxDelay: 8000,
 	backoffMultiplier: 2,
-	statusCodes: [429, 500]
+	statusCodes: [400, 429, 500]
 };
 
 export class HasDataError extends Error {
@@ -19,8 +19,74 @@ export class HasDataError extends Error {
 	constructor(message: string, readonly status?: number, options?: ErrorOptions) {
 		super(message, options);
 		this.name = 'HasDataError';
-		this.retryable = status == null || [408, 425, 429, 500, 502, 503, 504].includes(status);
+		this.retryable = status == null || [400, 408, 425, 429, 500, 502, 503, 504].includes(status);
 	}
+}
+
+async function logHasDataFailure(response: Response, url: string, requestValues: Array<string>): Promise<void> {
+	const parsedUrl = new URL(url);
+	const sensitiveParams = [...parsedUrl.searchParams.entries()]
+		.filter(([key]) => /^(q|query|page[_-]?token|token|api[_-]?key|key|authorization|auth)$/i.test(key))
+		.map(([, value]) => value);
+	const sensitiveValues = [getHasDataApiKey(), ...sensitiveParams, ...requestValues]
+		.filter(value => value.length > 0).sort((left, right) => right.length - left.length);
+	const sensitiveVariants = [...new Set(sensitiveValues.flatMap(value => {
+		const encoded = [encodeURIComponent(value), new URLSearchParams({ value }).toString().slice(6)];
+		return [value, ...encoded, ...encoded.map(item => item.replace(/%[A-F\d]{2}/g, part => part.toLowerCase()))];
+	}))].sort((left, right) => right.length - left.length);
+	const sanitize = (value: string): string => {
+		for (const sensitive of sensitiveVariants) {
+			value = value.replaceAll(sensitive, '[redacted]');
+		}
+		return value.replace(/https?:\/\/[^\s"'<>]+/gi, '[url]')
+			.replace(/\bBearer\s+\S+/gi, 'Bearer [redacted]')
+			.replace(/[A-Za-z0-9_=-]{32,}/g, '[redacted]')
+			.replace(/[\r\n\t]/g, ' ').slice(0, 500);
+	};
+	let detail: unknown = 'Response body unavailable';
+	try {
+		const reader = response.body?.getReader();
+		if (reader) {
+			const chunks: Array<Uint8Array> = [];
+			let length = 0;
+			try {
+				while (length <= 8192) {
+					const chunk = await reader.read();
+					if (chunk.done) { break; }
+					length += chunk.value.byteLength;
+					if (length <= 8192) { chunks.push(chunk.value); }
+				}
+			} finally {
+				await reader.cancel();
+			}
+			if (length <= 8192) {
+				const bytes = new Uint8Array(length);
+				let offset = 0;
+				for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+				const body = JSON.parse(new TextDecoder().decode(bytes));
+				// Keep validation structure, never echoed inputs, tokens, or request metadata.
+				const summarize = (value: unknown, depth = 0): unknown => {
+					if (depth > 4) { return '[truncated]'; }
+					if (Array.isArray(value)) { return value.slice(0, 5).map(item => summarize(item, depth + 1)); }
+					if (value && typeof value === 'object') {
+						return Object.fromEntries(Object.entries(value)
+							.filter(([key]) => ['error', 'errors', 'detail', 'message', 'msg', 'type', 'code', 'loc'].includes(key))
+							.map(([key, item]) => [key, summarize(item, depth + 1)]));
+					}
+					return typeof value === 'string' ? sanitize(value) : typeof value === 'number' ? value : null;
+				};
+				detail = summarize(body);
+			} else { detail = 'Response body exceeds diagnostic limit'; }
+		}
+	} catch { /* Diagnostic failures must not replace the provider error. */ }
+	const requestId = response.headers.get('x-request-id') ?? response.headers.get('request-id') ?? '';
+	console.error('HasData request failed', {
+		status: response.status,
+		endpoint: `${parsedUrl.origin}${parsedUrl.pathname}`,
+		requestId: /^[A-Za-z0-9._:-]{1,128}$/.test(requestId) && !sensitiveValues.includes(requestId)
+			? requestId : undefined,
+		detail
+	});
 }
 
 export function getHasDataApiKey(): string {
@@ -31,17 +97,25 @@ export function getHasDataApiKey(): string {
 	return apiKey;
 }
 
+export interface HasDataRetryOptions {
+	diagnosticSensitiveValues?: Array<string>;
+	expiresAt?: number;
+}
+
 export async function fetchHasDataWithRetry(
 	url: string,
 	retryConfig: RetryConfig = HASDATA_RETRY_CONFIG,
-	requestSignal?: AbortSignal
+	requestSignal?: AbortSignal,
+	{ diagnosticSensitiveValues = [], expiresAt }: HasDataRetryOptions = {}
 ): Promise<Response> {
 	const headers: Record<string, string> = {
 		'x-api-key': getHasDataApiKey()
 	};
 	const globalSignal = (globalThis as Record<string, unknown>).abortSignal as AbortSignal | undefined;
 	const signals = [requestSignal, retryConfig.signal, globalSignal].filter((value): value is AbortSignal => value != null);
-	const signal = signals.length > 0 ? AbortSignal.any(signals) : undefined;
+	const callerSignal = signals.length > 0 ? AbortSignal.any(signals) : undefined;
+	const freshness = expiresAt == null ? undefined : new AbortController();
+	const signal = freshness ? AbortSignal.any([...signals, freshness.signal]) : callerSignal;
 	let rateLimitDelay = retryConfig.initialDelay ?? 1000;
 
 	let response: Response;
@@ -49,6 +123,11 @@ export async function fetchHasDataWithRetry(
 		response = await withRetries(
 			async () => {
 				while (true) {
+					callerSignal?.throwIfAborted();
+					// Honor the full Retry-After wait before deciding whether to refresh an expired token.
+					if (expiresAt != null && Date.now() >= expiresAt) {
+						freshness?.abort(new HasDataError('HasData AI Overview request expired; refresh the search', 400));
+					}
 					signal?.throwIfAborted();
 					const response = await fetch(url, { headers, signal });
 					if (response.status !== 429) {
@@ -84,6 +163,10 @@ export async function fetchHasDataWithRetry(
 			{ ...retryConfig, signal }
 		);
 	} catch (error) {
+		callerSignal?.throwIfAborted();
+		if (freshness?.signal.aborted) {
+			throw freshness.signal.reason;
+		}
 		signal?.throwIfAborted();
 		if (error instanceof NetworkRetryError) {
 			throw new HasDataError(error.message, undefined, { cause: error.cause });
@@ -106,7 +189,8 @@ export async function fetchHasDataWithRetry(
 			errorMessage = `HasData API error: ${status} ${response.statusText}`;
 		}
 
-		console.error(errorMessage);
+		await logHasDataFailure(response, url, diagnosticSensitiveValues);
+		signal?.throwIfAborted();
 		throw new HasDataError(errorMessage, status);
 	}
 
