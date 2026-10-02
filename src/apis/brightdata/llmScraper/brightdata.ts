@@ -10,7 +10,14 @@
 
 import { type RetryConfig, sleep, withRetries } from '../../../helpers/async.ts';
 import type { ModelResult } from '../../../schemas/models.schema.ts';
-import { cleanAnswer, getAbortSignal, LLMSnapshotError, parseSources, type ProviderFunctions } from './scrape.ts';
+import {
+	cleanAnswer,
+	getAbortSignal,
+	LLMSnapshotError,
+	type LLMTriggerOutcome,
+	parseSources,
+	type ProviderFunctions,
+} from './scrape.ts';
 
 // ============================================================================
 // Types
@@ -114,6 +121,93 @@ export function createBrightdataProvider(
 ): ProviderFunctions {
 	const config = { ...DEFAULT_BRIGHTDATA_PROVIDER_CONFIG, ...overrides };
 	const customOutputFields = [...new Set([...(config.outputFields ?? []), ...(config.extraFields ?? [])])].join('|');
+
+	async function triggerJobOutcome(
+		prompt: string,
+		useSearch: boolean,
+		countryISOCode: string | null,
+	): Promise<LLMTriggerOutcome> {
+		const signal = getAbortSignal();
+		signal?.throwIfAborted();
+		const apiKey = getApiKey();
+		const body = {
+			custom_output_fields: customOutputFields,
+			input: [{
+				url: config.targetUrl,
+				prompt,
+				country: countryISOCode || '',
+				index: 0,
+				...(config.extraInputs?.({ prompt, useSearch, countryISOCode }) ?? {}),
+			}],
+		};
+		let response: Response;
+		try {
+			// Retry only explicit rate limits; a lost receipt can still represent a paid job.
+			let rateLimitDelay = 1000;
+			while (true) {
+				signal?.throwIfAborted();
+				response = await fetch(
+					`${config.apiBase}/datasets/v3/trigger?dataset_id=${config.datasetId}&include_errors=true`,
+					{
+						method: 'POST',
+						headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+						body: JSON.stringify(body),
+						signal,
+					},
+				);
+				if (response.status !== 429) break;
+				const retryAfter = response.headers.get('Retry-After')?.trim();
+				const seconds = retryAfter != null && /^\d+$/.test(retryAfter) ? Number(retryAfter) : NaN;
+				const date = retryAfter != null &&
+						/^[A-Za-z]{3}, \d{2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2} GMT$/.test(retryAfter)
+					? Date.parse(retryAfter)
+					: NaN;
+				let delay = Number.isSafeInteger(seconds * 1000)
+					? seconds * 1000
+					: Number.isFinite(date)
+					? Math.max(0, date - Date.now())
+					: rateLimitDelay;
+				await response.body?.cancel();
+				while (delay > 2147483647) {
+					await sleep(2147483647, signal);
+					delay -= 2147483647;
+				}
+				await sleep(delay, signal);
+				rateLimitDelay = Math.min(rateLimitDelay * 2, 30000);
+			}
+		} catch {
+			signal?.throwIfAborted();
+			return { jobId: null, failure: { provider: config.providerName, kind: 'trigger_uncertain' } };
+		}
+		signal?.throwIfAborted();
+		if (response.status >= 400 && response.status < 500 && ![408, 425].includes(response.status)) {
+			await response.body?.cancel();
+			throw new Error(`${config.providerName} trigger configuration rejected (${response.status})`);
+		}
+		let data: unknown;
+		try {
+			data = await response.json();
+		} catch {
+			signal?.throwIfAborted();
+		}
+		signal?.throwIfAborted();
+		const record = data != null && typeof data === 'object' && !Array.isArray(data)
+			? data as Record<string, unknown>
+			: {};
+		if (response.ok && typeof record.snapshot_id === 'string' && /^sd_[A-Za-z0-9_-]+$/.test(record.snapshot_id)) {
+			return { jobId: record.snapshot_id, failure: null };
+		}
+		const code = record.error_code;
+		return {
+			jobId: null,
+			failure: {
+				provider: config.providerName,
+				kind: 'trigger_uncertain',
+				status: response.status,
+				...(typeof code === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(code) ? { providerCode: code } : {}),
+			},
+		};
+	}
 
 	async function triggerJob(
 		prompt: string,
@@ -293,6 +387,7 @@ export function createBrightdataProvider(
 		maxConcurrency: config.maxConcurrency,
 		maxPromptsPerRequest: config.maxPromptsPerRequest,
 		triggerJob,
+		triggerJobOutcome,
 		monitorJob,
 		downloadJob,
 		transformResponse,

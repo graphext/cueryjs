@@ -21,12 +21,26 @@ export interface BatchOptions {
 	countryISOCode?: string | null;
 }
 
+export interface LLMTriggerFailure {
+	provider: string;
+	kind: 'trigger_rejected' | 'trigger_uncertain';
+	status?: number;
+	providerCode?: string;
+}
+
+export type LLMTriggerOutcome = { jobId: string; failure: null } | { jobId: null; failure: LLMTriggerFailure };
+
 export interface ProviderFunctions {
 	name: string;
 	strictSnapshots?: boolean;
 	maxConcurrency: number;
 	maxPromptsPerRequest: number;
 	triggerJob: (prompt: string, useSearch: boolean, countryISOCode: string | null) => Promise<string | null>;
+	triggerJobOutcome?: (
+		prompt: string,
+		useSearch: boolean,
+		countryISOCode: string | null,
+	) => Promise<LLMTriggerOutcome>;
 	monitorJob: (jobId: string) => Promise<boolean>;
 	downloadJob: (jobId: string) => Promise<unknown>;
 	transformResponse: (raw: unknown) => ModelResult | null;
@@ -37,6 +51,7 @@ export interface LLMScraper {
 	maxPromptsPerRequest: number;
 	scrapeLLMBatch: (options: BatchOptions) => Promise<Array<ModelResult>>;
 	triggerLLMBatch: (options: BatchOptions) => Promise<Array<string | null>>;
+	triggerLLMBatchOutcomes: (options: BatchOptions) => Promise<Array<LLMTriggerOutcome>>;
 	downloadLLMSnapshots: (jobIds: Array<string | null>) => Promise<Array<ModelResult>>;
 }
 
@@ -287,6 +302,14 @@ export function createLLMScraper(provider: ProviderFunctions): LLMScraper {
 		return results;
 	}
 
+	async function triggerLLMBatchOutcomes(
+		{ prompts, useSearch = false, countryISOCode = null }: BatchOptions,
+	): Promise<Array<LLMTriggerOutcome>> {
+		const trigger = provider.triggerJobOutcome;
+		if (trigger == null) throw new Error(`${name} does not support explicit trigger outcomes`);
+		return await mapParallel(prompts, maxConcurrency, (prompt) => trigger(prompt, useSearch, countryISOCode));
+	}
+
 	async function scrapeLLMBatch(options: BatchOptions): Promise<Array<ModelResult>> {
 		const jobIds = await triggerLLMBatch(options);
 		return downloadLLMSnapshots(jobIds);
@@ -297,6 +320,7 @@ export function createLLMScraper(provider: ProviderFunctions): LLMScraper {
 		maxPromptsPerRequest,
 		scrapeLLMBatch,
 		triggerLLMBatch,
+		triggerLLMBatchOutcomes,
 		downloadLLMSnapshots,
 	};
 }

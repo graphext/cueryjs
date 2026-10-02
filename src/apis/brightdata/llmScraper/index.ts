@@ -9,12 +9,13 @@
  */
 
 import type { ModelResult } from '../../../schemas/models.schema.ts';
-import { type BatchOptions, createLLMScraper, type LLMScraper } from './scrape.ts';
+import { type BatchOptions, createLLMScraper, type LLMScraper, type LLMTriggerOutcome } from './scrape.ts';
 import { createBrightdataProvider } from './brightdata.ts';
 import { createOxylabsProvider } from './oxy.ts';
 
 // Re-export types
 export type { BatchOptions };
+export type { LLMTriggerFailure, LLMTriggerOutcome } from './scrape.ts';
 export { LLMSnapshotError, type LLMSnapshotErrorKind } from './scrape.ts';
 export { transformBrightdataLLMResponse } from './brightdata.ts';
 export type JobId = string | null;
@@ -115,6 +116,10 @@ export async function triggerGPTBatch(options: BatchOptions): Promise<Array<stri
 	return getLLMScraper('chatgpt').triggerLLMBatch(options);
 }
 
+export async function triggerGPTBatchOutcomes(options: BatchOptions): Promise<Array<LLMTriggerOutcome>> {
+	return getLLMScraper('chatgpt').triggerLLMBatchOutcomes(options);
+}
+
 export async function downloadGPTSnapshots(jobIds: Array<string | null>): Promise<Array<ModelResult>> {
 	return downloadSnapshots(jobIds);
 }
@@ -126,6 +131,10 @@ export async function scrapeAIMBatch(options: BatchOptions): Promise<Array<Model
 
 export async function triggerAIMBatch(options: BatchOptions): Promise<Array<string | null>> {
 	return getLLMScraper('aim').triggerLLMBatch(options);
+}
+
+export async function triggerAIMBatchOutcomes(options: BatchOptions): Promise<Array<LLMTriggerOutcome>> {
+	return getLLMScraper('aim').triggerLLMBatchOutcomes(options);
 }
 
 export async function downloadAIMSnapshots(jobIds: Array<string | null>): Promise<Array<ModelResult>> {
