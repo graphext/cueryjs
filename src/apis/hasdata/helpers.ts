@@ -23,7 +23,7 @@ export class HasDataError extends Error {
 	}
 }
 
-async function logHasDataFailure(response: Response, url: string, requestValues: Array<string>): Promise<void> {
+async function logHasDataFailure(response: Response, url: string, requestValues: Array<string>): Promise<boolean> {
 	const parsedUrl = new URL(url);
 	const sensitiveParams = [...parsedUrl.searchParams.entries()]
 		.filter(([key]) => /^(q|query|page[_-]?token|token|api[_-]?key|key|authorization|auth)$/i.test(key))
@@ -44,6 +44,7 @@ async function logHasDataFailure(response: Response, url: string, requestValues:
 			.replace(/[\r\n\t]/g, ' ').slice(0, 500);
 	};
 	let detail: unknown = 'Response body unavailable';
+	let expiredAIOToken = false;
 	try {
 		const reader = response.body?.getReader();
 		if (reader) {
@@ -64,6 +65,11 @@ async function logHasDataFailure(response: Response, url: string, requestValues:
 				let offset = 0;
 				for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
 				const body = JSON.parse(new TextDecoder().decode(bytes));
+				expiredAIOToken = response.status === 422
+					&& parsedUrl.origin === 'https://api.hasdata.com'
+					&& parsedUrl.pathname === '/scrape/google/ai-overview'
+					&& Array.isArray(body?.errors) && body.errors.length === 1
+					&& body.errors[0]?.message === 'Page Token expired';
 				// Keep validation structure, never echoed inputs, tokens, or request metadata.
 				const summarize = (value: unknown, depth = 0): unknown => {
 					if (depth > 4) { return '[truncated]'; }
@@ -87,6 +93,7 @@ async function logHasDataFailure(response: Response, url: string, requestValues:
 			? requestId : undefined,
 		detail
 	});
+	return expiredAIOToken;
 }
 
 export function getHasDataApiKey(): string {
@@ -189,8 +196,12 @@ export async function fetchHasDataWithRetry(
 			errorMessage = `HasData API error: ${status} ${response.statusText}`;
 		}
 
-		await logHasDataFailure(response, url, diagnosticSensitiveValues);
+		const expiredAIOToken = await logHasDataFailure(response, url, diagnosticSensitiveValues);
 		signal?.throwIfAborted();
+		if (expiredAIOToken) {
+			// Retrying this URL cannot repair its token; let the caller refresh the current search.
+			throw new HasDataError('HasData AI Overview request expired; refresh the search', 400);
+		}
 		throw new HasDataError(errorMessage, status);
 	}
 

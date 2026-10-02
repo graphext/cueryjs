@@ -237,6 +237,78 @@ Deno.test('HasData does not retry a rejected AIO token or silently return partia
 	});
 });
 
+Deno.test('HasData identifies confirmed expired AIO tokens without retrying the expired URL', async () => {
+	await withMockRequests([
+		Response.json({ errors: [{ message: 'Page Token expired' }] }, { status: 422 })
+	], async (delays, calls) => {
+		const error = await assertRejects(() => fetchHasDataWithRetry(
+			'https://api.hasdata.com/scrape/google/ai-overview?pageToken=expired'
+		), HasDataError, 'refresh the search');
+		assertEquals(error.status, 400);
+		assertEquals(error.retryable, true);
+		assertEquals(error.cause, undefined);
+		assertEquals(calls(), 1);
+		assertEquals(delays, []);
+	});
+});
+
+Deno.test('HasData keeps unrelated 422 errors terminal including similar and mixed provider messages', async () => {
+	const cases = [
+		{ endpoint: '/scrape/google/serp', errors: [{ message: 'Page Token expired' }] },
+		{ endpoint: '/scrape/google/ai-overview', errors: [{ message: 'Invalid page token' }] },
+		{ endpoint: '/scrape/google/ai-overview', errors: [{ message: 'Page Token expired unexpectedly' }] },
+		{ endpoint: '/scrape/google/ai-overview', errors: [{ message: 'Page Token expired' }, { message: 'Invalid parameter' }] }
+	];
+	for (const { endpoint, errors } of cases) {
+		await withMockRequests([Response.json({ errors }, { status: 422 })], async (delays, calls) => {
+			const error = await assertRejects(() => fetchHasDataWithRetry(`https://api.hasdata.com${endpoint}`), HasDataError);
+			assertEquals(error.status, 422);
+			assertEquals(error.retryable, false);
+			assertEquals(calls(), 1);
+			assertEquals(delays, []);
+		});
+	}
+});
+
+Deno.test('HasData caller retries confirmed AIO expiration with a new SERP and token', async () => {
+	const serp = (token: string): Response => Response.json({
+		organicResults: [], aiOverview: {
+			pageToken: token, hasdataLink: `https://api.hasdata.com/scrape/google/ai-overview?pageToken=${token}`
+		}
+	});
+	await withMockRequests([
+		serp('expired'), Response.json({ errors: [{ message: 'Page Token expired' }] }, { status: 422 }),
+		serp('fresh'), Response.json({ textBlocks: [{ snippet: 'Valid recovered answer' }] })
+	], async (delays, calls, _controller, urls) => {
+		const error = await assertRejects(() => fetchSerpBatch(['example']), HasDataError);
+		assertEquals(error.retryable, true);
+		assertEquals(calls(), 2);
+		const result = await fetchSerpBatch(['example']);
+		assertEquals(calls(), 4);
+		assertEquals(urls[2], urls[0]);
+		assertEquals(urls[1], 'https://api.hasdata.com/scrape/google/ai-overview?pageToken=expired');
+		assertEquals(urls[3], 'https://api.hasdata.com/scrape/google/ai-overview?pageToken=fresh');
+		assertEquals(result[0].aiOverview?.answer, 'Valid recovered answer');
+		assertEquals(delays, []);
+	});
+});
+
+Deno.test('HasData caller cancellation takes precedence over a confirmed token-expiry response', async () => {
+	await withMockRequests([
+		Response.json({ errors: [{ message: 'Page Token expired' }] }, { status: 422 })
+	], async (_delays, calls, controller) => {
+		const originalError = console.error;
+		console.error = () => { controller.abort(new Error('Stopped')); };
+		try {
+			const error = await assertRejects(() => fetchHasDataWithRetry(
+				'https://api.hasdata.com/scrape/google/ai-overview?pageToken=expired', undefined, controller.signal
+			), Error, 'Stopped');
+			assertEquals(error instanceof HasDataError, false);
+			assertEquals(calls(), 1);
+		} finally { console.error = originalError; }
+	});
+});
+
 Deno.test('HasData bounds diagnostics and never logs raw non-JSON response bodies', async () => {
 	const originalError = console.error;
 	const logs: Array<unknown> = [];
