@@ -10,7 +10,7 @@
 
 import { type RetryConfig, sleep, withRetries } from '../../../helpers/async.ts';
 import type { ModelResult } from '../../../schemas/models.schema.ts';
-import { parseSources, cleanAnswer, getAbortSignal, type ProviderFunctions } from './scrape.ts';
+import { cleanAnswer, getAbortSignal, LLMSnapshotError, parseSources, type ProviderFunctions } from './scrape.ts';
 
 // ============================================================================
 // Types
@@ -158,8 +158,9 @@ export function createBrightdataProvider(
 
 			const data = await response.json();
 			return data?.snapshot_id || null;
-		} catch (error) {
-			console.error(`[${config.providerName}] Trigger failed:`, error);
+		} catch {
+			getAbortSignal()?.throwIfAborted();
+			console.error(`[${config.providerName}] Trigger request failed`);
 			return null;
 		}
 	}
@@ -171,7 +172,7 @@ export function createBrightdataProvider(
 		const abortSignal = getAbortSignal();
 
 		while (Date.now() - startTime < MAX_WAIT_MS) {
-			if (abortSignal?.aborted) return false;
+			abortSignal?.throwIfAborted();
 
 			try {
 				const response = await withRetries(
@@ -188,10 +189,14 @@ export function createBrightdataProvider(
 				} else {
 					const status = await response.json();
 					if (status.status === 'ready' || status.status === 'complete') return true;
-					if (status.status === 'failed' || status.status === 'error') return false;
+					if (status.status === 'failed' || status.status === 'error') {
+						throw new LLMSnapshotError(config.providerName, 'snapshot_error', snapshotId);
+					}
 				}
 			} catch (error) {
-				console.error(`[${config.providerName}] Monitor error:`, error);
+				abortSignal?.throwIfAborted();
+				if (error instanceof LLMSnapshotError) throw error;
+				console.error(`[${config.providerName}] Monitor request failed`);
 			}
 
 			await sleep(POLL_INTERVAL_MS, abortSignal);
@@ -201,7 +206,7 @@ export function createBrightdataProvider(
 		return false;
 	}
 
-	async function downloadJob(snapshotId: string): Promise<Array<BrightdataLLMResponse> | null> {
+	async function downloadJob(snapshotId: string): Promise<unknown> {
 		const apiKey = getApiKey();
 		const url = `${config.apiBase}/datasets/v3/snapshot/${snapshotId}?format=json`;
 
@@ -220,19 +225,55 @@ export function createBrightdataProvider(
 				return null;
 			}
 
-			const data = await response.json();
-			return Array.isArray(data) ? data : null;
-		} catch (error) {
-			console.error(`[${config.providerName}] Download failed:`, error);
+			return await response.json();
+		} catch {
+			getAbortSignal()?.throwIfAborted();
+			console.error(`[${config.providerName}] Download request failed`);
 			return null;
 		}
 	}
 
 	function transformResponse(raw: unknown): ModelResult | null {
-		const responses = raw as Array<BrightdataLLMResponse> | null;
-		if (!responses || responses.length === 0) return null;
-
-		const response = responses[0];
+		const records = Array.isArray(raw) ? raw : [raw];
+		for (const record of records) {
+			if (
+				record && typeof record === 'object' &&
+				(('error' in record && record.error != null && record.error !== '') ||
+					('error_code' in record && record.error_code != null && record.error_code !== ''))
+			) {
+				const code = typeof record.error_code === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(record.error_code)
+					? record.error_code
+					: undefined;
+				throw new LLMSnapshotError(config.providerName, 'snapshot_error', undefined, code);
+			}
+		}
+		if (!Array.isArray(raw) || raw.length !== 1) {
+			throw new LLMSnapshotError(config.providerName, 'malformed');
+		}
+		const item = raw[0];
+		if (
+			!item || typeof item !== 'object' || typeof item.prompt !== 'string' || item.prompt.trim() === '' ||
+			(typeof item.answer_text !== 'string' && typeof item.answer_text_markdown !== 'string') ||
+			(item.answer_text != null && typeof item.answer_text !== 'string') ||
+			(item.answer_text_markdown != null && typeof item.answer_text_markdown !== 'string') ||
+			(item.citations != null &&
+				(!Array.isArray(item.citations) ||
+					item.citations.some((value: unknown) =>
+						!value || typeof value !== 'object' || !('url' in value) || typeof value.url !== 'string'
+					))) ||
+			(item.links_attached != null &&
+				(!Array.isArray(item.links_attached) ||
+					item.links_attached.some((value: unknown) =>
+						!value || typeof value !== 'object' ||
+						('url' in value && value.url != null && typeof value.url !== 'string')
+					))) ||
+			(item.web_search_query != null &&
+				(!Array.isArray(item.web_search_query) ||
+					item.web_search_query.some((value: unknown) => typeof value !== 'string')))
+		) {
+			throw new LLMSnapshotError(config.providerName, 'malformed');
+		}
+		const response = item as BrightdataLLMResponse;
 
 		const answerText = cleanAnswer(response.answer_text || '');
 		const answerTextMarkdown = cleanAnswer(response.answer_text_markdown || '');
@@ -248,6 +289,7 @@ export function createBrightdataProvider(
 
 	return {
 		name: config.providerName,
+		strictSnapshots: true,
 		maxConcurrency: config.maxConcurrency,
 		maxPromptsPerRequest: config.maxPromptsPerRequest,
 		triggerJob,
@@ -262,3 +304,11 @@ export function createBrightdataProvider(
 // ============================================================================
 
 export const brightdataProvider: ProviderFunctions = createBrightdataProvider();
+
+export function transformBrightdataLLMResponse(raw: unknown): ModelResult {
+	const result = brightdataProvider.transformResponse(raw);
+	if (result == null) {
+		throw new LLMSnapshotError(brightdataProvider.name, 'malformed');
+	}
+	return result;
+}

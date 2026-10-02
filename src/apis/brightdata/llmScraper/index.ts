@@ -15,6 +15,8 @@ import { createOxylabsProvider } from './oxy.ts';
 
 // Re-export types
 export type { BatchOptions };
+export { LLMSnapshotError, type LLMSnapshotErrorKind } from './scrape.ts';
+export { transformBrightdataLLMResponse } from './brightdata.ts';
 export type JobId = string | null;
 export type ScraperTarget = 'chatgpt' | 'aim' | 'generic';
 
@@ -78,9 +80,7 @@ function getLLMScraper(target: ScraperTarget = 'chatgpt'): LLMScraper {
 	let provider;
 	if (target === 'generic') {
 		// Generic instance: only used for download/monitor, no target-specific config needed
-		provider = providerName === 'brightdata'
-			? createBrightdataProvider()
-			: createOxylabsProvider();
+		provider = providerName === 'brightdata' ? createBrightdataProvider() : createOxylabsProvider();
 	} else {
 		const targetOptions = getTargetOptions(target);
 		provider = providerName === 'brightdata'

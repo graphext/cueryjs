@@ -23,6 +23,7 @@ export interface BatchOptions {
 
 export interface ProviderFunctions {
 	name: string;
+	strictSnapshots?: boolean;
 	maxConcurrency: number;
 	maxPromptsPerRequest: number;
 	triggerJob: (prompt: string, useSearch: boolean, countryISOCode: string | null) => Promise<string | null>;
@@ -37,6 +38,20 @@ export interface LLMScraper {
 	scrapeLLMBatch: (options: BatchOptions) => Promise<Array<ModelResult>>;
 	triggerLLMBatch: (options: BatchOptions) => Promise<Array<string | null>>;
 	downloadLLMSnapshots: (jobIds: Array<string | null>) => Promise<Array<ModelResult>>;
+}
+
+export type LLMSnapshotErrorKind = 'missing_job' | 'not_ready' | 'download' | 'malformed' | 'snapshot_error';
+
+export class LLMSnapshotError extends Error {
+	constructor(
+		readonly provider: string,
+		readonly kind: LLMSnapshotErrorKind,
+		readonly jobId?: string,
+		readonly providerCode?: string,
+	) {
+		super(`${provider} snapshot ${kind}${jobId ? ` (${jobId})` : ''}${providerCode ? ` [${providerCode}]` : ''}`);
+		this.name = 'LLMSnapshotError';
+	}
 }
 
 // ============================================================================
@@ -201,6 +216,7 @@ export function emptyModelResult(providerName: string, errorMessage?: string, co
 export function createLLMScraper(provider: ProviderFunctions): LLMScraper {
 	const {
 		name,
+		strictSnapshots = false,
 		maxConcurrency,
 		maxPromptsPerRequest,
 		triggerJob,
@@ -228,25 +244,44 @@ export function createLLMScraper(provider: ProviderFunctions): LLMScraper {
 		const results: Array<ModelResult> = [];
 
 		for (const jobId of jobIds) {
+			getAbortSignal()?.throwIfAborted();
 			if (!jobId) {
+				if (strictSnapshots) throw new LLMSnapshotError(name, 'missing_job');
 				results.push(emptyModelResult(name, 'No job ID provided'));
 				continue;
 			}
 
 			const isReady = await monitorJob(jobId);
+			getAbortSignal()?.throwIfAborted();
 			if (!isReady) {
+				if (strictSnapshots) throw new LLMSnapshotError(name, 'not_ready', jobId);
 				results.push(emptyModelResult(name, 'Job not ready or failed', jobId));
 				continue;
 			}
 
 			const raw = await downloadJob(jobId);
+			getAbortSignal()?.throwIfAborted();
 			if (!raw) {
+				if (strictSnapshots) throw new LLMSnapshotError(name, 'download', jobId);
 				results.push(emptyModelResult(name, 'Failed to download job', jobId));
 				continue;
 			}
 
-			const result = transformResponse(raw);
-			results.push(result ?? emptyModelResult(name, 'Failed to transform response', jobId));
+			try {
+				const result = transformResponse(raw);
+				getAbortSignal()?.throwIfAborted();
+				if (result == null) {
+					if (strictSnapshots) throw new LLMSnapshotError(name, 'malformed', jobId);
+					results.push(emptyModelResult(name, 'Failed to transform response', jobId));
+					continue;
+				}
+				results.push(result);
+			} catch (error) {
+				if (error instanceof LLMSnapshotError && error.jobId == null) {
+					throw new LLMSnapshotError(error.provider, error.kind, jobId, error.providerCode);
+				}
+				throw error;
+			}
 		}
 
 		return results;
