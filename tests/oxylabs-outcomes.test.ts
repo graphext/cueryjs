@@ -35,10 +35,10 @@ Deno.test('Oxylabs explicit submissions keep one input per job and correct targe
 			setFetch((url, init) => {
 				assertEquals(String(url), 'https://data.oxylabs.io/v1/queries');
 				assertEquals(
-					new Headers(init?.headers).get('Authorization'),
+					new Headers(init != null && 'headers' in init ? init.headers : undefined).get('Authorization'),
 					`Basic ${btoa('test-user:test-password')}`,
 				);
-				bodies.push(JSON.parse(String(init?.body)));
+				bodies.push(JSON.parse(String(init != null && 'body' in init ? init.body : undefined)));
 				return Promise.resolve(Response.json({ id: String(bodies.length) }));
 			});
 			const outcomes = await createLLMScraper(provider).triggerLLMBatchOutcomes({
@@ -161,7 +161,7 @@ Deno.test('Oxylabs snapshot outcomes retain operational failures without submitt
 		) {
 			let calls = 0;
 			setFetch((_url, init) => {
-				assertEquals(init?.method, undefined);
+				assertEquals(init != null && 'method' in init ? init.method : undefined, undefined);
 				return Promise.resolve(++calls === 1 ? Response.json({ status: 'done' }) : reply);
 			});
 			const outcomes = await createLLMScraper(createOxylabsProvider()).downloadSnapshotOutcomes('123', 1);
@@ -201,7 +201,7 @@ Deno.test('Oxylabs explicit context signals cancel trigger backoff and snapshot 
 			const reason = new DOMException(`Cancel ${operation}`, 'AbortError');
 			let calls = 0;
 			setFetch((url, init) => {
-				assertEquals(init?.signal, controller.signal);
+				assertEquals(init != null && 'signal' in init ? init.signal : undefined, controller.signal);
 				calls++;
 				if (operation === 'download' && !String(url).endsWith('/results')) {
 					return Promise.resolve(Response.json({ status: 'done' }));

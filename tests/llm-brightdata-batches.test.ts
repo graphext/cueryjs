@@ -31,7 +31,7 @@ Deno.test('BrightData submits real twenty-input batches with one ordered receipt
 		for (const count of [0, 1, 20, 21, 41]) {
 			const inputs: Array<Array<{ prompt: string; index: number; country: string; web_search: boolean }>> = [];
 			setFetch((_url, init) => {
-				const body = JSON.parse(String(init?.body));
+				const body = JSON.parse(String(init != null && 'body' in init ? init.body : undefined));
 				inputs.push(body.input);
 				return Promise.resolve(Response.json({ snapshot_id: `sd_${inputs.length}` }));
 			});
@@ -62,7 +62,7 @@ Deno.test('legacy trigger APIs retain one job per prompt', async () => {
 	await mocked(async (setFetch) => {
 		let calls = 0;
 		setFetch((_url, init) => {
-			assertEquals(JSON.parse(String(init?.body)).input.length, 1);
+			assertEquals(JSON.parse(String(init != null && 'body' in init ? init.body : undefined)).input.length, 1);
 			return Promise.resolve(Response.json({ snapshot_id: `sd_${++calls}` }));
 		});
 		assertEquals(await createLLMScraper(createBrightdataProvider()).triggerLLMBatch({ prompts: ['a', 'b'] }), [
@@ -81,7 +81,10 @@ Deno.test('public ChatGPT and AI Mode outcome APIs target their own dataset with
 			{ url: string; body: { input: Array<{ index: number; url: string; prompt: string; country: string }> } }
 		> = [];
 		setFetch((url, init) => {
-			calls.push({ url: String(url), body: JSON.parse(String(init?.body)) });
+			calls.push({
+				url: String(url),
+				body: JSON.parse(String(init != null && 'body' in init ? init.body : undefined)),
+			});
 			return Promise.resolve(Response.json({ snapshot_id: 'sd_public' }));
 		});
 		try {
@@ -204,7 +207,7 @@ Deno.test('twenty-input uncertainty is not resubmitted and 429 retries preserve 
 		let calls = 0;
 		const bodies: Array<string> = [];
 		setFetch((_url, init) => {
-			bodies.push(String(init?.body));
+			bodies.push(String(init != null && 'body' in init ? init.body : undefined));
 			return Promise.resolve(
 				++calls === 1
 					? new Response('', { status: 429, headers: { 'Retry-After': '0' } })
@@ -237,7 +240,7 @@ Deno.test('explicit signals cancel trigger rate-limit waits without a global sig
 		let calls = 0;
 		setFetch((_url, init) => {
 			calls++;
-			assertEquals(init?.signal, controller.signal);
+			assertEquals(init != null && 'signal' in init ? init.signal : undefined, controller.signal);
 			setTimeout(() => controller.abort(reason), 0);
 			return Promise.resolve(new Response('', { status: 429, headers: { 'Retry-After': '60' } }));
 		});
@@ -262,7 +265,7 @@ Deno.test('explicit signals cancel monitoring and download retry waits with the 
 			let calls = 0;
 			setFetch((_url, init) => {
 				calls++;
-				assertEquals(init?.signal, controller.signal);
+				assertEquals(init != null && 'signal' in init ? init.signal : undefined, controller.signal);
 				if (stage === 'download' && calls === 1) return Promise.resolve(Response.json({ status: 'ready' }));
 				setTimeout(() => controller.abort(reason), 0);
 				return Promise.resolve(new Response('', { status: 503 }));
