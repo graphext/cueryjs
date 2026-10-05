@@ -9,13 +9,19 @@
  */
 
 import type { ModelResult } from '../../../schemas/models.schema.ts';
-import { type BatchOptions, createLLMScraper, type LLMScraper, type LLMTriggerOutcome } from './scrape.ts';
+import {
+	type BatchOptions,
+	createLLMScraper,
+	type LLMScraper,
+	type LLMSnapshotError,
+	type LLMTriggerInputOutcome,
+} from './scrape.ts';
 import { createBrightdataProvider } from './brightdata.ts';
 import { createOxylabsProvider } from './oxy.ts';
 
 // Re-export types
 export type { BatchOptions };
-export type { LLMTriggerFailure, LLMTriggerOutcome } from './scrape.ts';
+export type { LLMTriggerFailure, LLMTriggerInputOutcome, LLMTriggerOutcome } from './scrape.ts';
 export { LLMSnapshotError, type LLMSnapshotErrorKind } from './scrape.ts';
 export { transformBrightdataLLMResponse } from './brightdata.ts';
 export type JobId = string | null;
@@ -109,39 +115,47 @@ export function getMaxPromptsPerRequest(target: ScraperTarget = 'chatgpt'): numb
 
 // ChatGPT scraper methods
 export async function scrapeGPTBatch(options: BatchOptions): Promise<Array<ModelResult>> {
-	return getLLMScraper('chatgpt').scrapeLLMBatch(options);
+	return await getLLMScraper('chatgpt').scrapeLLMBatch(options);
 }
 
 export async function triggerGPTBatch(options: BatchOptions): Promise<Array<string | null>> {
-	return getLLMScraper('chatgpt').triggerLLMBatch(options);
+	return await getLLMScraper('chatgpt').triggerLLMBatch(options);
 }
 
-export async function triggerGPTBatchOutcomes(options: BatchOptions): Promise<Array<LLMTriggerOutcome>> {
-	return getLLMScraper('chatgpt').triggerLLMBatchOutcomes(options);
+export async function triggerGPTBatchOutcomes(options: BatchOptions): Promise<Array<LLMTriggerInputOutcome>> {
+	return await getLLMScraper('chatgpt').triggerLLMBatchOutcomes(options);
 }
 
 export async function downloadGPTSnapshots(jobIds: Array<string | null>): Promise<Array<ModelResult>> {
-	return downloadSnapshots(jobIds);
+	return await downloadSnapshots(jobIds);
 }
 
 // AIM scraper methods
 export async function scrapeAIMBatch(options: BatchOptions): Promise<Array<ModelResult>> {
-	return getLLMScraper('aim').scrapeLLMBatch(options);
+	return await getLLMScraper('aim').scrapeLLMBatch(options);
 }
 
 export async function triggerAIMBatch(options: BatchOptions): Promise<Array<string | null>> {
-	return getLLMScraper('aim').triggerLLMBatch(options);
+	return await getLLMScraper('aim').triggerLLMBatch(options);
 }
 
-export async function triggerAIMBatchOutcomes(options: BatchOptions): Promise<Array<LLMTriggerOutcome>> {
-	return getLLMScraper('aim').triggerLLMBatchOutcomes(options);
+export async function triggerAIMBatchOutcomes(options: BatchOptions): Promise<Array<LLMTriggerInputOutcome>> {
+	return await getLLMScraper('aim').triggerLLMBatchOutcomes(options);
 }
 
 export async function downloadAIMSnapshots(jobIds: Array<string | null>): Promise<Array<ModelResult>> {
-	return downloadSnapshots(jobIds);
+	return await downloadSnapshots(jobIds);
 }
 
 // Generic download — target-agnostic, works with any job IDs
 export async function downloadSnapshots(jobIds: Array<string | null>): Promise<Array<ModelResult>> {
-	return getLLMScraper('generic').downloadLLMSnapshots(jobIds);
+	return await getLLMScraper('generic').downloadLLMSnapshots(jobIds);
+}
+
+export async function downloadSnapshotOutcomes(
+	jobId: string,
+	inputCount: number,
+	signal?: AbortSignal,
+): Promise<Array<ModelResult | LLMSnapshotError>> {
+	return await getLLMScraper('generic').downloadSnapshotOutcomes(jobId, inputCount, signal);
 }

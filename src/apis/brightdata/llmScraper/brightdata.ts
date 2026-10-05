@@ -75,7 +75,7 @@ const DEFAULT_BRIGHTDATA_PROVIDER_CONFIG: BrightdataProviderConfig = {
 	targetUrl: 'http://chatgpt.com/',
 	providerName: 'Brightdata',
 	maxConcurrency: 50,
-	maxPromptsPerRequest: 1,
+	maxPromptsPerRequest: 20,
 };
 
 const TRIGGER_RETRY: RetryConfig = {
@@ -122,23 +122,26 @@ export function createBrightdataProvider(
 	const config = { ...DEFAULT_BRIGHTDATA_PROVIDER_CONFIG, ...overrides };
 	const customOutputFields = [...new Set([...(config.outputFields ?? []), ...(config.extraFields ?? [])])].join('|');
 
-	async function triggerJobOutcome(
-		prompt: string,
+	async function triggerBatchOutcome(
+		prompts: Array<string>,
 		useSearch: boolean,
 		countryISOCode: string | null,
+		signal = getAbortSignal(),
 	): Promise<LLMTriggerOutcome> {
-		const signal = getAbortSignal();
+		if (prompts.length < 1 || prompts.length > config.maxPromptsPerRequest) {
+			throw new Error('Invalid Brightdata batch size');
+		}
 		signal?.throwIfAborted();
 		const apiKey = getApiKey();
 		const body = {
 			custom_output_fields: customOutputFields,
-			input: [{
+			input: prompts.map((prompt, index) => ({
 				url: config.targetUrl,
 				prompt,
 				country: countryISOCode || '',
-				index: 0,
+				index,
 				...(config.extraInputs?.({ prompt, useSearch, countryISOCode }) ?? {}),
-			}],
+			})),
 		};
 		let response: Response;
 		try {
@@ -209,6 +212,15 @@ export function createBrightdataProvider(
 		};
 	}
 
+	function triggerJobOutcome(
+		prompt: string,
+		useSearch: boolean,
+		countryISOCode: string | null,
+		signal = getAbortSignal(),
+	): Promise<LLMTriggerOutcome> {
+		return triggerBatchOutcome([prompt], useSearch, countryISOCode, signal);
+	}
+
 	async function triggerJob(
 		prompt: string,
 		useSearch: boolean,
@@ -259,11 +271,10 @@ export function createBrightdataProvider(
 		}
 	}
 
-	async function monitorJob(snapshotId: string): Promise<boolean> {
+	async function monitorJob(snapshotId: string, abortSignal = getAbortSignal()): Promise<boolean> {
 		const apiKey = getApiKey();
 		const url = `${config.apiBase}/datasets/v3/progress/${snapshotId}`;
 		const startTime = Date.now();
-		const abortSignal = getAbortSignal();
 
 		while (Date.now() - startTime < MAX_WAIT_MS) {
 			abortSignal?.throwIfAborted();
@@ -275,7 +286,7 @@ export function createBrightdataProvider(
 							headers: { 'Authorization': `Bearer ${apiKey}` },
 							signal: abortSignal,
 						}),
-					MONITOR_RETRY,
+					{ ...MONITOR_RETRY, signal: abortSignal },
 				);
 
 				if (!response.ok) {
@@ -300,7 +311,7 @@ export function createBrightdataProvider(
 		return false;
 	}
 
-	async function downloadJob(snapshotId: string): Promise<unknown> {
+	async function downloadJob(snapshotId: string, signal = getAbortSignal()): Promise<unknown> {
 		const apiKey = getApiKey();
 		const url = `${config.apiBase}/datasets/v3/snapshot/${snapshotId}?format=json`;
 
@@ -309,9 +320,9 @@ export function createBrightdataProvider(
 				() =>
 					fetch(url, {
 						headers: { 'Authorization': `Bearer ${apiKey}` },
-						signal: getAbortSignal(),
+						signal,
 					}),
-				DOWNLOAD_RETRY,
+				{ ...DOWNLOAD_RETRY, signal },
 			);
 
 			if (!response.ok) {
@@ -321,7 +332,7 @@ export function createBrightdataProvider(
 
 			return await response.json();
 		} catch {
-			getAbortSignal()?.throwIfAborted();
+			signal?.throwIfAborted();
 			console.error(`[${config.providerName}] Download request failed`);
 			return null;
 		}
@@ -381,6 +392,40 @@ export function createBrightdataProvider(
 		};
 	}
 
+	function transformBatchResponse(raw: unknown, inputCount: number): Array<ModelResult | LLMSnapshotError> {
+		if (!Number.isInteger(inputCount) || inputCount < 1 || inputCount > config.maxPromptsPerRequest) {
+			throw new Error('Invalid Brightdata input count');
+		}
+		const malformed = () => new LLMSnapshotError(config.providerName, 'malformed');
+		const outcomes: Array<ModelResult | LLMSnapshotError> = Array.from({ length: inputCount }, malformed);
+		if (!Array.isArray(raw)) return outcomes;
+		const seen = new Set<number>();
+		for (const record of raw) {
+			if (record == null || typeof record !== 'object' || Array.isArray(record)) return outcomes.map(malformed);
+			const nestedIndex = record.input != null && typeof record.input === 'object'
+				? record.input.index
+				: undefined;
+			if (record.index != null && nestedIndex != null && record.index !== nestedIndex) {
+				return outcomes.map(malformed);
+			}
+			const index = record.index ?? nestedIndex ?? (inputCount === 1 && raw.length === 1 ? 0 : undefined);
+			// An unidentifiable row could collide with any otherwise valid response.
+			if (!Number.isInteger(index) || index < 0 || index >= inputCount) return outcomes.map(malformed);
+			if (seen.has(index)) {
+				outcomes[index] = malformed();
+				continue;
+			}
+			seen.add(index);
+			try {
+				outcomes[index] = transformResponse([record]) ?? malformed();
+			} catch (error) {
+				if (!(error instanceof LLMSnapshotError)) throw error;
+				outcomes[index] = error;
+			}
+		}
+		return outcomes;
+	}
+
 	return {
 		name: config.providerName,
 		strictSnapshots: true,
@@ -388,9 +433,11 @@ export function createBrightdataProvider(
 		maxPromptsPerRequest: config.maxPromptsPerRequest,
 		triggerJob,
 		triggerJobOutcome,
+		triggerBatchOutcome,
 		monitorJob,
 		downloadJob,
 		transformResponse,
+		transformBatchResponse,
 	};
 }
 

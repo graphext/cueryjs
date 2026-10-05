@@ -19,6 +19,7 @@ export interface BatchOptions {
 	prompts: Array<string>;
 	useSearch?: boolean;
 	countryISOCode?: string | null;
+	signal?: AbortSignal;
 }
 
 export interface LLMTriggerFailure {
@@ -30,6 +31,8 @@ export interface LLMTriggerFailure {
 
 export type LLMTriggerOutcome = { jobId: string; failure: null } | { jobId: null; failure: LLMTriggerFailure };
 
+export type LLMTriggerInputOutcome = LLMTriggerOutcome & { inputIndex: number; inputCount: number };
+
 export interface ProviderFunctions {
 	name: string;
 	strictSnapshots?: boolean;
@@ -40,10 +43,18 @@ export interface ProviderFunctions {
 		prompt: string,
 		useSearch: boolean,
 		countryISOCode: string | null,
+		signal?: AbortSignal,
 	) => Promise<LLMTriggerOutcome>;
-	monitorJob: (jobId: string) => Promise<boolean>;
-	downloadJob: (jobId: string) => Promise<unknown>;
+	triggerBatchOutcome?: (
+		prompts: Array<string>,
+		useSearch: boolean,
+		countryISOCode: string | null,
+		signal?: AbortSignal,
+	) => Promise<LLMTriggerOutcome>;
+	monitorJob: (jobId: string, signal?: AbortSignal) => Promise<boolean>;
+	downloadJob: (jobId: string, signal?: AbortSignal) => Promise<unknown>;
 	transformResponse: (raw: unknown) => ModelResult | null;
+	transformBatchResponse?: (raw: unknown, inputCount: number) => Array<ModelResult | LLMSnapshotError>;
 }
 
 export interface LLMScraper {
@@ -51,7 +62,12 @@ export interface LLMScraper {
 	maxPromptsPerRequest: number;
 	scrapeLLMBatch: (options: BatchOptions) => Promise<Array<ModelResult>>;
 	triggerLLMBatch: (options: BatchOptions) => Promise<Array<string | null>>;
-	triggerLLMBatchOutcomes: (options: BatchOptions) => Promise<Array<LLMTriggerOutcome>>;
+	triggerLLMBatchOutcomes: (options: BatchOptions) => Promise<Array<LLMTriggerInputOutcome>>;
+	downloadSnapshotOutcomes: (
+		jobId: string,
+		inputCount: number,
+		signal?: AbortSignal,
+	) => Promise<Array<ModelResult | LLMSnapshotError>>;
 	downloadLLMSnapshots: (jobIds: Array<string | null>) => Promise<Array<ModelResult>>;
 }
 
@@ -303,11 +319,65 @@ export function createLLMScraper(provider: ProviderFunctions): LLMScraper {
 	}
 
 	async function triggerLLMBatchOutcomes(
-		{ prompts, useSearch = false, countryISOCode = null }: BatchOptions,
-	): Promise<Array<LLMTriggerOutcome>> {
+		{ prompts, useSearch = false, countryISOCode = null, signal = getAbortSignal() }: BatchOptions,
+	): Promise<Array<LLMTriggerInputOutcome>> {
 		const trigger = provider.triggerJobOutcome;
-		if (trigger == null) throw new Error(`${name} does not support explicit trigger outcomes`);
-		return await mapParallel(prompts, maxConcurrency, (prompt) => trigger(prompt, useSearch, countryISOCode));
+		const triggerBatch = provider.triggerBatchOutcome;
+		if (trigger == null && triggerBatch == null) {
+			throw new Error(`${name} does not support explicit trigger outcomes`);
+		}
+		const batchSize = triggerBatch == null ? 1 : maxPromptsPerRequest;
+		if (!Number.isInteger(batchSize) || batchSize < 1) throw new Error('Invalid scraper batch size');
+		const batches: Array<Array<string>> = [];
+		for (let index = 0; index < prompts.length; index += batchSize) {
+			batches.push(prompts.slice(index, index + batchSize));
+		}
+		const outcomes = await mapParallel(batches, maxConcurrency, async (batch) => {
+			signal?.throwIfAborted();
+			const outcome = triggerBatch != null
+				? await triggerBatch(batch, useSearch, countryISOCode, signal)
+				: await trigger!(batch[0], useSearch, countryISOCode, signal);
+			signal?.throwIfAborted();
+			return batch.map((_, inputIndex) => ({ ...outcome, inputIndex, inputCount: batch.length }));
+		});
+		return outcomes.flat();
+	}
+
+	async function downloadSnapshotOutcomes(
+		jobId: string,
+		inputCount: number,
+		signal = getAbortSignal(),
+	): Promise<Array<ModelResult | LLMSnapshotError>> {
+		if (!Number.isInteger(inputCount) || inputCount < 1 || inputCount > maxPromptsPerRequest) {
+			throw new Error('Invalid scraper input count');
+		}
+		signal?.throwIfAborted();
+		if (!jobId) throw new LLMSnapshotError(name, 'missing_job');
+		const ready = await monitorJob(jobId, signal);
+		signal?.throwIfAborted();
+		if (!ready) throw new LLMSnapshotError(name, 'not_ready', jobId);
+		const raw = await downloadJob(jobId, signal);
+		signal?.throwIfAborted();
+		if (raw == null) throw new LLMSnapshotError(name, 'download', jobId);
+		let outcomes: Array<ModelResult | LLMSnapshotError>;
+		try {
+			if (provider.transformBatchResponse != null) {
+				outcomes = provider.transformBatchResponse(raw, inputCount);
+			} else {
+				if (inputCount !== 1) throw new LLMSnapshotError(name, 'malformed', jobId);
+				outcomes = [transformResponse(raw) ?? new LLMSnapshotError(name, 'malformed', jobId)];
+			}
+		} catch (error) {
+			if (!(error instanceof LLMSnapshotError)) throw error;
+			outcomes = Array.from({ length: inputCount }, () => error);
+		}
+		signal?.throwIfAborted();
+		if (outcomes.length !== inputCount) throw new LLMSnapshotError(name, 'malformed', jobId);
+		return outcomes.map((outcome) =>
+			outcome instanceof LLMSnapshotError && outcome.jobId == null
+				? new LLMSnapshotError(outcome.provider, outcome.kind, jobId, outcome.providerCode)
+				: outcome
+		);
 	}
 
 	async function scrapeLLMBatch(options: BatchOptions): Promise<Array<ModelResult>> {
@@ -321,6 +391,7 @@ export function createLLMScraper(provider: ProviderFunctions): LLMScraper {
 		scrapeLLMBatch,
 		triggerLLMBatch,
 		triggerLLMBatchOutcomes,
+		downloadSnapshotOutcomes,
 		downloadLLMSnapshots,
 	};
 }

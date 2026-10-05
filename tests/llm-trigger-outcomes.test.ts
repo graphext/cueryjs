@@ -48,7 +48,7 @@ Deno.test('explicit trigger outcomes retain receipts and never repeat uncertain 
 		setFetch(() => Promise.resolve(Response.json({ snapshot_id: 'sd_existing' })));
 		assertEquals(
 			await createLLMScraper(createBrightdataProvider()).triggerLLMBatchOutcomes({ prompts: ['prompt'] }),
-			[{ jobId: 'sd_existing', failure: null }],
+			[{ jobId: 'sd_existing', failure: null, inputIndex: 0, inputCount: 1 }],
 		);
 	});
 });
@@ -88,13 +88,15 @@ Deno.test('mixed trigger receipts retain input order and sanitized uncertainty m
 			);
 		});
 		assertEquals(
-			await createLLMScraper(createBrightdataProvider()).triggerLLMBatchOutcomes({
+			await createLLMScraper(createBrightdataProvider({ maxPromptsPerRequest: 1 })).triggerLLMBatchOutcomes({
 				prompts: ['first', 'second'],
 			}),
 			[
-				{ jobId: 'sd_first', failure: null },
+				{ jobId: 'sd_first', failure: null, inputIndex: 0, inputCount: 1 },
 				{
 					jobId: null,
+					inputIndex: 0,
+					inputCount: 1,
 					failure: {
 						provider: 'Brightdata',
 						kind: 'trigger_uncertain',
