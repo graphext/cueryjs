@@ -159,6 +159,96 @@ Deno.test('batch transforms preserve indexed successes around failed and missing
 	assertEquals('answer' in duplicate[1] && duplicate[1].answer, 'answer 1');
 });
 
+Deno.test('anonymous provider errors preserve nineteen shuffled successes in a twenty-input batch', () => {
+	const transform = createBrightdataProvider().transformBatchResponse!;
+	const successes = [4, 19, 16, 6, 17, 2, 15, 18, 9, 5, 12, 0, 10, 7, 8, 1, 14, 3, 13].map(response);
+	for (const position of [0, 10, 19]) {
+		const raw: Array<unknown> = [...successes];
+		raw.splice(position, 0, { error: 'private crawler detail', error_code: 'no_peers' });
+		const outcomes = transform(raw, 20);
+		assertEquals(outcomes.length, 20);
+		for (let index = 0; index < 20; index++) {
+			const outcome = outcomes[index];
+			if (index === 11) {
+				assertInstanceOf(outcome, LLMSnapshotError);
+				assertEquals(outcome.kind, 'snapshot_error');
+				assertEquals(outcome.providerCode, 'no_peers');
+				assertEquals(outcome.message.includes('private'), false);
+			} else {
+				assertEquals('answer' in outcome && outcome.answer, `answer ${index}`);
+			}
+		}
+	}
+});
+
+Deno.test('ambiguous anonymous errors do not overwrite indexed outcomes or guess error assignments', () => {
+	const transform = createBrightdataProvider().transformBatchResponse!;
+	const outcomes = transform([
+		{ error_code: 'no_peers' },
+		{ ...response(2), index: undefined, input: { index: 2 } },
+		{ error: 'another private error' },
+		response(0),
+	], 4);
+	assertEquals('answer' in outcomes[0] && outcomes[0].answer, 'answer 0');
+	assertEquals('answer' in outcomes[2] && outcomes[2].answer, 'answer 2');
+	for (const index of [1, 3]) {
+		assertInstanceOf(outcomes[index], LLMSnapshotError);
+		assertEquals((outcomes[index] as LLMSnapshotError).kind, 'malformed');
+		assertEquals((outcomes[index] as LLMSnapshotError).providerCode, undefined);
+	}
+	const duplicate = transform([response(0), response(0), { error_code: 'no_peers' }], 2);
+	assertEquals(
+		duplicate.every((outcome) => outcome instanceof LLMSnapshotError && outcome.kind === 'malformed'),
+		true,
+	);
+	assertEquals(transform([response(0), { error_code: 'no_peers' }], 1)[0], transform([response(0)], 1)[0]);
+});
+
+Deno.test('anonymous errors reuse provider-code sanitization and cannot hide invalid indices', () => {
+	const transform = createBrightdataProvider().transformBatchResponse!;
+	const sanitized = transform([response(0), { error_code: 'private detail with spaces' }], 2)[1];
+	assertInstanceOf(sanitized, LLMSnapshotError);
+	assertEquals(sanitized.kind, 'snapshot_error');
+	assertEquals(sanitized.providerCode, undefined);
+	assertEquals(sanitized.message.includes('private'), false);
+	for (
+		const record of [
+			{ error: '', error_code: '' },
+			{ error: null, error_code: null },
+			{ error_code: 'no_peers', index: -1 },
+			{ error_code: 'no_peers', index: 2 },
+			{ error_code: 'no_peers', index: '1' },
+			{ error_code: 'no_peers', index: 1, input: { index: 0 } },
+		]
+	) {
+		assertEquals(
+			transform([response(0), record], 2).every((outcome) =>
+				outcome instanceof LLMSnapshotError && outcome.kind === 'malformed'
+			),
+			true,
+		);
+	}
+});
+
+Deno.test('anonymous errors retain job metadata without another download or trigger', async () => {
+	await mocked(async (setFetch) => {
+		let calls = 0;
+		setFetch(() =>
+			Promise.resolve(
+				Response.json(++calls === 1 ? { status: 'ready' } : [response(1), { error_code: 'no_peers' }]),
+			)
+		);
+		const outcomes = await createLLMScraper(createBrightdataProvider()).downloadSnapshotOutcomes('sd_existing', 2);
+		assertEquals(calls, 2);
+		assertEquals(outcomes.length, 2);
+		assertInstanceOf(outcomes[0], LLMSnapshotError);
+		assertEquals(outcomes[0].kind, 'snapshot_error');
+		assertEquals(outcomes[0].providerCode, 'no_peers');
+		assertEquals(outcomes[0].jobId, 'sd_existing');
+		assertEquals('answer' in outcomes[1] && outcomes[1].answer, 'answer 1');
+	});
+});
+
 Deno.test('unidentifiable and contradictory indices invalidate the ambiguous snapshot', () => {
 	const transform = createBrightdataProvider().transformBatchResponse!;
 	for (const invalid of [undefined, null, -1, 2, 0.5, '0', NaN]) {

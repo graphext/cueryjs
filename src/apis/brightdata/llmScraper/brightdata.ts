@@ -400,6 +400,7 @@ export function createBrightdataProvider(
 		const outcomes: Array<ModelResult | LLMSnapshotError> = Array.from({ length: inputCount }, malformed);
 		if (!Array.isArray(raw)) return outcomes;
 		const seen = new Set<number>();
+		const anonymousErrors: Array<LLMSnapshotError> = [];
 		for (const record of raw) {
 			if (record == null || typeof record !== 'object' || Array.isArray(record)) return outcomes.map(malformed);
 			const nestedIndex = record.input != null && typeof record.input === 'object'
@@ -409,6 +410,17 @@ export function createBrightdataProvider(
 				return outcomes.map(malformed);
 			}
 			const index = record.index ?? nestedIndex ?? (inputCount === 1 && raw.length === 1 ? 0 : undefined);
+			if (index == null) {
+				try {
+					transformResponse([record]);
+				} catch (error) {
+					if (!(error instanceof LLMSnapshotError)) throw error;
+					if (error.kind === 'snapshot_error') {
+						anonymousErrors.push(error);
+						continue;
+					}
+				}
+			}
 			// An unidentifiable row could collide with any otherwise valid response.
 			if (!Number.isInteger(index) || index < 0 || index >= inputCount) return outcomes.map(malformed);
 			if (seen.has(index)) {
@@ -422,6 +434,11 @@ export function createBrightdataProvider(
 				if (!(error instanceof LLMSnapshotError)) throw error;
 				outcomes[index] = error;
 			}
+		}
+		// Only a single unmatched input allows an anonymous error to be attributed safely.
+		if (anonymousErrors.length === 1 && raw.length === inputCount && seen.size === inputCount - 1) {
+			const missingIndex = outcomes.findIndex((_, index) => !seen.has(index));
+			outcomes[missingIndex] = anonymousErrors[0];
 		}
 		return outcomes;
 	}
