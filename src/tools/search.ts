@@ -1,4 +1,5 @@
 import OpenAI from '@openai/openai';
+import { normalizeOpenAIParams } from '../providers/openai-params.ts';
 import { mapParallel } from '../helpers/async.ts';
 import { askLLMSafe } from '../llm.ts';
 
@@ -38,16 +39,18 @@ export type { SearchResult } from '../schemas/search.schema.ts';
  */
 export async function searchOpenAI({
 	prompt,
-	model = 'gpt-4.1-mini',
+	model = 'gpt-6-luna',
 	useSearch = true,
 	countryISOCode = null,
 	contextSize = 'low',
-	reasoningEffort = 'low',
+	reasoningEffort,
 	searchTool = 'web_search'
 }: SearchOptions): Promise<SearchResult> {
 	const params: OpenAIParams = {};
 
 	if (model.includes('-5')) {
+		params.reasoning = { effort: reasoningEffort ?? 'low' };
+	} else if ((model === 'gpt-6-luna' || model === 'gpt-6.1-sol') && reasoningEffort != null) {
 		params.reasoning = { effort: reasoningEffort };
 	}
 
@@ -62,7 +65,7 @@ export async function searchOpenAI({
 
 	const client = getOpenAIClient();
 	const response = await client.responses.create({
-		...params,
+		...normalizeOpenAIParams(model, params),
 		model,
 		input: [{ role: 'user', content: prompt }],
 		stream: false,
@@ -157,7 +160,7 @@ export async function searchWithFormat<T>({
 	useSearch = true,
 	countryISOCode = null,
 	contextSize = 'medium',
-	reasoningEffort = 'low'
+	reasoningEffort
 }: FormattedSearchOptions<T>): Promise<T> {
 
 	const searchResult = await searchOpenAI({
@@ -178,7 +181,7 @@ export async function searchWithFormat<T>({
 		.replace('{answer}', searchResult.answer)
 		.replace('{sources}', sources);
 
-	const { parsed } = await askLLMSafe({ prompt: formattedPrompt, model: 'gpt-4.1-mini', schema: responseSchema });
+	const { parsed } = await askLLMSafe({ prompt: formattedPrompt, model: 'gpt-6-luna', schema: responseSchema });
 	if (!parsed) {
 		throw new Error('Failed to parse structured response from LLM');
 	}
@@ -191,11 +194,11 @@ export async function searchWithFormat<T>({
  */
 export function searchBatch({
 	prompts,
-	model = 'gpt-4.1-mini',
+	model = 'gpt-6-luna',
 	useSearch = true,
 	countryISOCode = null,
 	contextSize = 'medium',
-	reasoningEffort = 'low',
+	reasoningEffort,
 	maxConcurrency = 100
 }: BatchSearchOptions): Promise<Array<SearchResult>> {
 	return mapParallel(

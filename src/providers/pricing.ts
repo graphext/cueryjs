@@ -75,6 +75,18 @@ for (const [providerId, provider] of Object.entries(modelsData as ModelsData)) {
 	}
 }
 
+// OpenAI pricing verified against https://developers.openai.com/api/docs/pricing/.
+// Keep these entries until the bundled catalog includes the released models.
+for (const [id, input, output, cacheRead] of [
+	['gpt-6-luna', 0.10, 0.50, 0.01],
+	['gpt-6.1-sol', 2.00, 10.00, 0.10],
+] as const) {
+	modelIndex.set(id, { provider: 'openai', model: {
+		id, name: id, cost: { input, output, cache_read: cacheRead },
+		structured_output: true, tool_call: true, reasoning: true,
+	} });
+}
+
 /**
  * Normalize a model ID by removing date suffixes and common variations.
  */

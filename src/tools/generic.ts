@@ -219,7 +219,7 @@ export async function generic<T = Record<string, unknown>>({
 	record,
 	instructions,
 	schema,
-	model = 'gpt-4.1-mini',
+	model = 'gpt-6-luna',
 	modelParams = {},
 	maxRetries = 3
 }: GenericOptions): Promise<LLMResponse<T | null>> {
@@ -256,7 +256,7 @@ export async function genericBatch<T = Record<string, unknown>>({
 	records,
 	instructions,
 	schema,
-	model = 'gpt-4.1-mini',
+	model = 'gpt-6-luna',
 	modelParams = {},
 	maxRetries = 3,
 	maxConcurrency = 100,
@@ -356,7 +356,7 @@ export async function auto<T = Record<string, unknown>>({
 	record,
 	instructions,
 	schemaOrInstructions = null,
-	model = 'gpt-4.1-mini',
+	model = 'gpt-6-luna',
 	schemaModel = 'gpt-4.1',
 	modelParams = {},
 	maxRetries = 3
@@ -399,7 +399,7 @@ export async function autoBatch<T = Record<string, unknown>>({
 	records,
 	instructions,
 	schemaOrInstructions = null,
-	model = 'gpt-4.1-mini',
+	model = 'gpt-6-luna',
 	schemaModel = 'gpt-4.1',
 	modelParams = {},
 	maxRetries = 3,

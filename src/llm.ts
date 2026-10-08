@@ -24,7 +24,7 @@ export { calculateCost } from './providers/index.ts';
 export interface AskLLMParams<T = string> {
 	/** The prompt (string or message array) */
 	prompt: string | Message[];
-	/** The model to use (e.g., 'gpt-4.1-mini', 'gemini-2.0-flash') */
+	/** The model to use (e.g., 'gpt-6-luna', 'gemini-2.0-flash') */
 	model: string;
 	/** Optional Zod schema for structured output */
 	schema?: z.ZodType<T> | null;

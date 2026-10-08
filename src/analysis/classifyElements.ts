@@ -100,7 +100,7 @@ async function classifySingleElement<T extends keyof ElementTypeMap>(
 export async function classifyElements<T extends keyof ElementTypeMap>(
 	elements: Array<ElementTypeMap[T]['element']>,
 	elementType: T,
-	model: string = 'gpt-4.1-mini',
+	model: string = 'gpt-6-luna',
 	maxConcurrency: number = 100
 ): Promise<Array<ElementTypeMap[T]['element'] & { classification: ElementTypeMap[T]['classification'] }>> {
 	const classifications = await mapParallel(
