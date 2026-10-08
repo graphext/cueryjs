@@ -42,7 +42,7 @@ Deno.test('Responses SDK parses strict Zod output in parallel and rejects invali
 	const requests: Array<RequestBody> = [];
 	globalThis.fetch = async (_input, init) => {
 		await Promise.resolve();
-		const body = JSON.parse(String(init?.body));
+		const body = JSON.parse(String((init as { body?: unknown })?.body));
 		requests.push(body);
 		const text = body.input[0].content === 'invalid' ? '{"answer":42}' : '{"answer":"ok"}';
 		return Response.json({
@@ -89,7 +89,7 @@ Deno.test('web search and formatted parallel searches send Luna none and Sol exp
 	const requests: Array<RequestBody> = [];
 	globalThis.fetch = async (_input, init) => {
 		await Promise.resolve();
-		const body = JSON.parse(String(init?.body));
+		const body = JSON.parse(String((init as { body?: unknown })?.body));
 		requests.push(body);
 		return Response.json({
 			id: 'resp_test',
