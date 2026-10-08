@@ -2,7 +2,7 @@ import type { z } from '@zod/zod';
 
 import type { Source } from './sources.schema.ts';
 export type ContextSize = 'low' | 'medium' | 'high';
-export type ReasoningEffort = 'low' | 'medium' | 'high';
+export type ReasoningEffort = 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
 export interface SearchResult {
 	answer: string;

@@ -3,6 +3,7 @@
  */
 
 import OpenAI from '@openai/openai';
+import { normalizeOpenAIParams } from './openai-params.ts';
 import { z } from '@zod/zod';
 import type { TokenUsage } from '../response.ts';
 import { SchemaValidationError } from './errors.ts';
@@ -124,7 +125,7 @@ export class OpenAIProvider implements LLMProvider {
 	): Promise<LLMResponse<T>> {
 		try {
 			const response = await this.client.responses.parse({
-				...(params as Record<string, unknown>),
+				...normalizeOpenAIParams(model, params),
 				model,
 				input: messages.map((m) => ({
 					role: m.role,
