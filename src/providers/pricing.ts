@@ -64,14 +64,30 @@ interface ProviderEntry {
 
 type ModelsData = Record<string, ProviderEntry>;
 
+/**
+ * models.json only keeps the providers cuery can call (see scripts/update-models.ts).
+ * If a model ID appears under more than one, this order decides which price is used.
+ */
+const FIRST_PARTY_PROVIDERS = ['openai', 'anthropic', 'google'];
+
 // Build flat index: model ID -> { provider, model }
 const modelIndex = new Map<string, { provider: string; model: ModelEntry }>();
 
-for (const [providerId, provider] of Object.entries(modelsData as ModelsData)) {
+const providerEntries = Object.entries(modelsData as ModelsData).sort(([a], [b]) => {
+	const rank = (id: string) => {
+		const index = FIRST_PARTY_PROVIDERS.indexOf(id);
+		return index === -1 ? FIRST_PARTY_PROVIDERS.length : index;
+	};
+	return rank(a) - rank(b);
+});
+
+for (const [providerId, provider] of providerEntries) {
 	if (!provider.models) continue;
 
 	for (const [modelId, model] of Object.entries(provider.models)) {
-		modelIndex.set(modelId, { provider: providerId, model });
+		if (!modelIndex.has(modelId)) {
+			modelIndex.set(modelId, { provider: providerId, model });
+		}
 	}
 }
 
@@ -87,18 +103,45 @@ for (const [id, input, output, cacheRead] of [
 	} });
 }
 
+// Snapshots the OpenAI API still serves but models.dev's first-party listing omits
+// (verified against https://developers.openai.com/api/docs/pricing/). The catalog wins if it lists them.
+for (const [id, input, output, toolCall] of [
+	['gpt-3.5-turbo-0125', 0.50, 1.50, true],
+	['gpt-3.5-turbo-1106', 1.00, 2.00, true],
+	['gpt-3.5-turbo-instruct', 1.50, 2.00, false],
+] as const) {
+	if (!modelIndex.has(id)) {
+		modelIndex.set(id, { provider: 'openai', model: {
+			id, name: id, cost: { input, output },
+			structured_output: false, tool_call: toolCall, reasoning: false,
+		} });
+	}
+}
+
 /**
  * Normalize a model ID by removing date suffixes and common variations.
  */
 function normalizeModel(modelId: string): string {
-	return modelId.replace(/-\d{4}-\d{2}-\d{2}$/, '');
+	return modelId
+		.replace(/-\d{4}-\d{2}-\d{2}$/, '')
+		// Gemini's stable versions (gemini-2.0-flash-001) are priced as the base model.
+		.replace(/^(gemini-.+)-\d{3}$/, '$1');
 }
 
 /**
- * Look up a model entry by ID (with normalization fallback).
+ * Look up a model entry by ID (with normalization fallback). A first-party
+ * entry for the undated ID wins over a reseller's entry for the dated ID.
  */
 export function lookupModel(modelId: string): { provider: string; model: ModelEntry } | null {
-	return modelIndex.get(modelId) ?? modelIndex.get(normalizeModel(modelId)) ?? null;
+	const exact = modelIndex.get(modelId) ?? null;
+	const normalized = modelIndex.get(normalizeModel(modelId)) ?? null;
+	if (exact != null && FIRST_PARTY_PROVIDERS.includes(exact.provider)) {
+		return exact;
+	}
+	if (normalized != null && FIRST_PARTY_PROVIDERS.includes(normalized.provider)) {
+		return normalized;
+	}
+	return exact ?? normalized;
 }
 
 /**
@@ -154,7 +197,9 @@ export function getModelInfo(modelId: string): ModelInfo | null {
 }
 
 /**
- * Calculate cost for token usage.
+ * Calculate cost for token usage. Cached and cache-write prompt tokens are
+ * charged at their own rates when the model has them (otherwise at the input
+ * rate); reasoning tokens are billed as output.
  */
 export function calculateCost(modelId: string, usage: TokenUsage): UsageCost | null {
 	const pricing = getModelPricing(modelId);
@@ -163,7 +208,15 @@ export function calculateCost(modelId: string, usage: TokenUsage): UsageCost | n
 		return null;
 	}
 
-	const inputCost = (usage.inputTokens / 1_000_000) * pricing.input;
+	// Cache breakdowns are part of inputTokens; clamp so inconsistent usage can't overcharge.
+	const cached = Math.min(usage.cachedInputTokens ?? 0, usage.inputTokens);
+	const cacheWrite = Math.min(usage.cacheWriteTokens ?? 0, usage.inputTokens - cached);
+	const uncached = Math.max(0, usage.inputTokens - cached - cacheWrite);
+	const inputCost = (
+		uncached * pricing.input
+		+ cached * (pricing.cacheRead ?? pricing.input)
+		+ cacheWrite * (pricing.cacheWrite ?? pricing.input)
+	) / 1_000_000;
 	const outputCost = (usage.outputTokens / 1_000_000) * pricing.output;
 
 	return {
